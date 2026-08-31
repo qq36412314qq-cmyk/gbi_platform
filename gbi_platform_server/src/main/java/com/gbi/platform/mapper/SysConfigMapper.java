@@ -1,0 +1,14 @@
+package com.gbi.platform.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.gbi.platform.entity.SysConfig;
+import org.apache.ibatis.annotations.Mapper;
+
+/**
+ * 系统参数配置 Mapper
+ *
+ * @author gbi
+ */
+@Mapper
+public interface SysConfigMapper extends BaseMapper<SysConfig> {
+}

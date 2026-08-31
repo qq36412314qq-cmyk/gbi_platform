@@ -1,0 +1,6 @@
+## 【2026-08-26 07:45:00】OA公告publish_status字段修复
+- 用户原始需求：修复发布公告页面错误
+- 问题根因：oa_announcement表缺少publish_status字段，实体类有该字段但建表脚本未包含
+- 修复：ALTER TABLE oa_announcement ADD COLUMN publish_status tinyint NOT NULL DEFAULT 0
+- 验证：公告创建/分页/发布/撤回全部正常
+- 风险：无

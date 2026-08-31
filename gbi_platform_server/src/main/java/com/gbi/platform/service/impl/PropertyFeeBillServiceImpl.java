@@ -1,0 +1,421 @@
+package com.gbi.platform.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.gbi.platform.common.constant.CommonConst;
+import com.gbi.platform.common.exception.BizException;
+import com.gbi.platform.common.security.LoginUser;
+import com.gbi.platform.common.security.UserContext;
+import com.gbi.platform.dto.PropertyFeeBillGenerateDTO;
+import com.gbi.platform.dto.PropertyFeeBillQueryDTO;
+import com.gbi.platform.entity.BillPlanRel;
+import com.gbi.platform.entity.BizFeeBill;
+import com.gbi.platform.entity.PropertyFeeBill;
+import com.gbi.platform.mapper.BillPlanRelMapper;
+import com.gbi.platform.mapper.BizFeeBillMapper;
+import com.gbi.platform.mapper.PropertyFeeBillMapper;
+import com.gbi.platform.mapper.StallContractMapper;
+import com.gbi.platform.service.FeeRuleStallRelService;
+import com.gbi.platform.service.LeaseStallService;
+import com.gbi.platform.service.PropertyFeeBillService;
+import com.gbi.platform.service.RecvPayPlanService;
+import com.gbi.platform.util.AuditLogUtil;
+import com.gbi.platform.vo.PageVO;
+import com.gbi.platform.vo.StallOptionVO;
+import com.gbi.platform.vo.StallRuleRelVO;
+import com.gbi.platform.vo.PropertyFeeBillVO;
+import com.gbi.platform.vo.PropertyFeeBillPreviewVO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.YearMonth;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * 物业费月度账单服务实现
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
+
+    private final PropertyFeeBillMapper billMapper;
+    private final BizFeeBillMapper bizFeeBillMapper;
+    private final LeaseStallService leaseStallService;
+    private final FeeRuleStallRelService feeRuleStallRelService;
+    private final StallContractMapper stallContractMapper;
+    private final RecvPayPlanService recvPayPlanService;
+    private final BillPlanRelMapper billPlanRelMapper;
+    private final AuditLogUtil auditLogUtil;
+
+    @Override
+    public PageVO<PropertyFeeBillVO> page(PropertyFeeBillQueryDTO dto) {
+        Page<PropertyFeeBill> page = new Page<>(dto.getPageNum(), dto.getPageSize());
+        LambdaQueryWrapper<PropertyFeeBill> wrapper = new LambdaQueryWrapper<PropertyFeeBill>()
+                .eq(StringUtils.hasText(dto.getBillMonth()), PropertyFeeBill::getBillMonth, dto.getBillMonth())
+                .eq(dto.getStallId() != null, PropertyFeeBill::getStallId, dto.getStallId())
+                .eq(dto.getPayStatus() != null, PropertyFeeBill::getPayStatus, dto.getPayStatus())
+                .eq(dto.getCalcMode() != null, PropertyFeeBill::getCalcMode, dto.getCalcMode())
+                .orderByDesc(PropertyFeeBill::getBillMonth)
+                .orderByDesc(PropertyFeeBill::getId);
+        Page<PropertyFeeBill> result = billMapper.selectPage(page, wrapper);
+        Map<Long, StallOptionVO> stallMap = loadStallMap(result.getRecords());
+        List<PropertyFeeBillVO> voList = result.getRecords().stream()
+                .map(b -> toVO(b, stallMap)).toList();
+        return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
+    }
+
+    @Override
+    public PropertyFeeBillVO detail(Long id) {
+        PropertyFeeBill bill = billMapper.selectById(id);
+        if (bill == null) throw new BizException("账单不存在或已删除");
+        Map<Long, StallOptionVO> stallMap = loadStallMap(List.of(bill));
+        return toVO(bill, stallMap);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int generateBatch(PropertyFeeBillGenerateDTO dto) {
+        LoginUser loginUser = UserContext.getLoginUser();
+        Long companyId = loginUser.getCompanyId();
+        List<Long> stallIds = leaseStallService.listStallIdsByMarket(dto.getMarketId());
+        if (stallIds.isEmpty()) {
+            throw new BizException("该市场下无可用摊位");
+        }
+        Map<Long, List<StallRuleRelVO>> ruleRelMap = feeRuleStallRelService.listByStallIds(stallIds);
+        List<StallOptionVO> stallOptions = leaseStallService.getOptionsByIds(stallIds).values().stream().toList();
+        int generated = 0;
+        for (StallOptionVO stall : stallOptions) {
+            Long stallId = stall.getId();
+            if (dto.getStallId() != null && !stallId.equals(dto.getStallId())) {
+                continue;
+            }
+            List<StallRuleRelVO> rels = ruleRelMap.getOrDefault(stallId, Collections.emptyList());
+            StallRuleRelVO propertyRule = rels.stream()
+                    .filter(r -> r.getCategoryType() != null && r.getCategoryType() == CommonConst.FEE_CATEGORY_PROPERTY)
+                    .findFirst().orElse(null);
+            if (propertyRule == null) {
+                log.info("[DEBUG] generateBatch 摊位{}无物业费规则，跳过", stallId);
+                continue;
+            }
+            PropertyFeeBill existingBill = billMapper.selectOne(new LambdaQueryWrapper<PropertyFeeBill>()
+                    .eq(PropertyFeeBill::getCompanyId, companyId)
+                    .eq(PropertyFeeBill::getStallId, stallId)
+                    .eq(PropertyFeeBill::getBillMonth, dto.getBillMonth()));
+            if (existingBill != null) {
+                log.info("[DEBUG] generateBatch 摊位{}月份{}已有账单，跳过", stallId, dto.getBillMonth());
+                continue;
+            }
+            PropertyFeeBill bill = new PropertyFeeBill();
+            bill.setCompanyId(companyId);
+            bill.setStallId(stallId);
+            bill.setBillMonth(dto.getBillMonth());
+            bill.setRuleId(propertyRule.getRuleId());
+            bill.setFeeItemId(propertyRule.getFeeItemId());
+            bill.setCalcMode(propertyRule.getCalcMode());
+            bill.setPeriodType(propertyRule.getPeriodType());
+            bill.setUnitPrice(propertyRule.getPrice());
+            if (propertyRule.getCalcMode() == 1) {
+                bill.setUsage(BigDecimal.ZERO);
+                bill.setPeriodFactor(BigDecimal.ONE);
+                bill.setAmount(propertyRule.getPrice() != null ? propertyRule.getPrice() : BigDecimal.ZERO);
+            } else {
+                BigDecimal area = stall.getStallArea() != null ? stall.getStallArea() : BigDecimal.ZERO;
+                bill.setUsage(area);
+                bill.setPeriodFactor(calcPeriodFactor(propertyRule.getPeriodType(), dto.getBillMonth()));
+                bill.setAmount(area.multiply(propertyRule.getPrice() != null ? propertyRule.getPrice() : BigDecimal.ZERO)
+                        .multiply(bill.getPeriodFactor()).setScale(2, RoundingMode.HALF_UP));
+            }
+            bill.setPayStatus(CommonConst.BILL_PAY_STATUS_UNPAID);
+            billMapper.insert(bill);
+            Long planId = recvPayPlanService.generatePlanForPropertyBill(bill);
+            if (planId != null) {
+                billMapper.update(null, new LambdaUpdateWrapper<PropertyFeeBill>()
+                        .eq(PropertyFeeBill::getId, bill.getId())
+                        .set(PropertyFeeBill::getPlanId, planId));
+                BillPlanRel rel = new BillPlanRel();
+                rel.setCompanyId(companyId);
+                rel.setBillType(CommonConst.BIZ_TYPE_PROPERTY_FEE);
+                rel.setBillId(bill.getId());
+                rel.setPlanId(planId);
+                rel.setSplitAmount(bill.getAmount());
+                billPlanRelMapper.insert(rel);
+            }
+            writeToUnifiedBill(companyId, stallId, dto.getBillMonth(), bill.getId(), bill.getAmount(), bill.getRuleId());
+            auditLogUtil.record(CommonConst.MODULE_PROPERTY_FEE, CommonConst.OPER_TYPE_ADD,
+                    String.valueOf(bill.getId()), null, bill);
+            generated++;
+        }
+        log.info("物业费批量生成完成：month={}, marketId={}, generated={}", dto.getBillMonth(), dto.getMarketId(), generated);
+        return generated;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long generateSingle(PropertyFeeBillGenerateDTO dto) {
+        LoginUser loginUser = UserContext.getLoginUser();
+        Long companyId = loginUser.getCompanyId();
+        if (dto.getStallId() == null) {
+            throw new BizException("请选择摊位");
+        }
+        StallOptionVO stall = leaseStallService.getOptionsByIds(List.of(dto.getStallId())).get(dto.getStallId());
+        if (stall == null) {
+            throw new BizException("摊位不存在");
+        }
+        List<StallRuleRelVO> rels = feeRuleStallRelService.listByStallId(dto.getStallId());
+        StallRuleRelVO propertyRule = rels.stream()
+                .filter(r -> r.getCategoryType() != null && r.getCategoryType() == CommonConst.FEE_CATEGORY_PROPERTY)
+                .findFirst().orElse(null);
+        if (propertyRule == null) {
+            throw new BizException("该摊位未绑定物业费收费规则，请先在摊位管理页面绑定");
+        }
+        PropertyFeeBill existingBill = billMapper.selectOne(new LambdaQueryWrapper<PropertyFeeBill>()
+                .eq(PropertyFeeBill::getCompanyId, companyId)
+                .eq(PropertyFeeBill::getStallId, dto.getStallId())
+                .eq(PropertyFeeBill::getBillMonth, dto.getBillMonth()));
+        if (existingBill != null) {
+            log.info("[DEBUG] generateSingle 账单已存在，返回已有ID：stallId={}, month={}, billId={}", dto.getStallId(), dto.getBillMonth(), existingBill.getId());
+            return existingBill.getId();
+        }
+        PropertyFeeBill bill = new PropertyFeeBill();
+        bill.setCompanyId(companyId);
+        bill.setStallId(dto.getStallId());
+        bill.setBillMonth(dto.getBillMonth());
+        bill.setRuleId(propertyRule.getRuleId());
+        bill.setFeeItemId(propertyRule.getFeeItemId());
+        bill.setCalcMode(propertyRule.getCalcMode());
+        bill.setPeriodType(propertyRule.getPeriodType());
+        bill.setUnitPrice(propertyRule.getPrice());
+        if (propertyRule.getCalcMode() == 1) {
+            bill.setUsage(BigDecimal.ZERO);
+            bill.setPeriodFactor(BigDecimal.ONE);
+            bill.setAmount(propertyRule.getPrice() != null ? propertyRule.getPrice() : BigDecimal.ZERO);
+        } else {
+            BigDecimal area = stall.getStallArea() != null ? stall.getStallArea() : BigDecimal.ZERO;
+            bill.setUsage(area);
+            bill.setPeriodFactor(calcPeriodFactor(propertyRule.getPeriodType(), dto.getBillMonth()));
+            bill.setAmount(area.multiply(propertyRule.getPrice() != null ? propertyRule.getPrice() : BigDecimal.ZERO)
+                    .multiply(bill.getPeriodFactor()).setScale(2, RoundingMode.HALF_UP));
+        }
+        bill.setPayStatus(CommonConst.BILL_PAY_STATUS_UNPAID);
+        billMapper.insert(bill);
+        log.info("[DEBUG] generateSingle 插入账单成功：billId={}, stallId={}, month={}, amount={}", bill.getId(), dto.getStallId(), dto.getBillMonth(), bill.getAmount());
+        Long planId = recvPayPlanService.generatePlanForPropertyBill(bill);
+        if (planId != null) {
+            billMapper.update(null, new LambdaUpdateWrapper<PropertyFeeBill>()
+                    .eq(PropertyFeeBill::getId, bill.getId())
+                    .set(PropertyFeeBill::getPlanId, planId));
+            BillPlanRel rel = new BillPlanRel();
+            rel.setCompanyId(companyId);
+            rel.setBillType(CommonConst.BIZ_TYPE_PROPERTY_FEE);
+            rel.setBillId(bill.getId());
+            rel.setPlanId(planId);
+            rel.setSplitAmount(bill.getAmount());
+            billPlanRelMapper.insert(rel);
+        }
+        writeToUnifiedBill(companyId, dto.getStallId(), dto.getBillMonth(), bill.getId(), bill.getAmount(), bill.getRuleId());
+        auditLogUtil.record(CommonConst.MODULE_PROPERTY_FEE, CommonConst.OPER_TYPE_ADD,
+                String.valueOf(bill.getId()), null, bill);
+        log.info("[DEBUG] generateSingle 完成：billId={}, planId={}", bill.getId(), planId);
+        return bill.getId();
+    }
+
+    @Override
+    public PropertyFeeBillPreviewVO preview(PropertyFeeBillGenerateDTO dto) {
+        if (dto.getStallId() == null) {
+            throw new BizException("请选择摊位");
+        }
+        StallOptionVO stall = leaseStallService.getOptionsByIds(List.of(dto.getStallId())).get(dto.getStallId());
+        if (stall == null) {
+            throw new BizException("摊位不存在");
+        }
+        List<StallRuleRelVO> rels = feeRuleStallRelService.listByStallId(dto.getStallId());
+        StallRuleRelVO propertyRule = rels.stream()
+                .filter(r -> r.getCategoryType() != null && r.getCategoryType() == CommonConst.FEE_CATEGORY_PROPERTY)
+                .findFirst().orElse(null);
+        PropertyFeeBillPreviewVO vo = new PropertyFeeBillPreviewVO();
+        vo.setStallId(dto.getStallId());
+        vo.setStallNumber(stall.getStallNumber());
+        vo.setStallName(stall.getStallName());
+        vo.setStallMarketName(stall.getMarketName());
+        if (propertyRule == null) {
+            vo.setCalcMode(1);
+            vo.setCalcModeText("定额");
+            vo.setPeriodType(2);
+            vo.setPeriodTypeText("按月");
+            vo.setUsage(BigDecimal.ZERO);
+            vo.setUnitPrice(BigDecimal.ZERO);
+            vo.setPeriodFactor(BigDecimal.ONE);
+            vo.setAmount(BigDecimal.ZERO);
+            vo.setHasExisting(false);
+            return vo;
+        }
+        vo.setCalcMode(propertyRule.getCalcMode());
+        vo.setCalcModeText(propertyRule.getCalcModeText());
+        vo.setPeriodType(propertyRule.getPeriodType());
+        vo.setPeriodTypeText(propertyRule.getPeriodTypeText());
+        vo.setUnitPrice(propertyRule.getPrice());
+        if (propertyRule.getCalcMode() == 1) {
+            vo.setUsage(BigDecimal.ZERO);
+            vo.setPeriodFactor(BigDecimal.ONE);
+            vo.setAmount(propertyRule.getPrice() != null ? propertyRule.getPrice() : BigDecimal.ZERO);
+        } else {
+            BigDecimal area = stall.getStallArea() != null ? stall.getStallArea() : BigDecimal.ZERO;
+            vo.setUsage(area);
+            BigDecimal factor = calcPeriodFactor(propertyRule.getPeriodType(), dto.getBillMonth());
+            vo.setPeriodFactor(factor);
+            vo.setAmount(area.multiply(propertyRule.getPrice() != null ? propertyRule.getPrice() : BigDecimal.ZERO)
+                    .multiply(factor).setScale(2, RoundingMode.HALF_UP));
+        }
+        LoginUser loginUser = UserContext.getLoginUser();
+        PropertyFeeBill existing = billMapper.selectOne(new LambdaQueryWrapper<PropertyFeeBill>()
+                .eq(PropertyFeeBill::getCompanyId, loginUser.getCompanyId())
+                .eq(PropertyFeeBill::getStallId, dto.getStallId())
+                .eq(PropertyFeeBill::getBillMonth, dto.getBillMonth()));
+        vo.setHasExisting(existing != null);
+        return vo;
+    }
+
+    @Override
+    public String syncToUnpaidBill(Long id) {
+        PropertyFeeBill bill = billMapper.selectById(id);
+        if (bill == null) throw new BizException("账单不存在或已删除");
+        Long exists = bizFeeBillMapper.selectCount(new LambdaQueryWrapper<BizFeeBill>()
+                .eq(BizFeeBill::getSourceBillId, bill.getId()));
+        if (exists != null && exists > 0) {
+            log.info("账单已存在，跳过同步：propertyBillId={}", id);
+            return "订单已存在，无需重复生成";
+        }
+        BizFeeBill unifiedBill = new BizFeeBill();
+        unifiedBill.setCompanyId(bill.getCompanyId());
+        unifiedBill.setBizType(CommonConst.BIZ_TYPE_PROPERTY_FEE);
+        unifiedBill.setStallId(bill.getStallId());
+        unifiedBill.setBillMonth(bill.getBillMonth());
+        unifiedBill.setRuleId(bill.getRuleId());
+        unifiedBill.setPeriodType(bill.getPeriodType());
+        unifiedBill.setSourceBillId(bill.getId());
+        unifiedBill.setOriginalAmount(bill.getAmount());
+        unifiedBill.setDiscountAmount(BigDecimal.ZERO);
+        unifiedBill.setAdjustAmount(BigDecimal.ZERO);
+        unifiedBill.setRealAmount(bill.getAmount());
+        unifiedBill.setPayStatus(bill.getPayStatus() != null ? bill.getPayStatus() : CommonConst.BILL_PAY_STATUS_UNPAID);
+        unifiedBill.setLockedFlag(1);
+        unifiedBill.setCreateBy(UserContext.getUserIdOrZero());
+        bizFeeBillMapper.insert(unifiedBill);
+        log.info("账单同步成功：propertyBillId={}, bizBillId={}", id, unifiedBill.getId());
+        return "同步成功";
+    }
+
+    private Map<Long, StallOptionVO> loadStallMap(List<PropertyFeeBill> bills) {
+        List<Long> stallIds = bills.stream().map(PropertyFeeBill::getStallId).filter(Objects::nonNull).distinct().toList();
+        return stallIds.isEmpty() ? Collections.emptyMap() : leaseStallService.getOptionsByIds(stallIds);
+    }
+
+    private PropertyFeeBillVO toVO(PropertyFeeBill bill, Map<Long, StallOptionVO> stallMap) {
+        PropertyFeeBillVO vo = new PropertyFeeBillVO();
+        vo.setId(bill.getId());
+        vo.setCompanyId(bill.getCompanyId());
+        vo.setStallId(bill.getStallId());
+        StallOptionVO stall = stallMap.get(bill.getStallId());
+        if (stall != null) {
+            vo.setStallNumber(stall.getStallNumber());
+            vo.setStallName(stall.getStallName());
+            vo.setStallMarketName(stall.getMarketName());
+            vo.setCategoryName(stall.getCategoryName());
+        }
+        vo.setBillMonth(bill.getBillMonth());
+        vo.setRuleId(bill.getRuleId());
+        vo.setCalcMode(bill.getCalcMode());
+        vo.setPeriodType(bill.getPeriodType());
+        vo.setUsage(bill.getUsage());
+        vo.setUnitPrice(bill.getUnitPrice());
+        vo.setPeriodFactor(bill.getPeriodFactor());
+        vo.setAmount(bill.getAmount());
+        vo.setPayStatus(bill.getPayStatus());
+        vo.setCalcModeText(calcModeText(bill.getCalcMode()));
+        vo.setPayStatusText(payStatusText(bill.getPayStatus()));
+        vo.setPeriodTypeText(periodTypeText(bill.getPeriodType()));
+        vo.setCreateTime(bill.getCreateTime());
+        return vo;
+    }
+
+    private String calcModeText(Integer calcMode) {
+        if (calcMode == null) return null;
+        return switch (calcMode) {
+            case 1 -> "定额";
+            case 2 -> "按面积";
+            default -> null;
+        };
+    }
+
+    private String payStatusText(Integer payStatus) {
+        if (payStatus == null) return null;
+        return switch (payStatus) {
+            case CommonConst.BILL_PAY_STATUS_UNPAID -> "待缴";
+            case CommonConst.BILL_PAY_STATUS_PART -> "部分缴费";
+            case CommonConst.BILL_PAY_STATUS_PAID -> "已缴";
+            default -> null;
+        };
+    }
+
+    private String periodTypeText(Integer periodType) {
+        if (periodType == null) return "按月";
+        return switch (periodType) {
+            case 1 -> "按年";
+            case 2 -> "按月";
+            case 3 -> "按日";
+            default -> "按月";
+        };
+    }
+
+    private BigDecimal calcPeriodFactor(Integer periodType, String billMonth) {
+        if (periodType == null || periodType == 2) return BigDecimal.ONE;
+        if (periodType == 1) return BigDecimal.ONE.divide(new BigDecimal(12), 4, RoundingMode.HALF_UP);
+        if (periodType == 3) {
+            YearMonth ym = YearMonth.parse(billMonth);
+            return new BigDecimal(ym.lengthOfMonth());
+        }
+        return BigDecimal.ONE;
+    }
+
+    private void writeToUnifiedBill(Long companyId, Long stallId, String billMonth, Long billId, BigDecimal amount, Long ruleId) {
+        Long exists = bizFeeBillMapper.selectCount(new LambdaQueryWrapper<BizFeeBill>()
+                .eq(BizFeeBill::getCompanyId, companyId)
+                .eq(BizFeeBill::getBizType, CommonConst.BIZ_TYPE_PROPERTY_FEE)
+                .eq(BizFeeBill::getStallId, stallId)
+                .eq(BizFeeBill::getBillMonth, billMonth));
+        if (exists != null && exists > 0) {
+            log.info("[DEBUG] writeToUnifiedBill 统一账单已存在，跳过：stallId={}, month={}", stallId, billMonth);
+            return;
+        }
+        BizFeeBill unifiedBill = new BizFeeBill();
+        unifiedBill.setCompanyId(companyId);
+        unifiedBill.setBizType(CommonConst.BIZ_TYPE_PROPERTY_FEE);
+        unifiedBill.setStallId(stallId);
+        unifiedBill.setBillMonth(billMonth);
+        unifiedBill.setSourceBillId(billId);
+        unifiedBill.setRuleId(ruleId);
+        unifiedBill.setOriginalAmount(amount);
+        unifiedBill.setDiscountAmount(BigDecimal.ZERO);
+        unifiedBill.setAdjustAmount(BigDecimal.ZERO);
+        unifiedBill.setRealAmount(amount);
+        unifiedBill.setPayStatus(CommonConst.BILL_PAY_STATUS_UNPAID);
+        unifiedBill.setLockedFlag(1);
+        unifiedBill.setCreateBy(UserContext.getUserIdOrZero());
+        bizFeeBillMapper.insert(unifiedBill);
+        log.info("[DEBUG] writeToUnifiedBill 同步成功：sourceBillId={}, bizBillId={}", billId, unifiedBill.getId());
+    }
+}
+
+
+
+

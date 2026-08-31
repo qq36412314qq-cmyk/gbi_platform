@@ -1,0 +1,16 @@
+## 【2026-08-31 15:31:01】SQL文件合并整理到 install.sql
+- 用户原始需求：将 gbi_platform_docs/attachments/sql 目录中的 SQL 文件合并整理到 install.sql，排除 group_rent_db.sql（仅作正式版参考）
+- 涉及修改/新增文件：
+  - gbi_platform_docs/attachments/sql/install.sql（重写）
+- 变更摘要：
+  1. 以 group_rent_db.sql 正式版为基准，提取全部 64 张表的 DROP+CREATE 结构（不含 Records 测试数据）
+  2. 按版本号分段标注（v1.1~v2.6 HR/OA 模块）
+  3. 追加中台平台初始化数据（角色+菜单1-106+授权，来自 init_platform_menu.sql）
+  4. 追加 HR 模块菜单初始化（菜单107-130，来自 init_hr_menu.sql）
+  5. 按版本号顺序追加全部升级/修正脚本（28个脚本），已过滤重复建表
+  6. 密码重置脚本独立归类在最前面
+- 风险与注意事项：
+  - group_rent_db.sql 中的 Records（测试数据）未纳入 install.sql
+  - 升级脚本中的 DROP+CREATE 已过滤（全量安装只需建一次表）
+  - 执行方式: mysql -uroot -p21145211 --default-character-set=utf8mb4 group_rent_db < install.sql
+  - 无特殊风险

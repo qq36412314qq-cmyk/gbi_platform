@@ -1,0 +1,61 @@
+/* ============================================================
+ * 全局 CSS 变量（现代极简扁平化 UI 视觉规范）
+ * 主色支持后台 sys_ui_theme 动态配置，禁止页面硬编码色值
+ * 状态色（成功/警告/危险）不可自定义，仅主色可配置
+ * ============================================================ */
+:root {
+  /* 主色体系（默认集团主蓝，低饱和商务色） */
+  --color-primary: #2f6bff;
+  --color-primary-light: #eaf0ff;
+  --color-primary-dark: #1f52d0;
+
+  /* 状态色（不可自定义） */
+  --color-success: #18a058;
+  --color-success-light: #d9f2e5;   /* 空置摊位底色 */
+  --color-warning: #f0a020;
+  --color-warning-light: #fdf0dc;   /* 即将到期摊位 */
+  --color-danger: #e5484d;
+  --color-danger-light: #fde8e8;    /* 欠费摊位 */
+  --color-info: #909399;
+
+  /* 中性灰度体系 */
+  --color-bg-page: #f5f7fa;         /* 页面背景 */
+  --color-bg-card: #ffffff;         /* 卡片背景 */
+  --color-bg-hover: #f3f5f9;
+  --color-border: #e4e7ed;
+  --color-border-light: #ebeef5;
+  --color-text-primary: #303133;
+  --color-text-regular: #606266;
+  --color-text-secondary: #909399;
+  --color-text-placeholder: #c0c4cc;
+
+  /* 布局参数（后台可配置） */
+  --layout-mode: side;
+  --card-radius: 6px;
+  --header-height: 56px;
+  --sidebar-width: 220px;
+
+  /* 字号层级：18 大标题 / 16 模块标题 / 14 正文 / 13 备注 / 12 小字 */
+  --font-size-xxl: 18px;
+  --font-size-xl: 16px;
+  --font-size-base: 14px;
+  --font-size-sm: 13px;
+  --font-size-xs: 12px;
+
+  /* 阴影：轻分层质感，弱阴影区分层级 */
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 暗黑模式（跟随 sys_ui_theme.dark_mode 切换） */
+html.dark {
+  --color-bg-page: #14161a;
+  --color-bg-card: #1d2026;
+  --color-bg-hover: #262a32;
+  --color-border: #3a3f4b;
+  --color-border-light: #2c313a;
+  --color-text-primary: #e5e7eb;
+  --color-text-regular: #c9cdd4;
+  --color-text-secondary: #8a919e;
+  --color-text-placeholder: #5c6470;
+}

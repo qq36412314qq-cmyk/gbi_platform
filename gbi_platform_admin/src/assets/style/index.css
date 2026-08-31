@@ -1,0 +1,85 @@
+/* ============================================================
+ * 全局通用样式（前缀 g- 通用，b- 业务）
+ * ============================================================ */
+@import './variables.css';
+@import './reset.css';
+
+/* Element Plus 主色联动 CSS 变量 */
+.el-button--primary {
+  --el-button-bg-color: var(--color-primary);
+  --el-button-border-color: var(--color-primary);
+  --el-button-hover-bg-color: var(--color-primary-dark);
+  --el-button-hover-border-color: var(--color-primary-dark);
+}
+
+.el-card {
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-light);
+}
+
+/* 页面通用卡片容器 */
+.g-card {
+  background: var(--color-bg-card);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+}
+
+/* 页面根容器（四区块布局包裹层） */
+.g-page-wrap {
+  padding: 16px;
+}
+
+/* 顶部操作区 */
+.g-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.g-page-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* 搜索区 */
+.g-search-bar {
+  margin-bottom: 12px;
+}
+
+/* 表格区 */
+.g-table-card {
+  background: var(--color-bg-card);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  padding: 8px 16px 4px;
+}
+
+/* 工具类 */
+.g-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.g-mt-12 {
+  margin-top: 12px;
+}
+
+.g-mb-12 {
+  margin-bottom: 12px;
+}
+
+/* 金额右对齐 */
+.g-money {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 分页底部对齐 */
+.g-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0;
+}
