@@ -1,0 +1,97 @@
+# =====================================================
+# GBi Platform - 项目级 .gitignore
+# 覆盖 Java/Spring Boot、Vue3/Node、微信小程序、IDE 等
+# =====================================================
+
+# -------------------- Java / Maven --------------------
+# 编译产物
+target/
+BOOT-INF/
+
+# 本地 Maven 仓库（开发机独立仓库）
+m2_repo_tmp/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# -------------------- Spring Boot / 配置 --------------------
+# 生产配置文件（含密钥，禁止入库）
+**/application-prod.yml
+**/application-dev.yml
+**/.env
+**/.env.local
+**/.env.production
+
+# 本地覆盖配置
+**/application-local.yml
+
+# -------------------- Node / Vue --------------------
+# 依赖目录
+node_modules/
+.pnp
+.pnp.js
+
+# 构建产物
+dist/
+dist-ssr/
+
+# -------------------- 微信小程序 --------------------
+# 编译产物
+gbi_platform_miniapp/dist/
+gbi_platform_miniapp/npm/
+gbi_platform_miniapp/unpackage/
+
+# 开发者工具缓存
+gbi_platform_miniapp/.devtools/
+gbi_platform_miniapp/project.config.json
+gbi_platform_miniapp/project.private.config.json
+
+# -------------------- 日志 / 上传 --------------------
+# 运行时日志
+logs/
+*.log
+
+# 上传文件（图片、合同、巡检照片等）
+upload/
+!**/.gitkeep
+
+# -------------------- 操作系统 --------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.bak
+*.swp
+
+# Linux
+.Spotlight-V100
+.Trashes
+
+# -------------------- 其他 --------------------
+# OpenCode 配置（含 AI 上下文）
+.opencode/
+
+# VS Code：忽略整个目录，再按需恢复关键文件
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/
+
+# 临时测试文件
+*.test.temp
+*.snap
+coverage/
