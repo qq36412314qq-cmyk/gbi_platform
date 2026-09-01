@@ -89,6 +89,7 @@ public class UnpaidBillServiceImpl implements UnpaidBillService {
             case "water_elec" -> "水电费";
             case "rent" -> "租赁费";
             case "kindergarten" -> "幼儿园费";
+            case "deposit" -> "押金";
             default -> bizType;
         };
     }

@@ -11,6 +11,9 @@ export interface CategoryQueryDTO {
   pageNum: number
   pageSize: number
   categoryName?: string
+  stallNumber?: string
+  marketName?: string
+  rentPeriodType?: number
   status?: number
 }
 
@@ -89,6 +92,9 @@ export interface StallVO {
   marketId: number
   stallCategoryId?: number
   categoryName?: string
+  stallNumber?: string
+  marketName?: string
+  rentPeriodType?: number
   stallNumber: string
   stallName?: string
   stallArea?: number
@@ -176,6 +182,9 @@ export interface StallOptionVO {
   marketName?: string
   stallCategoryId?: number
   categoryName?: string
+  stallNumber?: string
+  marketName?: string
+  rentPeriodType?: number
   /** 摊位面积(平方米，按面积收费规则计算用) */
   stallArea?: number
 }
@@ -235,6 +244,7 @@ export interface ContractVO {
   stallNumber?: string
   stallName?: string
   categoryName?: string
+  marketName?: string
   rentAmount: number
   depositAmount: number
   startTime?: string
@@ -243,6 +253,7 @@ export interface ContractVO {
   contractStatusText?: string
   attachmentUrl?: string
   remark?: string
+  rentPeriodType?: number
   createTime?: string
 }
 

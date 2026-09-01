@@ -34,9 +34,12 @@
       <el-table v-loading="loading" :data="sortedRecords" border stripe>
         <el-table-column prop="contractNo" label="合同编号" min-width="180" />
         <el-table-column prop="tenantName" label="租户" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="stallNumber" label="摊位编号" width="110" align="center" />
+        <el-table-column prop="marketName" label="所属市场" width="120" align="center" />
         <el-table-column prop="categoryName" label="租赁分类" width="100" align="center" />
-        <el-table-column prop="rentAmount" label="月租金(元)" width="110" align="right" />
+        <el-table-column prop="stallNumber" label="摊位编号" width="110" align="center" />
+        <el-table-column label="月租金(元)" width="110" align="right">
+          <template #default="{ row }"><span class="rent-value">{{ getRentDisplay(row).value }}</span><span v-if="getRentDisplay(row).tag" class="rent-tag rent-tag--{{ getRentDisplay(row).tagClass }}">{{ getRentDisplay(row).tag }}</span></template>
+        </el-table-column>
         <el-table-column prop="depositAmount" label="押金(元)" width="100" align="right" />
         <el-table-column prop="startTime" label="开始日期" width="110" align="center" />
         <el-table-column width="110" align="center">
@@ -137,6 +140,11 @@
           </div>
           <div v-else class="g-tip">该摊位未绑定押金收费规则（定额/按面积），请手动填写</div>
         </el-form-item>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <el-button size="small" @click="handleAddMonth">加1月</el-button>
+          <el-button size="small" @click="handleAddYear">加1年</el-button>
+          <el-button size="small" @click="handleResetDate">重置</el-button>
+        </div>
         <el-form-item label="开始日期" prop="startTime">
           <el-date-picker
             v-model="form.startTime"
@@ -429,6 +437,18 @@ function periodText(periodType?: number): string {
   return '月'
 }
 
+/** 租金列展示：返回换算后数值 + 周期标签（年/日/No） ---------------- */
+function getRentDisplay(row: { rentAmount?: number; rentPeriodType?: number }): { value: string; tag: string; tagClass: string } {
+  if (row.rentAmount == null) return { value: '-', tag: '', tagClass: 'month' }
+  const num = Number(row.rentAmount)
+  switch (row.rentPeriodType) {
+    case 1: return { value: (num / 12).toFixed(2), tag: '年', tagClass: 'year' }
+    case 3: return { value: (num * 30).toFixed(2), tag: '日', tagClass: 'day' }
+    default: return { value: num.toFixed(2), tag: 'No', tagClass: 'month' }
+  }
+}
+
+
 /* ---------------- 优惠策略（可选）：随合同提交自动生成优惠申请，超阈值自动发起审批 ---------------- */
 const policyLoading = ref(false)
 const policyOptions = ref<DiscountPolicyVO[]>([])
@@ -507,7 +527,7 @@ function openDialog(): void {
     formCategoryId: undefined,
     rentAmount: 0,
     depositAmount: 0,
-    startTime: '',
+    startTime: formatToday(), // 默认当天日期
     endTime: '',
     remark: ''
   })
@@ -523,6 +543,47 @@ function openDialog(): void {
     form.policyId = undefined
   }
   dialogVisible.value = true
+}
+
+/** 获取当天日期字符串 YYYY-MM-DD ---------------- */
+function formatToday(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** 加1月：在到期日期基础上加1个月填入到期日期，为空则以开始日期计算 ---------------- */
+function handleAddMonth(): void {
+  const base = form.endTime || form.startTime
+  if (!base) { return }
+  const d = new Date(base)
+  d.setMonth(d.getMonth() + 1)
+  form.endTime = formatFrom(d)
+}
+
+/** 加1年：在到期日期基础上加1年填入到期日期，为空则以开始日期计算 ---------------- */
+function handleAddYear(): void {
+  const base = form.endTime || form.startTime
+  if (!base) { return }
+  const d = new Date(base)
+  d.setFullYear(d.getFullYear() + 1)
+  form.endTime = formatFrom(d)
+}
+
+/** 重置：开始日期填入当天，到期日期清空 ---------------- */
+function handleResetDate(): void {
+  form.startTime = formatToday()
+  form.endTime = ''
+}
+
+/** 日期对象转 YYYY-MM-DD ---------------- */
+function formatFrom(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 async function handleSubmit(): Promise<void> {
@@ -576,5 +637,14 @@ async function handleTerminate(row: ContractVO): Promise<void> {
   color: #409eff;
   font-weight: 700;
 }
+
+/* 租金列周期标签 */
+.rent-value { font-weight: 600; }
+.rent-tag { margin-left: 4px; font-size: 10px; padding: 0 4px; border-radius: 3px; line-height: 16px; vertical-align: middle; }
+.rent-tag--year { color: #e6a23c; background: #fdf6ec; }
+.rent-tag--day  { color: #f56c6c; background: #fef0f0; }
+.rent-tag--month { color: #909399; background: #f4f4f5; }
 </style>
+
+
 

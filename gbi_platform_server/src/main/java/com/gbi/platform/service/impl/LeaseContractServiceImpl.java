@@ -12,18 +12,24 @@ import com.gbi.platform.dto.ContractAddDTO;
 import com.gbi.platform.dto.ContractQueryDTO;
 import com.gbi.platform.dto.ContractTerminateDTO;
 import com.gbi.platform.entity.BillPlanRel;
+import com.gbi.platform.entity.FeeRuleStallRel;
 import com.gbi.platform.entity.BizFinanceFlow;
 import com.gbi.platform.entity.BizFeeBill;
 import com.gbi.platform.entity.StallCategory;
 import com.gbi.platform.entity.StallContract;
 import com.gbi.platform.entity.StallInfo;
+import com.gbi.platform.entity.MarketInfo;
 import com.gbi.platform.entity.StallTenant;
 import com.gbi.platform.mapper.BillPlanRelMapper;
+import com.gbi.platform.mapper.FeeRuleStallRelMapper;
+import com.gbi.platform.mapper.FeeRuleMapper;
+import com.gbi.platform.entity.FeeRule;
 import com.gbi.platform.mapper.BizFinanceFlowMapper;
 import com.gbi.platform.mapper.BizFeeBillMapper;
 import com.gbi.platform.mapper.StallCategoryMapper;
 import com.gbi.platform.mapper.StallContractMapper;
 import com.gbi.platform.mapper.StallInfoMapper;
+import com.gbi.platform.mapper.MarketInfoMapper;
 import com.gbi.platform.mapper.StallTenantMapper;
 import com.gbi.platform.service.ConfigService;
 import com.gbi.platform.service.DiscountApplyService;
@@ -49,6 +55,8 @@ import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -70,6 +78,8 @@ public class LeaseContractServiceImpl implements LeaseContractService {
 
     private final StallInfoMapper stallMapper;
 
+    private final MarketInfoMapper marketInfoMapper;
+
     private final StallCategoryMapper categoryMapper;
 
     private final StallTenantMapper tenantMapper;
@@ -88,11 +98,15 @@ public class LeaseContractServiceImpl implements LeaseContractService {
 
     private final BillPlanRelMapper billPlanRelMapper;
 
+    private final FeeRuleStallRelMapper feeRuleStallRelMapper;
+
+    private final FeeRuleMapper feeRuleMapper;
+
     private final ConfigService configService;
 
     private final DiscountApplyService discountApplyService;
 
-    public LeaseContractServiceImpl(StallContractMapper contractMapper, StallInfoMapper stallMapper,
+    public LeaseContractServiceImpl(StallContractMapper contractMapper, StallInfoMapper stallMapper, MarketInfoMapper marketInfoMapper,
                                     StallCategoryMapper categoryMapper, StallTenantMapper tenantMapper,
                                     BizFinanceFlowMapper financeFlowMapper, TenantService tenantService,
                                     AuditLogUtil auditLogUtil,
@@ -101,9 +115,12 @@ public class LeaseContractServiceImpl implements LeaseContractService {
                                     ConfigService configService,
                                     FlowNoGenerator flowNoGenerator,
                                     BizFeeBillMapper bizFeeBillMapper,
-                                    BillPlanRelMapper billPlanRelMapper) {
+                                    BillPlanRelMapper billPlanRelMapper,
+                                    FeeRuleStallRelMapper feeRuleStallRelMapper,
+                                    FeeRuleMapper feeRuleMapper) {
         this.contractMapper = contractMapper;
         this.stallMapper = stallMapper;
+        this.marketInfoMapper = marketInfoMapper;
         this.categoryMapper = categoryMapper;
         this.tenantMapper = tenantMapper;
         this.financeFlowMapper = financeFlowMapper;
@@ -115,6 +132,8 @@ public class LeaseContractServiceImpl implements LeaseContractService {
         this.flowNoGenerator = flowNoGenerator;
         this.bizFeeBillMapper = bizFeeBillMapper;
         this.billPlanRelMapper = billPlanRelMapper;
+        this.feeRuleStallRelMapper = feeRuleStallRelMapper;
+        this.feeRuleMapper = feeRuleMapper;
     }
 
     @Override
@@ -126,6 +145,53 @@ public class LeaseContractServiceImpl implements LeaseContractService {
                 .eq(dto.getContractStatus() != null, StallContract::getContractStatus, dto.getContractStatus())
                 .orderByDesc(StallContract::getCreateTime);
         Page<StallContract> result = contractMapper.selectPage(page, wrapper);
+
+        // 批量查摊位信息
+        List<Long> stallIds = result.getRecords().stream()
+                .map(StallContract::getStallId).distinct().toList();
+        Map<Long, StallInfo> stallMap = stallMapper.selectBatchIds(stallIds).stream()
+                .collect(Collectors.toMap(StallInfo::getId, s -> s));
+
+        // 批量查分类名称
+        Set<Long> catIds = stallMap.values().stream()
+                .map(StallInfo::getStallCategoryId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> categoryNameMap = catIds.isEmpty() ? Collections.emptyMap()
+                : categoryMapper.selectBatchIds(catIds).stream()
+                        .collect(Collectors.toMap(StallCategory::getId, StallCategory::getCategoryName));
+
+        // 批量查市场名称
+        Set<Long> marketIds = stallMap.values().stream()
+                .map(StallInfo::getMarketId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> marketNameMap = marketIds.isEmpty() ? Collections.emptyMap()
+                : marketInfoMapper.selectBatchIds(marketIds).stream()
+                        .collect(Collectors.toMap(MarketInfo::getId, MarketInfo::getMarketName));
+
+        // 批量查租金收费规则周期类型
+        Map<Long, Integer> rentPeriodTypeMap = new HashMap<>();
+        for (Long stallId : stallIds) {
+            List<FeeRuleStallRel> rels = feeRuleStallRelMapper.selectList(
+                    new LambdaQueryWrapper<FeeRuleStallRel>()
+                            .select(FeeRuleStallRel::getRuleId)
+                            .eq(FeeRuleStallRel::getCompanyId, UserContext.getLoginUser().getCompanyId() != null ? UserContext.getLoginUser().getCompanyId() : 0L)
+                            .eq(FeeRuleStallRel::getStallId, stallId)
+                            .eq(FeeRuleStallRel::getIsDelete, 0));
+            if (!rels.isEmpty()) {
+                List<Long> ruleIds = rels.stream().map(FeeRuleStallRel::getRuleId).toList();
+                List<FeeRule> rules = feeRuleMapper.selectBatchIds(ruleIds);
+                rules.stream()
+                        .filter(r -> r != null && r.getFeeItemId() != null && r.getFeeItemId() == 1L)
+                        .findFirst()
+                        .ifPresent(r -> rentPeriodTypeMap.put(stallId, r.getPeriodType()));
+            }
+        }
+
+        // 批量查租户名称
+        Set<Long> tenantIds = result.getRecords().stream()
+                .map(StallContract::getTenantId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> tenantNameMap = tenantIds.isEmpty() ? Collections.emptyMap()
+                : tenantMapper.selectBatchIds(tenantIds).stream()
+                        .collect(Collectors.toMap(StallTenant::getId, StallTenant::getTenantName));
+
         List<ContractVO> voList = result.getRecords().stream().map(c -> {
             ContractVO vo = new ContractVO();
             vo.setId(c.getId());
@@ -141,6 +207,14 @@ public class LeaseContractServiceImpl implements LeaseContractService {
             vo.setAttachmentUrl(c.getAttachmentUrl());
             vo.setRemark(c.getRemark());
             vo.setCreateTime(c.getCreateTime());
+            StallInfo stall = stallMap.get(c.getStallId());
+            if (stall != null) {
+                vo.setStallNumber(stall.getStallNumber());
+                vo.setCategoryName(categoryNameMap.get(stall.getStallCategoryId()));
+                vo.setMarketName(marketNameMap.get(stall.getMarketId()));
+            }
+            vo.setRentPeriodType(rentPeriodTypeMap.get(c.getStallId()));
+            vo.setTenantName(tenantNameMap.get(c.getTenantId()));
             return vo;
         }).toList();
         return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
@@ -157,6 +231,10 @@ public class LeaseContractServiceImpl implements LeaseContractService {
         vo.setTenantId(contract.getTenantId());
         vo.setStallId(contract.getStallId());
         vo.setRentAmount(contract.getRentAmount());
+        if (contract.getTenantId() != null) {
+            StallTenant _t = tenantMapper.selectById(contract.getTenantId());
+            if (_t != null) vo.setTenantName(_t.getTenantName());
+        }
         vo.setDepositAmount(contract.getDepositAmount());
         vo.setStartTime(contract.getStartTime());
         vo.setEndTime(contract.getEndTime());
@@ -223,17 +301,23 @@ public class LeaseContractServiceImpl implements LeaseContractService {
         contract.setAttachmentUrl(dto.getAttachmentUrl());
         contract.setRemark(dto.getRemark());
         contractMapper.insert(contract);
-
+        // 更新摊位状态为已租赁
         StallInfo stallUpdate = new StallInfo();
         stallUpdate.setId(stall.getId());
         stallUpdate.setStatus(CommonConst.STALL_STATUS_RENTED);
         stallMapper.updateById(stallUpdate);
 
-        if (contract.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
-            insertDepositFlow(companyId, contract.getId(), contract.getStallId(), dto.getTenantId(),
-                    contract.getDepositAmount(), CommonConst.FLOW_TYPE_INCOME, "合同签订押金");
-        }
-
+        // 插入押金流水
+        // if (contract.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {// 押金不能为空
+        //     insertDepositFlow(companyId, contract.getId(), contract.getStallId(), dto.getTenantId(),
+        //             contract.getDepositAmount(), CommonConst.FLOW_TYPE_INCOME, "合同签订押金");
+        // }
+        // 插入租金流水
+        // if (contract.getRentAmount().compareTo(BigDecimal.ZERO) > 0) {// 租金不能为空
+        //     insertRentFlow(companyId, contract.getId(), contract.getStallId(), dto.getTenantId(),
+        //             contract.getRentAmount(), CommonConst.FLOW_TYPE_INCOME, "合同签订租金");
+        // }
+        // 处理优惠申请
         boolean hasDiscount = dto.getPolicyId() != null || dto.getWaiveMonths() != null
                 || dto.getDiscountRate() != null || dto.getDeductAmount() != null;
         if (hasDiscount) {
@@ -243,6 +327,7 @@ public class LeaseContractServiceImpl implements LeaseContractService {
             recvPayPlanService.generateByContract(contract.getId());
         }
 
+        // 写入租金和押金业务费用流水
         writeRentAndDepositBizFeeBills(companyId, contract, dto);
 
         auditLogUtil.record(CommonConst.MODULE_LEASE_CONTRACT, CommonConst.OPER_TYPE_ADD,
@@ -344,6 +429,9 @@ public class LeaseContractServiceImpl implements LeaseContractService {
                 .collect(Collectors.toMap(StallTenant::getId, StallTenant::getTenantName));
     }
 
+    /**
+     * 插入押金流水
+     */
     private void insertDepositFlow(Long companyId, Long contractId, Long stallId, Long tenantId,
                                    BigDecimal amount, Integer flowType, String remark) {
         BizFinanceFlow flow = new BizFinanceFlow();
@@ -361,6 +449,28 @@ public class LeaseContractServiceImpl implements LeaseContractService {
         financeFlowMapper.insert(flow);
     }
 
+    /**
+     * 插入租金流水
+     */
+    private void insertRentFlow(Long companyId, Long contractId, Long stallId, Long tenantId,
+                                BigDecimal amount, Integer flowType, String remark) {
+        BizFinanceFlow flow = new BizFinanceFlow();
+        flow.setCompanyId(companyId);
+        flow.setBusinessType(CommonConst.BIZ_TYPE_RENT);
+        flow.setBillId(String.valueOf(contractId));
+        flow.setStallId(stallId);
+        flow.setOriginalAmount(amount);
+        flow.setDiscountAmount(BigDecimal.ZERO);
+        flow.setRealAmount(amount);
+        flow.setFlowType(flowType);
+        flow.setStatus(1);
+        flow.setFlowNo(flowNoGenerator.generate(companyId));
+        flow.setRemark(remark + "-合同" + contractId);
+        financeFlowMapper.insert(flow);
+    }
+    /**
+     * 合同状态文本
+     */
     private String contractStatusText(Integer status) {
         if (status == null) {
             return null;
@@ -373,15 +483,30 @@ public class LeaseContractServiceImpl implements LeaseContractService {
             default -> "未知";
         };
     }
-
+    /**
+     * 写入租金和押金账单
+     */
     private void writeRentAndDepositBizFeeBills(Long companyId, StallContract contract, ContractAddDTO dto) {
+        log.info("写入租金和押金业务费用流水：contractId={}", contract.getId());
         if (contract.getDepositAmount().compareTo(BigDecimal.ZERO) > 0) {
             String depositBillMonth = contract.getStartTime().toString().substring(0, 7);
+            FeeRule depositRule = resolveFeeRule(companyId, contract.getStallId(), CommonConst.BIZ_TYPE_DEPOSIT);
+            int depositPeriodType = depositRule != null && depositRule.getPeriodType() != null ? depositRule.getPeriodType() : CommonConst.PLAN_PERIOD_ONCE;
             writeBizFeeBillWithPlan(companyId, contract.getStallId(), depositBillMonth,
-                    CommonConst.BIZ_TYPE_DEPOSIT,
-                    contract.getDepositAmount(), BigDecimal.ZERO, BigDecimal.ZERO,
-                    CommonConst.PLAN_PERIOD_ONCE);
+                CommonConst.BIZ_TYPE_DEPOSIT, contract.getDepositAmount(),
+                BigDecimal.ZERO, BigDecimal.ZERO, depositPeriodType);
         }
+        log.info("写入租金业务费用流水：contractId={}", contract.getId());
+        // 查询租金收费规则，获取 periodType 决定账单周期
+        FeeRule rentRule = resolveFeeRule(companyId, contract.getStallId(), CommonConst.BIZ_TYPE_RENT);
+        if (rentRule == null) {
+            log.error("未找到租金收费规则，跳过租金账单写入：companyId={}, stallId={}", companyId, contract.getStallId());
+            return;
+        }
+        int rentPeriodType = rentRule.getPeriodType() != null ? rentRule.getPeriodType() : CommonConst.PLAN_PERIOD_MONTH;
+        // periodType: 1=按年 2=按月 3=按日
+        // 账单周期：按年用"yyyy"，按月用"yyyy-MM"，按日用"yyyy-MM-dd"
+        int billPeriodType = (rentPeriodType == 1) ? CommonConst.PLAN_PERIOD_MONTH : rentPeriodType;
 
         int waiveMonths = dto.getWaiveMonths() != null ? dto.getWaiveMonths() : 0;
         BigDecimal discountRate = dto.getDiscountRate() != null
@@ -397,33 +522,48 @@ public class LeaseContractServiceImpl implements LeaseContractService {
         if (rentMonths <= 0) {
             return;
         }
+        log.info("写入租金业务费用流水：contractId={}, rentMonths={}, periodType={}", contract.getId(), rentMonths, rentPeriodType);
 
-        BigDecimal monthlyRent = contract.getRentAmount() == null ? BigDecimal.ZERO : contract.getRentAmount();
-        BigDecimal monthlyOriginal = monthlyRent.multiply(discountRate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-
-        BigDecimal perMonthDeduct = BigDecimal.ZERO;
-        BigDecimal remainderDeduct = BigDecimal.ZERO;
-        if (deductAmount.compareTo(BigDecimal.ZERO) > 0 && rentMonths > 0) {
-            perMonthDeduct = deductAmount.divide(new BigDecimal(rentMonths), 2, RoundingMode.HALF_UP);
-            remainderDeduct = deductAmount.subtract(perMonthDeduct.multiply(new BigDecimal(rentMonths - 1)));
-        }
-
-        long index = 0;
-        for (YearMonth ym = start; !ym.isAfter(end); ym = ym.plusMonths(1)) {
-            if (index < waiveMonths) {
-                index++;
-                continue;
-            }
-            boolean lastMonth = index == totalMonths - 1;
-            BigDecimal deduct = lastMonth ? remainderDeduct : perMonthDeduct;
-            BigDecimal realAmount = monthlyOriginal.subtract(deduct).max(BigDecimal.ZERO);
-            BigDecimal discountAmount = monthlyOriginal.subtract(realAmount).max(BigDecimal.ZERO);
-
-            writeBizFeeBillWithPlan(companyId, contract.getStallId(), ym.toString(),
+        if (rentPeriodType == 1) {
+            // 按年收费：只生成1条年度账单
+            BigDecimal annualOriginal = contract.getRentAmount() == null ? BigDecimal.ZERO : contract.getRentAmount();
+            BigDecimal annualDiscount = annualOriginal.multiply(BigDecimal.ONE.subtract(discountRate.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP))).max(BigDecimal.ZERO);
+            BigDecimal annualReal = annualOriginal.subtract(annualDiscount).add(deductAmount).max(BigDecimal.ZERO);
+            String billYear = start.getYear() + "";
+            writeBizFeeBillWithPlan(companyId, contract.getStallId(), billYear,
                     CommonConst.BIZ_TYPE_RENT,
-                    monthlyOriginal, discountAmount, BigDecimal.ZERO,
-                    CommonConst.PLAN_PERIOD_MONTH);
-            index++;
+                    annualOriginal, annualDiscount, deductAmount,
+                    rentPeriodType);
+        } else {
+            // 按月收费：生成多条月度账单
+            BigDecimal monthlyRent = contract.getRentAmount() == null ? BigDecimal.ZERO : contract.getRentAmount();
+            BigDecimal monthlyOriginal = monthlyRent.multiply(discountRate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+            BigDecimal perMonthDeduct = BigDecimal.ZERO;
+            BigDecimal remainderDeduct = BigDecimal.ZERO;
+            if (deductAmount.compareTo(BigDecimal.ZERO) > 0 && rentMonths > 0) {
+                perMonthDeduct = deductAmount.divide(new BigDecimal(rentMonths), 2, RoundingMode.HALF_UP);
+                remainderDeduct = deductAmount.subtract(perMonthDeduct.multiply(new BigDecimal(rentMonths - 1)));
+            }
+            log.info("写入租金业务费用流水：contractId={}, perMonthDeduct={}, remainderDeduct={}",
+                    contract.getId(), perMonthDeduct, remainderDeduct);
+            long index = 0;
+            for (YearMonth ym = start; !ym.isAfter(end); ym = ym.plusMonths(1)) {
+                if (index < waiveMonths) {
+                    index++;
+                    continue;
+                }
+                boolean lastMonth = index == totalMonths - 1;
+                BigDecimal deduct = lastMonth ? remainderDeduct : perMonthDeduct;
+                BigDecimal realAmount = monthlyOriginal.subtract(deduct).max(BigDecimal.ZERO);
+                BigDecimal discountAmount = monthlyOriginal.subtract(realAmount).max(BigDecimal.ZERO);
+
+                writeBizFeeBillWithPlan(companyId, contract.getStallId(), ym.toString(),
+                        CommonConst.BIZ_TYPE_RENT,
+                        monthlyOriginal, discountAmount, BigDecimal.ZERO,
+                        CommonConst.PLAN_PERIOD_MONTH);
+                index++;
+            }
         }
     }
 
@@ -442,11 +582,19 @@ public class LeaseContractServiceImpl implements LeaseContractService {
             return;
         }
 
+        // 根据摊位绑定的收费规则和 bizType 查询对应的 rule_id
+        Long ruleId = resolveRuleId(companyId, stallId, bizType);
+        if (ruleId == null) {
+            log.error("未找到摊位绑定的收费规则：companyId={}, stallId={}, bizType={}", companyId, stallId, bizType);
+            return;
+        }
+
         BizFeeBill unifiedBill = new BizFeeBill();
         unifiedBill.setCompanyId(companyId);
         unifiedBill.setBizType(bizType);
         unifiedBill.setStallId(stallId);
         unifiedBill.setBillMonth(billMonth);
+        unifiedBill.setRuleId(ruleId);
         unifiedBill.setOriginalAmount(originalAmount);
         unifiedBill.setDiscountAmount(discountAmount);
         unifiedBill.setAdjustAmount(adjustAmount);
@@ -461,17 +609,19 @@ public class LeaseContractServiceImpl implements LeaseContractService {
         } catch (Exception ex) {
             log.warn("统一账单写入冲突（唯一键 uk_stall_rule_period），查询已有记录：companyId={}, stallId={}, month={}, bizType={}",
                     companyId, stallId, billMonth, bizType);
-            unifiedBill = bizFeeBillMapper.selectOne(new LambdaQueryWrapper<BizFeeBill>()
+            // 使用唯一键字段查询：company_id, stall_id, rule_id, bill_month, is_delete
+            // 由于 rule_id 可能为 null，使用 selectList 获取所有匹配记录后取第一条
+            List<BizFeeBill> existingBills = bizFeeBillMapper.selectList(new LambdaQueryWrapper<BizFeeBill>()
                     .eq(BizFeeBill::getCompanyId, companyId)
                     .eq(BizFeeBill::getStallId, stallId)
                     .eq(BizFeeBill::getBillMonth, billMonth)
-                    .eq(BizFeeBill::getBizType, bizType)
-                    .last("LIMIT 1"));
-            if (unifiedBill == null) {
+                    .eq(BizFeeBill::getIsDelete, 0));
+            if (existingBills == null || existingBills.isEmpty()) {
                 log.error("统一账单写入失败且未查到已有记录：companyId={}, stallId={}, month={}, bizType={}",
                         companyId, stallId, billMonth, bizType);
                 return;
             }
+            unifiedBill = existingBills.get(0);
             log.info("复用已有统一账单：companyId={}, stallId={}, month={}, bizType={}, billId={}",
                     companyId, stallId, billMonth, bizType, unifiedBill.getId());
         }
@@ -489,7 +639,76 @@ public class LeaseContractServiceImpl implements LeaseContractService {
             rel.setSplitAmount(unifiedBill.getRealAmount());
             billPlanRelMapper.insert(rel);
         }
-        log.info("租赁合同统一账单写入成功：companyId={}, stallId={}, month={}, bizType={}, billId={}",
-                companyId, stallId, billMonth, bizType, unifiedBill.getId());
+        log.info("租赁合同统一账单写入成功：companyId={}, stallId={}, month={}, bizType={}, billId={}, ruleId={}",
+                companyId, stallId, billMonth, bizType, unifiedBill.getId(), ruleId);
+    }
+
+    /**
+     * 根据摊位绑定的收费规则和 bizType 解析对应的 rule_id
+     * <p>通过 biz_fee_rule_stall_rel 查询摊位绑定的规则，
+     * 关联 biz_fee_rule 筛选匹配的 feeItemId，返回正确的 rule_id
+     */
+    private Long resolveRuleId(Long companyId, Long stallId, String bizType) {
+        // bizType → feeItemId 映射
+        Long feeItemId;
+        if (CommonConst.BIZ_TYPE_RENT.equals(bizType)) {
+            feeItemId = 1L; // 租金
+        } else if (CommonConst.BIZ_TYPE_DEPOSIT.equals(bizType)) {
+            feeItemId = 5L; // 押金
+        } else {
+            log.warn("不支持的 bizType：{}", bizType);
+            return null;
+        }
+        // 查询摊位绑定的规则 ID 列表
+        List<Long> ruleIds = feeRuleStallRelMapper.selectList(new LambdaQueryWrapper<FeeRuleStallRel>()
+                .select(FeeRuleStallRel::getRuleId)
+                .eq(FeeRuleStallRel::getCompanyId, companyId)
+                .eq(FeeRuleStallRel::getStallId, stallId)
+                .eq(FeeRuleStallRel::getIsDelete, 0))
+                .stream().map(FeeRuleStallRel::getRuleId).collect(Collectors.toList());
+        if (ruleIds == null || ruleIds.isEmpty()) {
+            log.warn("摊位未绑定收费规则：companyId={}, stallId={}", companyId, stallId);
+            return null;
+        }
+        // 关联 biz_fee_rule 筛选匹配的 feeItemId
+        List<FeeRule> rules = feeRuleMapper.selectBatchIds(ruleIds);
+        for (FeeRule rule : rules) {
+            if (rule != null && feeItemId.equals(rule.getFeeItemId())) {
+                return rule.getId();
+            }
+        }
+        log.warn("未找到匹配的收费规则：companyId={}, stallId={}, feeItemId={}", companyId, stallId, feeItemId);
+        return null;
+    }
+
+    /**
+     * 查询摊位绑定的收费规则信息（ruleId + periodType）
+     * <p>用于根据收费周期决定账单生成策略
+     */
+    private FeeRule resolveFeeRule(Long companyId, Long stallId, String bizType) {
+        Long feeItemId;
+        if (CommonConst.BIZ_TYPE_RENT.equals(bizType)) {
+            feeItemId = 1L;
+        } else if (CommonConst.BIZ_TYPE_DEPOSIT.equals(bizType)) {
+            feeItemId = 5L;
+        } else {
+            return null;
+        }
+        List<Long> ruleIds = feeRuleStallRelMapper.selectList(new LambdaQueryWrapper<FeeRuleStallRel>()
+                .select(FeeRuleStallRel::getRuleId)
+                .eq(FeeRuleStallRel::getCompanyId, companyId)
+                .eq(FeeRuleStallRel::getStallId, stallId)
+                .eq(FeeRuleStallRel::getIsDelete, 0))
+                .stream().map(FeeRuleStallRel::getRuleId).collect(Collectors.toList());
+        if (ruleIds == null || ruleIds.isEmpty()) {
+            return null;
+        }
+        List<FeeRule> rules = feeRuleMapper.selectBatchIds(ruleIds);
+        for (FeeRule rule : rules) {
+            if (rule != null && feeItemId.equals(rule.getFeeItemId())) {
+                return rule;
+            }
+        }
+        return null;
     }
 }

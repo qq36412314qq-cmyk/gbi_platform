@@ -485,8 +485,8 @@ public class RecvPayPlanServiceImpl implements RecvPayPlanService {
                 .eq(StallContract::getStallId, bill.getStallId())
                 .eq(StallContract::getCompanyId, bill.getCompanyId())
                 .eq(StallContract::getContractStatus, CommonConst.CONTRACT_STATUS_EFFECTIVE)
-                .le(StallContract::getStartTime, bill.getBillMonth().substring(0, 4) + "-" + bill.getBillMonth().substring(5) + "-15")
-                .ge(StallContract::getEndTime, bill.getBillMonth().substring(0, 4) + "-" + bill.getBillMonth().substring(5) + "-15")
+                .le(StallContract::getStartTime, parseBillMonthToDate(bill.getBillMonth()))
+                .ge(StallContract::getEndTime, parseBillMonthToDate(bill.getBillMonth()))
                 .orderByDesc(StallContract::getCreateTime).last("LIMIT 1"));
         BizRecvPayPlan plan = new BizRecvPayPlan();
         plan.setCompanyId(bill.getCompanyId());
@@ -543,8 +543,8 @@ public class RecvPayPlanServiceImpl implements RecvPayPlanService {
                 .eq(StallContract::getStallId, bill.getStallId())
                 .eq(StallContract::getCompanyId, bill.getCompanyId())
                 .eq(StallContract::getContractStatus, CommonConst.CONTRACT_STATUS_EFFECTIVE)
-                .le(StallContract::getStartTime, bill.getBillMonth().substring(0, 4) + "-" + bill.getBillMonth().substring(5) + "-15")
-                .ge(StallContract::getEndTime, bill.getBillMonth().substring(0, 4) + "-" + bill.getBillMonth().substring(5) + "-15")
+                .le(StallContract::getStartTime, parseBillMonthToDate(bill.getBillMonth()))
+                .ge(StallContract::getEndTime, parseBillMonthToDate(bill.getBillMonth()))
                 .orderByDesc(StallContract::getCreateTime).last("LIMIT 1"));
         BizRecvPayPlan plan = new BizRecvPayPlan();
         plan.setCompanyId(bill.getCompanyId());
@@ -601,8 +601,8 @@ public class RecvPayPlanServiceImpl implements RecvPayPlanService {
                 .eq(StallContract::getStallId, bill.getStallId())
                 .eq(StallContract::getCompanyId, bill.getCompanyId())
                 .eq(StallContract::getContractStatus, CommonConst.CONTRACT_STATUS_EFFECTIVE)
-                .le(StallContract::getStartTime, bill.getBillMonth().substring(0, 4) + "-" + bill.getBillMonth().substring(5) + "-15")
-                .ge(StallContract::getEndTime, bill.getBillMonth().substring(0, 4) + "-" + bill.getBillMonth().substring(5) + "-15")
+                .le(StallContract::getStartTime, parseBillMonthToDate(bill.getBillMonth()))
+                .ge(StallContract::getEndTime, parseBillMonthToDate(bill.getBillMonth()))
                 .orderByDesc(StallContract::getCreateTime).last("LIMIT 1"));
         String planBizType = CommonConst.PLAN_BIZ_FEE_BILL;
         BizRecvPayPlan plan = new BizRecvPayPlan();
@@ -617,7 +617,7 @@ public class RecvPayPlanServiceImpl implements RecvPayPlanService {
         plan.setMerchantId(contract != null ? contract.getMerchantId() : bill.getMerchantId());
         plan.setPeriodNo(bill.getBillMonth());
         plan.setPeriodType(bill.getPeriodType() != null ? bill.getPeriodType() : CommonConst.PLAN_PERIOD_MONTH);
-        plan.setDueDate(YearMonth.parse(bill.getBillMonth()).atDay(1));
+        plan.setDueDate(parseBillMonthToDueDate(bill.getBillMonth()));
         plan.setOriginalAmount(bill.getRealAmount() != null ? bill.getRealAmount() : BigDecimal.ZERO);
         plan.setDiscountAmount(bill.getDiscountAmount() != null ? bill.getDiscountAmount() : BigDecimal.ZERO);
         plan.setAdjustAmount(bill.getAdjustAmount() != null ? bill.getAdjustAmount() : BigDecimal.ZERO);
@@ -780,5 +780,26 @@ public class RecvPayPlanServiceImpl implements RecvPayPlanService {
         }
     }
 
-}
+    /**
+     * 解析账单月份为日期（用于合同匹配，取月中15日）
+     * 支持 yyyy-MM（月账单）和 yyyy（年账单）格式
+     */
+    private LocalDate parseBillMonthToDate(String billMonth) {
+        if (StringUtils.hasText(billMonth) && billMonth.length() == 4) {
+            return LocalDate.parse(billMonth + "-01-15");
+        }
+        return LocalDate.parse(billMonth + "-15");
+    }
 
+    /**
+     * 解析账单月份为应收日期（取月初1日）
+     * 支持 yyyy-MM（月账单）和 yyyy（年账单）格式
+     */
+    private LocalDate parseBillMonthToDueDate(String billMonth) {
+        if (StringUtils.hasText(billMonth) && billMonth.length() == 4) {
+            return LocalDate.parse(billMonth + "-01-01");
+        }
+        return LocalDate.parse(billMonth + "-01");
+    }
+
+}
