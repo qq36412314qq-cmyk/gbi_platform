@@ -3,9 +3,13 @@
     <!-- 顶部操作区 -->
     <div class="g-page-header">
       <span class="g-page-title">摊位管理</span>
-      <div>
-        <AuthBtn permission="lease:stall:add" type="primary" @click="openDialog()">新增摊位</AuthBtn>
-      </div>
+        <router-link to="/property/lease/canvas" class="canvas-link" title="摊位布局画布">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          摊位画布
+        </router-link>
+        <div>
+          <AuthBtn permission="lease:stall:add" type="primary" @click="openDialog()">新增摊位</AuthBtn>
+        </div>
     </div>
 
     <!-- 搜索筛选区 -->
@@ -341,4 +345,25 @@ async function handleDelete(row: StallVO): Promise<void> {
 .b-stall-rule-empty {
   color: var(--el-text-color-placeholder);
 }
-</style>
+
+/* 摊位画布快捷入口 */
+.canvas-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  margin-right: 8px;
+  background: #0d1f35;
+  border: 1px solid #2d6a9f;
+  color: #7fa8cc;
+  border-radius: 4px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.15s;
+  font-family: monospace;
+}
+.canvas-link:hover {
+  background: #1a3a5f;
+  color: #e2e8f0;
+  border-color: #4a90d9;
+}</style>

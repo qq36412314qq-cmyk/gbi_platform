@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 路由配置：与后台菜单、权限标识一一对应
  * meta 固定三元组：title / icon / permission
  */
@@ -160,6 +160,12 @@ export const constantRoutes: RouteRecordRaw[] = [
             name: 'PropertyLeaseContract',
             component: () => import('@/views/business/property/leaseContract.vue'),
             meta: { title: '合同管理', icon: 'Document', permission: 'lease:contract:list', isCache: true }
+          },
+                    {
+            path: 'canvas',
+            name: 'PropertyLeaseCanvas',
+            component: () => import('@/views/business/property/stallCanvas.vue'),
+            meta: { title: '摊位画布', icon: 'Coordinate', permission: 'lease:stall:list', isCache: true }
           }
         ]
       }
