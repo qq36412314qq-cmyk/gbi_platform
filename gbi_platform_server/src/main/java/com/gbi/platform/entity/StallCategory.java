@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("stall_category")
+@TableName("property_stall_category")
 public class StallCategory extends BaseEntity {
 
     /** 所属子公司ID */

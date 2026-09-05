@@ -5,6 +5,8 @@ import com.gbi.platform.dto.WaterElecBillQueryDTO;
 import com.gbi.platform.vo.PageVO;
 import com.gbi.platform.vo.WaterElecBillVO;
 
+import java.util.List;
+
 /**
  * 水电物业月度账单服务：分页查询 + 月度生成
  *
@@ -30,4 +32,11 @@ public interface WaterElecBillService {
      * 供「生成账单」按钮直接使用现有记录数据
      */
     String syncToUnpaidBill(Long id);
+
+    /**
+     * 批量将水电费记录同步写入未支付订单
+     * @param ids 账单ID列表
+     * @return 成功同步数量
+     */
+    int batchSyncToUnpaidBill(List<Long> ids);
 }

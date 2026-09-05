@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 统一收费账单实体：biz_fee_bill
+ * 统一收费账单实体：finance_fee_pay_bill
  * 聚合物业费/水电费/租赁费/幼儿园费等所有费用类型，biz_type 区分类型
  * 新增费用类型只需写入对应 biz_type 记录，无需改表结构
  *
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_fee_bill")
+@TableName("finance_fee_pay_bill")
 public class BizFeeBill extends BaseEntity {
 
     @Serial
@@ -38,7 +38,7 @@ public class BizFeeBill extends BaseEntity {
     /** 账单周期标识 月yyyy-MM / 季yyyy-Qn / 年yyyy / 一次性once */
     private String billMonth;
 
-    /** 生成账单的规则ID（biz_fee_rule，锁定后仅记录不回溯） */
+    /** 生成账单的规则ID（finance_fee_rule，锁定后仅记录不回溯） */
     private Long ruleId;
 
     /** 关联应收应付计划ID（可空） */
@@ -71,6 +71,6 @@ public class BizFeeBill extends BaseEntity {
     /** 账单备注 */
     private String remark;
 
-    /** 源账单ID（water_elec_bill.id / property_fee_bill.id，用于幂等和追溯） */
+    /** 源账单ID（property_water_elec_bill.id / property_fee_bill.id，用于幂等和追溯） */
     private Long sourceBillId;
 }

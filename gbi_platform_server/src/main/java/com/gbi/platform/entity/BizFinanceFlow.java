@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * @author gbi
  */
 @Data
-@TableName("biz_finance_flow")
+@TableName("finance_pay_flow")
 public class BizFinanceFlow implements Serializable {
 
     @Serial

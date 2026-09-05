@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 收费规则-摊位绑定 Mapper（biz_fee_rule_stall_rel，company_id 自动隔离）
+ * 收费规则-摊位绑定 Mapper（finance_fee_rule_stall_rel，company_id 自动隔离）
  *
  * @author gbi
  */
@@ -23,6 +23,6 @@ public interface FeeRuleStallRelMapper extends BaseMapper<FeeRuleStallRel> {
      *
      * @param stallId 摊位ID
      */
-    @Delete("DELETE FROM biz_fee_rule_stall_rel WHERE stall_id = #{stallId}")
+    @Delete("DELETE FROM finance_fee_rule_stall_rel WHERE stall_id = #{stallId}")
     int deleteByStallIdPhysical(@Param("stallId") Long stallId);
 }

@@ -24,6 +24,8 @@ export interface PropertyFeeBillVO {
   categoryName?: string
   merchantId?: number
   billMonth: string
+  tenantName?: string
+  hasFeeBill?: boolean
   ruleId?: number
   ruleName?: string
   feeItemId?: number
@@ -47,7 +49,6 @@ export interface PropertyFeeBillGenerateDTO {
   marketId?: number
   stallId?: number
 }
-
 
 export interface PropertyFeeBillPreviewVO {
   stallId?: number
@@ -116,6 +117,8 @@ export interface UnpaidBillVO {
   payStatusText?: string
   payTime?: string
   createTime?: string
+  merchantId?: number
+  payerName?: string
 }
 
 /** 未支付订单分页（聚合物业费 + 水电费） */
@@ -124,7 +127,11 @@ export function getUnpaidBillPageApi(params: UnpaidBillQueryDTO): Promise<PageRe
 }
 /** 同步已有物业费记录到未支付订单 */
 export function syncPropertyFeeBillApi(id: number): Promise<string> {
-  return post<null>('/property/feeBill/sync/' + id, null)
+  return post<string>('/property/feeBill/sync/' + id, null)
+}
+/** 批量同步物业费记录到未支付订单（finance_fee_pay_bill） */
+export function batchSyncPropertyFeeBillApi(ids: number[]): Promise<number> {
+  return post<number>('/property/feeBill/batchSync', ids)
 }
 
 /** 物业费线下缴费 */
@@ -151,4 +158,94 @@ export interface UnifiedPayDTO {
 
 export function unifiedPayApi(data: UnifiedPayDTO): Promise<null> {
   return post<null>('/property/unifiedPay/pay', data)
+}
+
+/* ------------------------------ 缴费单聚合支付 ------------------------------ */
+
+/** 缴费单明细VO */
+export interface PayBillItemVO {
+  id: number
+  payBillId: number
+  billId: number
+  bizType: string
+  ruleName?: string
+  feeItemName?: string
+  billMonth: string
+  amount: number
+  paidAmount: number
+  unpaidAmount: number
+}
+
+/** 缴费单VO */
+export interface PayBillVO {
+  id: number
+  payBillNo: string
+  sourceType?: string
+  sourceId?: number
+  stallId?: number
+  merchantId?: number
+  totalAmount: number
+  paidAmount: number
+  unpaidAmount: number
+  payStatus: number
+  payStatusText?: string
+  payTime?: string
+  remark?: string
+  createTime?: string
+  items?: PayBillItemVO[]
+}
+
+/** 创建缴费单入参 */
+export interface PayBillCreateDTO {
+  bizFeeBillIds: number[]
+  remark?: string
+}
+
+/** 缴费单缴费入参 */
+export interface PayBillPayDTO {
+  payBillId: number
+  payType: number
+  requestId: string
+  remark?: string
+}
+
+/** 缴费单退费入参 */
+export interface PayBillRefundDTO {
+  payBillId: number
+  refundAmount: number
+  remark?: string
+}
+
+/** 缴费单分页查询 */
+export interface PayBillQueryDTO {
+  pageNum: number
+  pageSize: number
+  payStatus?: number
+  stallId?: number
+  payBillNo?: string
+}
+
+/** 创建缴费单 */
+export function createPayBillApi(data: PayBillCreateDTO): Promise<number> {
+  return post<number>('/property/payBill/create', data)
+}
+
+/** 缴费单聚合缴费 */
+export function payPayBillApi(data: PayBillPayDTO): Promise<null> {
+  return post<null>('/property/payBill/pay', data)
+}
+
+/** 缴费单分页查询 */
+export function getPayBillPageApi(params: PayBillQueryDTO): Promise<PageResult<PayBillVO>> {
+  return get<PageResult<PayBillVO>>('/property/payBill/page', params)
+}
+
+/** 缴费单详情 */
+export function getPayBillDetailApi(id: number): Promise<PayBillVO> {
+  return get<PayBillVO>('/property/payBill/detail/' + id)
+}
+
+/** 作废缴费单 */
+export function voidPayBillApi(id: number): Promise<null> {
+  return post<null>('/property/payBill/void/' + id, null)
 }

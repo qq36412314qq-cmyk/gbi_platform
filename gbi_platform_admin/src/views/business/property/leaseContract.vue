@@ -1,7 +1,7 @@
 <!--
   租赁合同管理页面
   数据表：stall_contract
-  关联表：stall_info（摊位）、stall_tenant（租户）、stall_category（分类）、market_info（市场）
+  关联表：stall_info（铺位）、stall_tenant（租户）、stall_category（分类）、market_info（市场）
   权限：lease:contract:*
 -->
 <template>
@@ -36,7 +36,7 @@
         <el-table-column prop="tenantName" label="租户" min-width="130" show-overflow-tooltip />
         <el-table-column prop="marketName" label="所属市场" width="120" align="center" />
         <el-table-column prop="categoryName" label="租赁分类" width="100" align="center" />
-        <el-table-column prop="stallNumber" label="摊位编号" width="110" align="center" />
+        <el-table-column prop="stallNumber" label="铺位编号" width="110" align="center" />
         <el-table-column label="月租金(元)" width="110" align="right">
           <template #default="{ row }"><span class="rent-value">{{ getRentDisplay(row).value }}</span><span v-if="getRentDisplay(row).tag" class="rent-tag rent-tag--{{ getRentDisplay(row).tagClass }}">{{ getRentDisplay(row).tag }}</span></template>
         </el-table-column>
@@ -95,7 +95,7 @@
             <el-option v-for="t in tenantOptions" :key="t.id" :label="t.tenantName" :value="t.id" />
           </el-select>
         </el-form-item>
-        <!-- 摊位三级联动：市场 → 租赁分类 → 空置摊位（数据源 market_info / stall_category / stall_info，仅空置 status=0） -->
+        <!-- 铺位三级联动：市场 → 租赁分类 → 空置铺位（数据源 market_info / stall_category / stall_info，仅空置 status=0） -->
         <el-form-item label="市场" prop="formMarketId">
           <el-select v-model="form.formMarketId" placeholder="选择市场" clearable style="width: 100%" @change="handleMarketChange">
             <el-option v-for="m in marketOptions" :key="m.id" :label="m.marketName" :value="m.id" />
@@ -106,7 +106,7 @@
             <el-option v-for="c in categoryOptions" :key="c.id" :label="c.categoryName" :value="c.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="摊位" prop="stallId">
+        <el-form-item label="铺位" prop="stallId">
           <el-select
             v-model="form.stallId"
             filterable
@@ -126,19 +126,19 @@
         </el-form-item>
         <el-form-item :label="rentLabel" prop="rentAmount">
           <el-input-number v-model="form.rentAmount" :min="0" :precision="2" :disabled="!rentEditable" style="width: 100%" />
-          <div v-if="rentRuleText" class="g-tip">已按摊位收费规则自动带出：{{ rentRuleText }}
+          <div v-if="rentRuleText" class="g-tip">已按铺位收费规则自动带出：{{ rentRuleText }}
             <span v-if="!rentEditable" class="g-tip">（仅展示，禁止手动修改）</span>
             <span v-else class="g-tip">可手动修改</span>
           </div>
-          <div v-else class="g-tip">该摊位未绑定租金收费规则（定额/按面积），请手动填写</div>
+          <div v-else class="g-tip">该铺位未绑定租金收费规则（定额/按面积），请手动填写</div>
         </el-form-item>
         <el-form-item :label="depositLabel" prop="depositAmount">
           <el-input-number v-model="form.depositAmount" :min="0" :precision="2" :disabled="!rentEditable" style="width: 100%" />
-          <div v-if="depositRuleText" class="g-tip">已按摊位收费规则自动带出：{{ depositRuleText }}
+          <div v-if="depositRuleText" class="g-tip">已按铺位收费规则自动带出：{{ depositRuleText }}
             <span v-if="!rentEditable" class="g-tip">（仅展示，禁止手动修改）</span>
             <span v-else class="g-tip">可手动修改</span>
           </div>
-          <div v-else class="g-tip">该摊位未绑定押金收费规则（定额/按面积），请手动填写</div>
+          <div v-else class="g-tip">该铺位未绑定押金收费规则（定额/按面积），请手动填写</div>
         </el-form-item>
         <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 8px;">
           <el-button size="small" @click="handleAddMonth">加1月</el-button>
@@ -202,7 +202,7 @@
 
 <script setup lang="ts">
 /**
- * 租赁合同页：租户+摊位签订合同，生效后摊位自动置为已租、押金写入财务流水；退租为高危操作二次确认
+ * 租赁合同页：租户+铺位签订合同，生效后铺位自动置为已租、押金写入财务流水；退租为高危操作二次确认
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -289,7 +289,7 @@ async function loadTenants(visible: boolean): Promise<void> {
   }
 }
 
-/* ---------------- 摊位三级联动（市场/分类公司级数据打开加载一次；摊位按条件动态加载且仅空置） ---------------- */
+/* ---------------- 铺位三级联动（市场/分类公司级数据打开加载一次；铺位按条件动态加载且仅空置） ---------------- */
 const marketOptions = ref<MarketVO[]>([])
 const categoryOptions = ref<CategoryVO[]>([])
 const stallOptions = ref<StallOptionVO[]>([])
@@ -329,7 +329,7 @@ onMounted(async () => {
   }
 })
 
-/* 市场/分类变化 → 清空已选摊位并重新加载空置摊位选项（status=0，后端过滤） ---------------- */
+/* 市场/分类变化 → 清空已选铺位并重新加载空置铺位选项（status=0，后端过滤） ---------------- */
 async function handleMarketChange(): Promise<void> {
   form.stallId = undefined
   await loadStallOptions()
@@ -352,11 +352,11 @@ async function loadStallOptions(): Promise<void> {
   }
 }
 
-/* ---------------- 租金/押金按摊位收费规则自动带出（收费类别：1租金 5押金；定额=单价，按面积=单价×面积） ---------------- */
+/* ---------------- 租金/押金按铺位收费规则自动带出（收费类别：1租金 5押金；定额=单价，按面积=单价×面积） ---------------- */
 const rentRuleText = ref('')
 const depositRuleText = ref('')
 
-/* 周期类型跟随摊位绑定收费规则 period_type（0不使用周期 1按年 2按月 3按日；undefined=未绑定规则走默认） ---------------- */
+/* 周期类型跟随铺位绑定收费规则 period_type（0不使用周期 1按年 2按月 3按日；undefined=未绑定规则走默认） ---------------- */
 const rentPeriodType = ref<number | undefined>(undefined)
 const depositPeriodType = ref<number | undefined>(undefined)
 
@@ -385,7 +385,7 @@ const depositLabel = computed(() => {
   return '押金(元)'
 })
 
-/** 收费规则金额计算：定额取单价，按面积取 单价×摊位面积（两位小数） ---------------- */
+/** 收费规则金额计算：定额取单价，按面积取 单价×铺位面积（两位小数） ---------------- */
 function calcRuleAmount(rel: StallRuleRel, area?: number): number {
   const price = rel.price ?? 0
   if (rel.calcMode === 2) {
@@ -394,7 +394,7 @@ function calcRuleAmount(rel: StallRuleRel, area?: number): number {
   return Math.round(price * 100) / 100
 }
 
-/** 选中摊位 → 读取该摊位已绑定收费规则，按类别自动带出租金/押金（无对应规则保留手动填写） ---------------- */
+/** 选中铺位 → 读取该铺位已绑定收费规则，按类别自动带出租金/押金（无对应规则保留手动填写） ---------------- */
 async function handleStallChange(): Promise<void> {
   rentRuleText.value = ''
   depositRuleText.value = ''
@@ -511,9 +511,9 @@ const form = reactive<
 
 const rules: FormRules = computed(() => ({
   tenantId: [{ required: true, message: '请选择租户', trigger: 'change' }],
-  stallId: [{ required: true, message: '请选择空置摊位', trigger: 'change' }],
-  rentAmount: [{ required: rentEditable.value, message: '请输入月租金（可先选择摊位自动带出）', trigger: 'change' }],
-  depositAmount: [{ required: rentEditable.value, message: '请输入押金（可先选择摊位自动带出）', trigger: 'change' }],
+  stallId: [{ required: true, message: '请选择空置铺位', trigger: 'change' }],
+  rentAmount: [{ required: rentEditable.value, message: '请输入月租金（可先选择铺位自动带出）', trigger: 'change' }],
+  depositAmount: [{ required: rentEditable.value, message: '请输入押金（可先选择铺位自动带出）', trigger: 'change' }],
   startTime: [{ required: true, message: '请选择开始日期', trigger: 'change' }],
   endTime: [{ required: true, message: '请选择到期日期', trigger: 'change' }]
 }))
@@ -599,7 +599,7 @@ async function handleSubmit(): Promise<void> {
       // 剥离联动中间字段（formMarketId/formCategoryId），只提交业务字段
       const { formMarketId: _m, formCategoryId: _c, ...rest } = form
       await addContractApi(rest as ContractAddDTO)
-      ElMessage.success('合同签订成功，摊位已置为已租')
+      ElMessage.success('合同签订成功，铺位已置为已租')
       dialogVisible.value = false
       loadData()
     } finally {
@@ -611,7 +611,7 @@ async function handleSubmit(): Promise<void> {
 /* ---------------- 退租（高危操作二次确认） ---------------- */
 async function handleTerminate(row: ContractVO): Promise<void> {
   await ElMessageBox.confirm(
-    `确定对合同「${row.contractNo}」（租户：${row.tenantName}）执行退租吗？退租后摊位置为空置，押金将按原金额生成退费支出流水，该操作不可撤销！`,
+    `确定对合同「${row.contractNo}」（租户：${row.tenantName}）执行退租吗？退租后铺位置为空置，押金将按原金额生成退费支出流水，该操作不可撤销！`,
     '高危操作确认',
     { type: 'warning', confirmButtonText: '确认退租' }
   )

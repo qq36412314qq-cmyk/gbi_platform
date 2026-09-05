@@ -40,7 +40,7 @@ CREATE TABLE `biz_discount_apply`  (
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源类型 contract',
   `source_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源单据ID（合同ID）',
   `contract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '合同编号（冗余便于列表展示）',
-  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '摊位ID',
+  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '铺位ID',
   `tenant_id` bigint(20) NULL DEFAULT NULL COMMENT '租户ID',
   `waive_months` int(11) NOT NULL DEFAULT 0 COMMENT '申请免租期月数',
   `discount_rate` decimal(5, 2) NOT NULL DEFAULT 100.00 COMMENT '申请折扣率%',
@@ -74,7 +74,7 @@ CREATE TABLE `biz_discount_policy`  (
   `waive_months` int(11) NOT NULL DEFAULT 0 COMMENT '免租期月数（type=1/4）',
   `discount_rate` decimal(5, 2) NOT NULL DEFAULT 100.00 COMMENT '折扣率%（100=无折扣，type=2/4）',
   `deduct_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '减免金额（type=3/4）',
-  `scope_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '适用范围 1按合同 2按摊位',
+  `scope_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '适用范围 1按合同 2按铺位',
   `start_time` date NULL DEFAULT NULL COMMENT '策略生效时间',
   `end_time` date NULL DEFAULT NULL COMMENT '策略失效时间，NULL永久',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0停用 1启用',
@@ -99,7 +99,7 @@ CREATE TABLE `biz_fee_bill`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'property_fee' COMMENT '业务类型 property_fee=物业费 water_elec=水电费 rent=租赁费 kindergarten=幼儿园费',
-  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID（可空，账单可无商户绑定）',
   `bill_month` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '账单周期标识（月yyyy-MM / 季yyyy-Qn / 年yyyy / 一次性once）',
   `rule_id` bigint(20) NOT NULL COMMENT '生成账单的规则ID（biz_fee_rule，锁定后仅记录不回溯）',
@@ -202,8 +202,8 @@ CREATE TABLE `biz_fee_rule_stall_rel`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `rule_id` bigint(20) NOT NULL COMMENT '收费规则ID（biz_fee_rule）',
-  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID（stall_info）',
-  `override_flag` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否特殊覆盖 0普通绑定 1单摊位覆盖（预留）',
+  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID（stall_info）',
+  `override_flag` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否特殊覆盖 0普通绑定 1单铺位覆盖（预留）',
   `override_price` decimal(12, 2) NULL DEFAULT NULL COMMENT '覆盖单价（预留，override_flag=1时生效）',
   `override_config_json` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '覆盖配置JSON（预留，后端过滤脚本后入库）',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
@@ -215,7 +215,7 @@ CREATE TABLE `biz_fee_rule_stall_rel`  (
   UNIQUE INDEX `uk_rule_stall`(`rule_id` ASC, `stall_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_stall_id`(`stall_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '收费规则-摊位绑定关联表（同收费类型限选一条）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '收费规则-铺位绑定关联表（同收费类型限选一条）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 
@@ -230,9 +230,9 @@ CREATE TABLE `biz_finance_flow`  (
   `bill_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '关联业务单据ID',
   `plan_id` bigint(20) NULL DEFAULT NULL COMMENT '关联应收应付计划ID（biz_recv_pay_plan，核销时写入）',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID',
-  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '摊位ID',
-  `stall_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '摊位编号快照（写入时固化）',
-  `stall_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '摊位名称快照（写入时固化）',
+  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '铺位ID',
+  `stall_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '铺位编号快照（写入时固化）',
+  `stall_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '铺位名称快照（写入时固化）',
   `stall_market_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '所属市场名称快照（写入时固化）',
   `category_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '租赁分类名称快照（写入时固化）',
   `merchant_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '商户名称快照（写入时固化）',
@@ -346,7 +346,7 @@ CREATE TABLE `biz_recv_pay_plan`  (
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源单据类型 contract/reimburse/purchase/bill',
   `source_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源单据ID（合同/报销单/采购单）',
   `market_id` bigint(20) NULL DEFAULT NULL COMMENT '市场ID',
-  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '摊位ID',
+  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '铺位ID',
   `tenant_id` bigint(20) NULL DEFAULT NULL COMMENT '租户ID',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID',
   `period_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '期次标识 月度yyyy-MM 季度yyyy-Qn 年度yyyy 一次性once',
@@ -811,8 +811,8 @@ CREATE TABLE `map_stall_point`  (
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `map_id` bigint(20) NOT NULL COMMENT '关联地图ID',
   `market_id` bigint(20) NOT NULL COMMENT '所属市场ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '关联摊位ID',
-  `point_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '单个摊位点位JSON数据',
+  `stall_id` bigint(20) NOT NULL COMMENT '关联铺位ID',
+  `point_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '单个铺位点位JSON数据',
   `sort_order` int(11) NOT NULL DEFAULT 0 COMMENT '排序号',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -822,7 +822,7 @@ CREATE TABLE `map_stall_point`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_map_stall`(`map_id` ASC, `stall_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '摊位点位明细表（点位超过500条启用）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '铺位点位明细表（点位超过500条启用）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 
@@ -1112,14 +1112,14 @@ DROP TABLE IF EXISTS `property_bill`;
 CREATE TABLE `property_bill`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
   `merchant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '商户ID',
   `bill_month` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '账单月份 yyyy-MM',
   `rule_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '计费规则ID（biz_fee_rule，快照）',
   `fee_item_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '收费类型ID（biz_fee_item，固定=物业费）',
   `calc_mode` tinyint(4) NOT NULL DEFAULT 1 COMMENT '收费方式 1定额 2按面积',
   `period_type` tinyint(4) NOT NULL DEFAULT 2 COMMENT '收费周期 0不使用 1按年 2按月 3按日',
-  `usage` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '用量：定额=0，按面积=摊位面积（快照）',
+  `usage` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '用量：定额=0，按面积=铺位面积（快照）',
   `unit_price` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '计费单价快照（规则修改不回溯）',
   `period_factor` decimal(10, 4) NOT NULL DEFAULT 1.0000 COMMENT '周期系数（按年/12、按日×当月天数、按月=1）',
   `amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '本条账单金额',
@@ -1172,7 +1172,7 @@ CREATE TABLE `stall_contract`  (
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `contract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '合同编号',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID（v2.0起合同改用租户体系，可空）',
-  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
   `tenant_id` bigint(20) NULL DEFAULT NULL COMMENT '租户ID（关联stall_tenant）',
   `rent_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '月租金金额',
   `deposit_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '押金金额',
@@ -1193,7 +1193,7 @@ CREATE TABLE `stall_contract`  (
   INDEX `idx_merchant_id`(`merchant_id` ASC) USING BTREE,
   INDEX `idx_stall_id`(`stall_id` ASC) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '摊位租赁合同表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '铺位租赁合同表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 DROP TABLE IF EXISTS `stall_info`;
@@ -1202,11 +1202,11 @@ CREATE TABLE `stall_info`  (
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `market_id` bigint(20) NOT NULL COMMENT '关联市场ID',
   `stall_category_id` bigint(20) NULL DEFAULT NULL COMMENT '租赁分类ID（关联stall_category）',
-  `stall_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '摊位编号',
-  `stall_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '摊位名称',
-  `stall_area` decimal(10, 2) NULL DEFAULT NULL COMMENT '摊位面积(平方米)',
-  `status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '摊位状态 0空置 1已租 2欠费 3即将到期',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '摊位备注',
+  `stall_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '铺位编号',
+  `stall_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '铺位名称',
+  `stall_area` decimal(10, 2) NULL DEFAULT NULL COMMENT '铺位面积(平方米)',
+  `status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '铺位状态 0空置 1已租 2欠费 3即将到期',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '铺位备注',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人用户ID',
@@ -1216,7 +1216,7 @@ CREATE TABLE `stall_info`  (
   UNIQUE INDEX `uk_stall_no_company`(`stall_number` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_market_id`(`market_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '摊位基础信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '铺位基础信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 DROP TABLE IF EXISTS `stall_merchant`;
@@ -1513,7 +1513,7 @@ DROP TABLE IF EXISTS `water_elec_bill`;
 CREATE TABLE `water_elec_bill`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
   `merchant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '商户ID',
   `plan_id` bigint(20) NULL DEFAULT NULL COMMENT '关联应收应付计划ID',
   `bill_month` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '账单月份 yyyy-MM',
@@ -1546,7 +1546,7 @@ DROP TABLE IF EXISTS `water_elec_meter`;
 CREATE TABLE `water_elec_meter`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '绑定摊位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '绑定铺位ID',
   `meter_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '智能表设备编号',
   `meter_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '表类型1水表 2电表',
   `gateway_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '物联网网关编码',
@@ -1574,10 +1574,10 @@ CREATE TABLE `water_elec_pay_record`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `bill_id` bigint(20) NOT NULL COMMENT '关联账单ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID',
-  `stall_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '摊位编号快照（写入时固化）',
-  `stall_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '摊位名称快照（写入时固化）',
+  `stall_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '铺位编号快照（写入时固化）',
+  `stall_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '铺位名称快照（写入时固化）',
   `stall_market_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '所属市场名称快照（写入时固化）',
   `category_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '租赁分类名称快照（写入时固化）',
   `merchant_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '商户名称快照（写入时固化）',
@@ -1761,7 +1761,7 @@ AND NOT EXISTS (SELECT 1 FROM sys_role_menu_rel r WHERE r.role_id = 1 AND r.menu
 INSERT INTO sys_config (company_id, config_key, config_value, config_name, remark, create_by, is_delete) VALUES
 (0, 'water_elec.water_price', '4.50', '水费单价（元/吨）', '水电物业账单生成计费参数，集团统一配置', 1, 0),
 (0, 'water_elec.elec_price', '1.20', '电费单价（元/度）', '水电物业账单生成计费参数，集团统一配置', 1, 0),
-(0, 'water_elec.property_price', '50.00', '物业费单价（元/摊位/月）', '水电物业账单生成计费参数，集团统一配置，一期按摊位固定费用', 1, 0)
+(0, 'water_elec.property_price', '50.00', '物业费单价（元/铺位/月）', '水电物业账单生成计费参数，集团统一配置，一期按铺位固定费用', 1, 0)
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value);
 
 -- ============================================================
@@ -1782,7 +1782,7 @@ SET NAMES utf8mb4;
 
 -- 2. 租赁分类表（商铺/仓库/车位等，子公司可自定义）
 
--- 3. 摊位表增加租赁分类字段（stall_info 原表 ALTER）
+-- 3. 铺位表增加租赁分类字段（stall_info 原表 ALTER）
 ALTER TABLE `stall_info`
   ADD COLUMN `stall_category_id` bigint DEFAULT NULL COMMENT '租赁分类ID（关联stall_category）' AFTER `market_id`;
 
@@ -1802,17 +1802,17 @@ INSERT INTO sys_menu (id, parent_id, menu_name, permission, path, icon, sort_ord
 -- 页面
 (52, 36, '租户管理', 'tenant:list', '/property/tenant', 'User', 1, 2, 1, 1),
 (53, 36, '租赁管理', NULL, '/property/lease', 'Goods', 2, 1, 1, 1),
-(54, 53, '摊位管理', 'lease:stall:list', '/property/lease/stall', 'OfficeBuilding', 1, 2, 1, 1),
+(54, 53, '铺位管理', 'lease:stall:list', '/property/lease/stall', 'OfficeBuilding', 1, 2, 1, 1),
 (55, 53, '租赁分类', 'lease:category:list', '/property/lease/category', 'Menu', 2, 2, 1, 1),
 (56, 53, '合同管理', 'lease:contract:list', '/property/lease/contract', 'Document', 3, 2, 1, 1),
 -- 租户按钮
 (57, 52, '租户新增', 'tenant:add', NULL, NULL, 1, 3, 0, 1),
 (58, 52, '租户编辑', 'tenant:edit', NULL, NULL, 2, 3, 0, 1),
 (59, 52, '租户删除', 'tenant:delete', NULL, NULL, 3, 3, 0, 1),
--- 摊位按钮
-(60, 54, '摊位新增', 'lease:stall:add', NULL, NULL, 1, 3, 0, 1),
-(61, 54, '摊位编辑', 'lease:stall:edit', NULL, NULL, 2, 3, 0, 1),
-(62, 54, '摊位删除', 'lease:stall:delete', NULL, NULL, 3, 3, 0, 1),
+-- 铺位按钮
+(60, 54, '铺位新增', 'lease:stall:add', NULL, NULL, 1, 3, 0, 1),
+(61, 54, '铺位编辑', 'lease:stall:edit', NULL, NULL, 2, 3, 0, 1),
+(62, 54, '铺位删除', 'lease:stall:delete', NULL, NULL, 3, 3, 0, 1),
 -- 分类按钮
 (63, 55, '分类新增', 'lease:category:add', NULL, NULL, 1, 3, 0, 1),
 (64, 55, '分类编辑', 'lease:category:edit', NULL, NULL, 2, 3, 0, 1),
@@ -1839,7 +1839,7 @@ INSERT INTO stall_category (company_id, category_name, sort_order, status, remar
 -- 集团多业态一体化管控系统 升级脚本 V1.3
 -- 模块：物业管理-市场管理
 -- 内容：market_info 市场档案表、菜单 68-71、超管授权、默认市场初始化
--- 说明：摊位/市场地图的 market_id 统一关联本表，杜绝手填错号
+-- 说明：铺位/市场地图的 market_id 统一关联本表，杜绝手填错号
 -- 执行方式: cmd /c "mysql.exe -uroot -p21145211 --default-character-set=utf8mb4 group_rent_db < upgrade_v1.3_market.sql"
 -- 权限标识与后端 PermissionConst / 前端路由 meta.permission 对齐
 -- ============================================================
@@ -1861,16 +1861,16 @@ SELECT 1, m.id FROM sys_menu m WHERE m.id BETWEEN 68 AND 71
 AND NOT EXISTS (SELECT 1 FROM sys_role_menu_rel r WHERE r.role_id = 1 AND r.menu_id = m.id);
 
 -- 4. 初始化默认市场（集团模板 company_id=0）
--- 说明：一期升级前摊位手填 market_id=1 即对应本市场；子公司实际经营请在本公司创建市场档案
+-- 说明：一期升级前铺位手填 market_id=1 即对应本市场；子公司实际经营请在本公司创建市场档案
 INSERT INTO market_info (company_id, market_name, market_address, contact_person, contact_phone, status, remark, create_by) VALUES
-(0, '默认市场', '集团默认市场模板', NULL, NULL, 1, '集团模板：与一期摊位 market_id=1 对齐', 1);
+(0, '默认市场', '集团默认市场模板', NULL, NULL, 1, '集团模板：与一期铺位 market_id=1 对齐', 1);
 
 -- ============================================================
 -- 来源: fix_v1.4_remove_stall_type.sql
 -- ============================================================
 -- ============================================================
 -- 集团多业态一体化管控系统 修正脚本 V1.4
--- 模块：租赁摊位
+-- 模块：租赁铺位
 -- 内容：移除 stall_info.stall_type 硬编码类型字段（1商铺 2库房）
 -- 说明：该字段与 v1.2 引入的可配置租赁分类 stall_category 功能重复，
 --       统一收敛为 stall_category_id 关联 stall_category 表（子公司可自定义），
@@ -1880,7 +1880,7 @@ INSERT INTO market_info (company_id, market_name, market_address, contact_person
 
 SET NAMES utf8mb4;
 
--- 1. 删除硬编码摊位类型字段（开发库已确认无业务数据依赖；生产环境需先确认历史数据迁移到 stall_category 后再执行）
+-- 1. 删除硬编码铺位类型字段（开发库已确认无业务数据依赖；生产环境需先确认历史数据迁移到 stall_category 后再执行）
 ALTER TABLE `stall_info` DROP COLUMN `stall_type`;
 
 -- ============================================================
@@ -1963,7 +1963,7 @@ AND NOT EXISTS (SELECT 1 FROM sys_role_menu_rel r WHERE r.role_id = 1 AND r.menu
 
 -- 5. 初始化收费类型（集团模板 company_id=0，子公司可自建扩展）
 INSERT INTO biz_fee_item (company_id, fee_item_name, calc_unit, remark, create_by) VALUES
-(0, '租金', '元/月', '集团模板：摊位租金收费', 1),
+(0, '租金', '元/月', '集团模板：铺位租金收费', 1),
 (0, '物业费', '元/月', '集团模板：物业管理服务费', 1),
 (0, '水费', '元/吨', '集团模板：用水收费', 1),
 (0, '电费', '元/度', '集团模板：用电收费', 1),
@@ -1975,16 +1975,16 @@ INSERT INTO biz_fee_item (company_id, fee_item_name, calc_unit, remark, create_b
 -- ============================================================
 -- ============================================================
 -- 集团多业态一体化管控系统 升级脚本 V1.8
--- 模块：财务管理-自定义收费 × 租赁摊位
--- 内容：biz_fee_rule_stall_rel 收费规则-摊位绑定关联表
--- 说明：摊位管理页多选收费规则（biz_fee_rule），约束同一收费类型（biz_fee_item）只能选一条；
---       override_flag/override_price/override_config_json 为单摊位特殊规则覆盖预留（本期界面不提供）
+-- 模块：财务管理-自定义收费 × 租赁铺位
+-- 内容：biz_fee_rule_stall_rel 收费规则-铺位绑定关联表
+-- 说明：铺位管理页多选收费规则（biz_fee_rule），约束同一收费类型（biz_fee_item）只能选一条；
+--       override_flag/override_price/override_config_json 为单铺位特殊规则覆盖预留（本期界面不提供）
 -- 执行方式: cmd /c "mysql.exe -uroot -p21145211 --default-character-set=utf8mb4 group_rent_db < upgrade_v1.8_fee_rule_stall_rel.sql"
 -- ============================================================
 
 SET NAMES utf8mb4;
 
--- 1. 收费规则-摊位绑定表（多对多；rule_id + stall_id 同公司唯一）
+-- 1. 收费规则-铺位绑定表（多对多；rule_id + stall_id 同公司唯一）
 
 -- ============================================================
 -- 来源: upgrade_v1.9_fee_period_none.sql
@@ -2011,7 +2011,7 @@ ALTER TABLE `biz_fee_rule`
 -- 集团多业态一体化管控系统 升级脚本 V1.10
 -- 模块：财务管理-自定义收费 x 水电物业账单
 -- 内容1：biz_fee_item 增加 category_type 收费类别编码（1租金 2物业费 3水费 4电费 5押金 6其他）
---        -- 账单生成按类别编码匹配摊位绑定规则（名称可改、编码稳定），历史数据按名称回填
+--        -- 账单生成按类别编码匹配铺位绑定规则（名称可改、编码稳定），历史数据按名称回填
 -- 内容2：water_elec_bill 单价快照说明（不再添加三列，由 v1.11 统一结构替代）
 --        -- 新结构使用 category+usage+unit_price+total_amount 统一字段
 -- 执行方式: cmd /c "mysql.exe -uroot -p21145211 --default-character-set=utf8mb4 group_rent_db < upgrade_v1.10_bill_fee_category.sql"
@@ -2045,7 +2045,7 @@ UPDATE `biz_fee_item` SET `category_type` = 5 WHERE `fee_item_name` = '押金';
 -- 内容：water_elec_bill 由多字段（water_usage/elec_usage/property_amount...）
 --       改为单类别行（category + usage + unit_price + total_amount）
 -- 说明：此版本为设计稿，当前水费/电费/物业费分列字段，
---       重构后每条账单记录代表一个类别，账单月份+摊位可有多条记录
+--       重构后每条账单记录代表一个类别，账单月份+铺位可有多条记录
 -- 执行方式: cmd /c "mysql.exe -uroot -p21145211 --default-character-set=utf8mb4 group_rent_db < upgrade_v1.11_water_elec_bill_restructure.sql"
 -- ============================================================
 
@@ -2143,7 +2143,7 @@ ALTER TABLE `biz_finance_flow`
 
 -- 10.2 水电账单挂靠计划（一期保留 plan_id 直连字段兼容单计划；多计划走 bill_plan_rel）
 ALTER TABLE `water_elec_bill`
-  ADD COLUMN `plan_id` bigint DEFAULT NULL COMMENT '关联应收应付计划ID（同摊位月度计划，可空）' AFTER `merchant_id`;
+  ADD COLUMN `plan_id` bigint DEFAULT NULL COMMENT '关联应收应付计划ID（同铺位月度计划，可空）' AFTER `merchant_id`;
 
 -- 10.3 收费规则账单表（补建）+ 挂靠计划
 -- 说明：biz_fee_bill/biz_fee_bill_detail 为收费规则周期账单表（V2 账单-计划联动预留），
@@ -2152,7 +2152,7 @@ ALTER TABLE `water_elec_bill`
 CREATE TABLE IF NOT EXISTS `biz_fee_bill` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `stall_id` bigint NOT NULL COMMENT '摊位ID',
+  `stall_id` bigint NOT NULL COMMENT '铺位ID',
   `merchant_id` bigint DEFAULT NULL COMMENT '商户ID（可空，账单可无商户绑定）',
   `bill_month` varchar(32) NOT NULL COMMENT '账单周期标识（月yyyy-MM / 季yyyy-Qn / 年yyyy / 一次性once）',
   `rule_id` bigint NOT NULL COMMENT '生成账单的规则ID（biz_fee_rule，锁定后仅记录不回溯）',
@@ -2306,7 +2306,7 @@ SET NAMES utf8mb4;
 CREATE TABLE IF NOT EXISTS `biz_fee_bill` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `stall_id` bigint NOT NULL COMMENT '摊位ID',
+  `stall_id` bigint NOT NULL COMMENT '铺位ID',
   `merchant_id` bigint DEFAULT NULL COMMENT '商户ID（可空，账单可无商户绑定）',
   `bill_month` varchar(32) NOT NULL COMMENT '账单周期标识（月yyyy-MM / 季yyyy-Qn / 年yyyy / 一次性once）',
   `rule_id` bigint NOT NULL COMMENT '生成账单的规则ID（biz_fee_rule，锁定后仅记录不回溯）',
@@ -2503,7 +2503,7 @@ ALTER TABLE `stall_contract`
 -- upgrade_v2.3_flow_snapshot.sql
 -- 用途：biz_finance_flow 和 water_elec_pay_record 增加快照字段
 --      实现财务流水审计合规：
---      1. 物业场景：摊位/商户信息写入时固化
+--      1. 物业场景：铺位/商户信息写入时固化
 --      2. 非物业场景：缴费人/合同信息写入时固化
 --      3. 冲红/作废状态字段
 -- 执行方式:
@@ -2559,9 +2559,9 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 1. biz_finance_flow — 物业场景快照（摊位/商户）
-CALL sp_add_column_if_not_exists('biz_finance_flow', 'stall_number', 'varchar(64) DEFAULT NULL COMMENT ''摊位编号快照（写入时固化）'' AFTER stall_id');
-CALL sp_add_column_if_not_exists('biz_finance_flow', 'stall_name', 'varchar(128) DEFAULT NULL COMMENT ''摊位名称快照（写入时固化）'' AFTER stall_number');
+-- 1. biz_finance_flow — 物业场景快照（铺位/商户）
+CALL sp_add_column_if_not_exists('biz_finance_flow', 'stall_number', 'varchar(64) DEFAULT NULL COMMENT ''铺位编号快照（写入时固化）'' AFTER stall_id');
+CALL sp_add_column_if_not_exists('biz_finance_flow', 'stall_name', 'varchar(128) DEFAULT NULL COMMENT ''铺位名称快照（写入时固化）'' AFTER stall_number');
 CALL sp_add_column_if_not_exists('biz_finance_flow', 'stall_market_name', 'varchar(128) DEFAULT NULL COMMENT ''所属市场名称快照（写入时固化）'' AFTER stall_name');
 CALL sp_add_column_if_not_exists('biz_finance_flow', 'category_name', 'varchar(64) DEFAULT NULL COMMENT ''租赁分类名称快照（写入时固化）'' AFTER stall_market_name');
 CALL sp_add_column_if_not_exists('biz_finance_flow', 'merchant_name', 'varchar(128) DEFAULT NULL COMMENT ''商户名称快照（写入时固化）'' AFTER category_name');
@@ -2585,14 +2585,14 @@ CALL sp_add_index_if_not_exists('biz_finance_flow', 'idx_payer_name', 'payer_nam
 CALL sp_add_index_if_not_exists('biz_finance_flow', 'idx_flow_status', 'flow_status');
 CALL sp_add_index_if_not_exists('biz_finance_flow', 'idx_merchant_id', 'merchant_id');
 
--- 5. water_elec_pay_record — 物业场景快照（摊位/商户）
-CALL sp_add_column_if_not_exists('water_elec_pay_record', 'stall_number', 'varchar(64) DEFAULT NULL COMMENT ''摊位编号快照（写入时固化）'' AFTER merchant_id');
-CALL sp_add_column_if_not_exists('water_elec_pay_record', 'stall_name', 'varchar(128) DEFAULT NULL COMMENT ''摊位名称快照（写入时固化）'' AFTER stall_number');
+-- 5. water_elec_pay_record — 物业场景快照（铺位/商户）
+CALL sp_add_column_if_not_exists('water_elec_pay_record', 'stall_number', 'varchar(64) DEFAULT NULL COMMENT ''铺位编号快照（写入时固化）'' AFTER merchant_id');
+CALL sp_add_column_if_not_exists('water_elec_pay_record', 'stall_name', 'varchar(128) DEFAULT NULL COMMENT ''铺位名称快照（写入时固化）'' AFTER stall_number');
 CALL sp_add_column_if_not_exists('water_elec_pay_record', 'stall_market_name', 'varchar(128) DEFAULT NULL COMMENT ''所属市场名称快照（写入时固化）'' AFTER stall_name');
 CALL sp_add_column_if_not_exists('water_elec_pay_record', 'category_name', 'varchar(64) DEFAULT NULL COMMENT ''租赁分类名称快照（写入时固化）'' AFTER stall_market_name');
 CALL sp_add_column_if_not_exists('water_elec_pay_record', 'merchant_name', 'varchar(128) DEFAULT NULL COMMENT ''商户名称快照（写入时固化）'' AFTER category_name');
 
--- 6. 回填存量数据（biz_finance_flow）— 摊位/商户快照
+-- 6. 回填存量数据（biz_finance_flow）— 铺位/商户快照
 UPDATE biz_finance_flow f
   LEFT JOIN stall_info s ON f.stall_id = s.id
   LEFT JOIN stall_category c ON s.stall_category_id = c.id
@@ -2611,7 +2611,7 @@ UPDATE biz_finance_flow f
 SET f.stall_market_name = (SELECT m.market_name FROM market_info m WHERE m.id = s.market_id)
 WHERE f.stall_market_name IS NULL AND s.market_id IS NOT NULL;
 
--- 7. 回填存量数据（water_elec_pay_record）— 摊位/商户快照
+-- 7. 回填存量数据（water_elec_pay_record）— 铺位/商户快照
 UPDATE water_elec_pay_record r
   LEFT JOIN stall_info s ON r.stall_id = s.id
   LEFT JOIN stall_category c ON s.stall_category_id = c.id

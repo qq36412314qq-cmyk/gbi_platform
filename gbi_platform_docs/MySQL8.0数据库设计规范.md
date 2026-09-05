@@ -4,7 +4,7 @@
 
 ## 文档描述
 
-本规范基于项目 MySQL8\.0 数据库、单库多租户`company_id`逻辑隔离架构制定，统一数据表、字段、索引、主键、外键、SQL、多租户、摊位地图专项、财务数据表、数据生命周期、安全、版本迁移全套标准；对齐《集团多业态整体方案》《后端编码规范》《权限多租户规范》《安全开发规范》，单人开发统一建表、改表、SQL 编写标准，杜绝字段混乱、数据越权、资金脏数据、地图 JSON 存储漏洞，适配租赁、OA、财务、营销全业务模块。
+本规范基于项目 MySQL8\.0 数据库、单库多租户`company_id`逻辑隔离架构制定，统一数据表、字段、索引、主键、外键、SQL、多租户、铺位地图专项、财务数据表、数据生命周期、安全、版本迁移全套标准；对齐《集团多业态整体方案》《后端编码规范》《权限多租户规范》《安全开发规范》，单人开发统一建表、改表、SQL 编写标准，杜绝字段混乱、数据越权、资金脏数据、地图 JSON 存储漏洞，适配租赁、OA、财务、营销全业务模块。
 
 # 一、数据库整体架构规范
 
@@ -14,7 +14,7 @@
 
 2. 存储引擎：统一 InnoDB，不使用 MyISAM；
 
-3. 字符集：全局 utf8mb4，支持 emoji、特殊摊位备注、画布 JSON 特殊字符；
+3. 字符集：全局 utf8mb4，支持 emoji、特殊铺位备注、画布 JSON 特殊字符；
 
 4. 排序规则：utf8mb4\_unicode\_ci；
 
@@ -43,7 +43,7 @@
 作用：全子公司只读，仅集团管理员维护，无租户隔离。
 
 2. **子公司业务私有表（必带 company\_id）**
-摊位、商户、合同、市场地图、水电账单、物资出入库、OA 公文、营销线索；
+铺位、商户、合同、市场地图、水电账单、物资出入库、OA 公文、营销线索；
 所有数据绑定所属分公司，MyBatis-Plus 拦截器自动过滤。
 
 3. **全域财务流水表（biz\_finance\_flow）**
@@ -114,7 +114,7 @@
 
 3. 金额类：decimal \(12,2\)，统一保留两位小数，禁止 float/double 浮点误差；
 
-4. 短文本名称：varchar \(64\) /varchar \(128\)（摊位名、商户名）；
+4. 短文本名称：varchar \(64\) /varchar \(128\)（铺位名、商户名）；
 
 5. 长备注、描述：varchar \(500\)；
 
@@ -136,7 +136,7 @@
 
 2. 租户 company\_id：NOT NULL DEFAULT 0；
 
-3. 核心业务字段（摊位编号、合同编号、市场名称）：NOT NULL，禁止为空；
+3. 核心业务字段（铺位编号、合同编号、市场名称）：NOT NULL，禁止为空；
 
 4. 可空字段仅允许备注、扩展描述类；
 
@@ -167,10 +167,10 @@
 
 2. 关联外键单独索引：stall\_id、market\_id、merchant\_id；
 
-3. 唯一索引：同公司下不可重复的字段（市场名称、摊位编号）
+3. 唯一索引：同公司下不可重复的字段（市场名称、铺位编号）
 uk\_market\_name\_company \(company\_id,market\_name,is\_delete\)
 
-## 4\.2 摊位地图表索引专项
+## 4\.2 铺位地图表索引专项
 
 market\_map：
 
@@ -229,7 +229,7 @@ map\_stall\_point：
 
 3. 地图、财务等高敏感表禁止提供无租户 ID 的全表查询接口。
 
-# 六、摊位可视化地图专属数据表规范
+# 六、铺位可视化地图专属数据表规范
 
 ## 6\.1 market\_map 市场地图主表（必建）
 
@@ -255,7 +255,7 @@ CREATE TABLE `market_map` (
 
 ### 核心字段约束
 
-1. point\_json 使用 mediumtext，适配 300 \+ 摊位大图 JSON；
+1. point\_json 使用 mediumtext，适配 300 \+ 铺位大图 JSON；
 
 2. JSON 入库前后端统一过滤`<script>`、onload 等恶意脚本；
 
@@ -263,16 +263,16 @@ CREATE TABLE `market_map` (
 
 ## 6\.2 map\_stall\_point 点位明细表（可选，点位超 500 启用）
 
-拆分 point\_json 单条存储，支持按 stall 快速检索，适合大量摊位场景；
+拆分 point\_json 单条存储，支持按 stall 快速检索，适合大量铺位场景；
 字段包含 point\_id、map\_id、market\_id、company\_id、stall\_id、point\_data（单点位 JSON）、sort\_order、全局基础通用字段。
 
 ## 6\.3 地图数据一致性约束
 
 1. stall\_id 必须关联 stall\_info 有效数据，保存点位后端校验；
 
-2. 不允许绑定其他 company、其他 market 下摊位；
+2. 不允许绑定其他 company、其他 market 下铺位；
 
-3. 摊位删除 / 退租不删除点位，仅状态标记，画布灰色提示；
+3. 铺位删除 / 退租不删除点位，仅状态标记，画布灰色提示；
 
 4. 地图删除为逻辑删除，保留历史点位 JSON 用于追溯审计。
 
@@ -326,7 +326,7 @@ CREATE TABLE `market_map` (
 |---|---|
 |biz\_fee\_item|收费项表（租金 / 物业费 / 水费 / 电费 / 公摊费 / 押金 / 违约金 / 一次性杂费）|
 |biz\_fee\_rule|收费规则表（计费模式 / 单价 / 周期 / 生效时间 / 减免 / 违约金配置）|
-|biz\_fee\_rule\_stall\_rel|规则与摊位绑定关系表（支持单摊位特殊规则覆盖）|
+|biz\_fee\_rule\_stall\_rel|规则与铺位绑定关系表（支持单铺位特殊规则覆盖）|
 |biz\_fee\_bill|周期收费账单表（历史账单锁定，修改规则不回溯）|
 |biz\_fee\_bill\_detail|账单明细表（收费项快照固化，用于对账追溯）|
 
@@ -375,13 +375,13 @@ CREATE TABLE `biz_fee_rule` (
   INDEX `idx_fee_item_id` (`fee_item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='自定义收费规则表';
 
--- 规则摊位绑定表：一套规则绑定多个摊位，支持单摊位特殊规则覆盖
+-- 规则铺位绑定表：一套规则绑定多个铺位，支持单铺位特殊规则覆盖
 CREATE TABLE `biz_fee_rule_stall_rel` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `rule_id` bigint NOT NULL COMMENT '收费规则ID',
-  `stall_id` bigint NOT NULL COMMENT '摊位ID',
-  `override_flag` tinyint NOT NULL DEFAULT 0 COMMENT '是否特殊覆盖 0普通绑定 1单摊位覆盖',
+  `stall_id` bigint NOT NULL COMMENT '铺位ID',
+  `override_flag` tinyint NOT NULL DEFAULT 0 COMMENT '是否特殊覆盖 0普通绑定 1单铺位覆盖',
   `override_price` decimal(12,2) DEFAULT NULL COMMENT '覆盖单价（override_flag=1时生效）',
   `override_config_json` mediumtext DEFAULT NULL COMMENT '覆盖配置JSON（阶梯/违约金等，覆盖规则配置）',
   `create_by` bigint NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
@@ -393,13 +393,13 @@ CREATE TABLE `biz_fee_rule_stall_rel` (
   UNIQUE KEY `uk_rule_stall` (`rule_id`,`stall_id`,`is_delete`),
   INDEX `idx_company_id_is_delete` (`company_id`,`is_delete`),
   INDEX `idx_stall_id` (`stall_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='收费规则摊位绑定表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='收费规则铺位绑定表';
 
 -- 周期收费账单表：历史账单锁定，规则修改不回溯旧账单
 CREATE TABLE `biz_fee_bill` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `stall_id` bigint NOT NULL COMMENT '摊位ID',
+  `stall_id` bigint NOT NULL COMMENT '铺位ID',
   `merchant_id` bigint NOT NULL COMMENT '商户ID',
   `bill_month` varchar(32) NOT NULL COMMENT '账单周期标识（月yyyy-MM / 季yyyy-Qn / 年yyyy / 一次性custom）',
   `rule_id` bigint NOT NULL COMMENT '生成账单的规则ID（历史锁定后仅记录，不参与回溯计算）',
@@ -453,11 +453,11 @@ CREATE TABLE `biz_fee_bill_detail` (
 
 3. 账单金额三要素公式：real\_amount = original\_amount \- discount\_amount + adjust\_amount，生成与调账均写入 biz\_finance\_flow 统一流水（business\_type 新增 fee\_bill 类型）；
 
-4. 同一摊位同一周期唯一（uk\_stall\_period\_company），批量生成账单幂等：已存在周期直接跳过，不重复生成；
+4. 同一铺位同一周期唯一（uk\_stall\_period\_company），批量生成账单幂等：已存在周期直接跳过，不重复生成；
 
 5. 阶梯水价 / 电价、违约金、公摊分摊配置全部存 JSON 参数，禁止落业务代码硬编码；
 
-6. 收费规则、账单、明细与摊位 / 市场 / 商户绑定均强制 company\_id 校验，禁止跨子公司绑定摊位与生成账单；
+6. 收费规则、账单、明细与铺位 / 市场 / 商户绑定均强制 company\_id 校验，禁止跨子公司绑定铺位与生成账单；
 
 7. 账单仅支持逻辑删除，缴费完成的账单禁止删除，禁止物理删除；调账操作必须写入审计日志（oper\_module=fee\_bill）。
 

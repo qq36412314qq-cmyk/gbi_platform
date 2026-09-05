@@ -32,6 +32,8 @@ export function useTable<T = Record<string, unknown>>(
         const data = await fetchApi({ ...query })
         records.value = data.records || []
         total.value = data.total || 0
+      } catch (err) {
+        console.error('useTable loadData error:', err)
       } finally {
         loading.value = false
       }

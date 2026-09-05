@@ -43,7 +43,7 @@ public class UnpaidBillServiceImpl implements UnpaidBillService {
         List<BizFeeBill> bills = bizFeeBillMapper.selectList(wrapper);
 
         List<Long> stallIds = bills.stream()
-                .map(BizFeeBill::getStallId).distinct().toList();
+                .map(BizFeeBill::getStallId).filter(java.util.Objects::nonNull).distinct().toList();
         Map<Long, StallOptionVO> stallMap = stallIds.isEmpty()
                 ? Collections.emptyMap()
                 : leaseStallService.getOptionsByIds(stallIds);

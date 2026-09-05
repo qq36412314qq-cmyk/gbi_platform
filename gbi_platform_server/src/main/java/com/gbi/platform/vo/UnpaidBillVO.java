@@ -65,7 +65,7 @@ public class UnpaidBillVO implements Serializable {
 
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
-    @Schema(description = "源账单ID（water_elec_bill.id / property_fee_bill.id，用于缴费跳转）")
 
+    @Schema(description = "源账单ID（water_elec_bill.id / property_fee_bill.id，用于缴费跳转）")
     private Long sourceBillId;
 }

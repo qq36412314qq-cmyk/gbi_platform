@@ -52,7 +52,7 @@
           <el-select v-model="form.categoryType" placeholder="选择收费类别" style="width: 100%">
             <el-option v-for="c in categoryOptions" :key="c.value" :label="c.label" :value="c.value" />
           </el-select>
-          <div class="g-tip">类别编码稳定用于账单计费匹配（水费/电费/物业费按类别取摊位绑定规则单价），名称可自定义</div>
+          <div class="g-tip">类别编码稳定用于账单计费匹配（水费/电费/物业费按类别取铺位绑定规则单价），名称可自定义</div>
         </el-form-item>
         <el-form-item label="计量单位" prop="calcUnit">
           <el-input v-model="form.calcUnit" placeholder="如：元/月、元/平米、元/吨" maxlength="32" />

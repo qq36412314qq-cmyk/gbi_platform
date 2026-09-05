@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_discount_apply")
+@TableName("finance_discount_apply")
 public class BizDiscountApply extends BaseEntity {
 
     /** 所属子公司ID */

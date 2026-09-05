@@ -1,6 +1,6 @@
 /**
  * 物业管理-市场管理接口（对应后端 MarketController /property/market）
- * 园区/商圈维度，摊位与市场地图统一关联本表
+ * 园区/商圈维度，铺位与市场地图统一关联本表
  */
 import { get, post } from '@/utils/request'
 import type { PageResult } from '@/utils/request'
@@ -54,7 +54,7 @@ export function updateMarketApi(data: MarketDTO): Promise<null> {
   return post<null>('/property/market/update', data)
 }
 
-/** 删除市场（市场下有摊位禁止删除，逻辑删除） */
+/** 删除市场（市场下有铺位禁止删除，逻辑删除） */
 export function deleteMarketApi(id: number): Promise<null> {
   return post<null>('/property/market/delete', { id })
 }

@@ -16,7 +16,7 @@ import java.time.LocalDate;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_discount_policy")
+@TableName("finance_discount_policy")
 public class BizDiscountPolicy extends BaseEntity {
 
     /** 所属子公司ID，0=集团模板 */

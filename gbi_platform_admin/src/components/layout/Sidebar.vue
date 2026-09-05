@@ -15,7 +15,7 @@
 /**
  * Sidebar 侧边栏：基于 constantRoutes 完整目录渲染，支持多一级模块切换
  * 目录级：中台管理 / 物业管理 / 财务管理；子菜单按权限递归过滤，无可见子菜单的目录自动隐藏
- * 支持三级菜单（如 物业管理 -> 租赁管理 -> 摊位管理），由 SidebarItem 递归渲染
+ * 支持三级菜单（如 物业管理 -> 租赁管理 -> 铺位管理），由 SidebarItem 递归渲染
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'

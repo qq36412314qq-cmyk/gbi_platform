@@ -1,6 +1,6 @@
 /**
  * 物业管理-租赁管理接口（对应后端 LeaseCategory/Stall/Contract 三个控制器）
- * 分类管理 / 摊位管理 / 合同管理
+ * 分类管理 / 铺位管理 / 合同管理
  */
 import { get, post } from '@/utils/request'
 import type { PageResult } from '@/utils/request'
@@ -54,12 +54,12 @@ export function updateCategoryApi(data: CategoryDTO): Promise<null> {
   return post<null>('/property/lease/category/update', data)
 }
 
-/** 删除分类（被摊位引用禁止删除，逻辑删除） */
+/** 删除分类（被铺位引用禁止删除，逻辑删除） */
 export function deleteCategoryApi(id: number): Promise<null> {
   return post<null>('/property/lease/category/delete', { id })
 }
 
-/* ------------------------------ 租赁摊位 stall_info ------------------------------ */
+/* ------------------------------ 租赁铺位 stall_info ------------------------------ */
 
 export interface StallQueryDTO {
   pageNum: number
@@ -106,27 +106,27 @@ export interface StallVO {
   feeRules?: StallRuleRel[]
 }
 
-/** 摊位分页（含分类名称） */
+/** 铺位分页（含分类名称） */
 export function getStallPageApi(params: StallQueryDTO): Promise<PageResult<StallVO>> {
   return get<PageResult<StallVO>>('/property/lease/stall/page', params)
 }
 
-/** 新增摊位（初始状态空置） */
+/** 新增铺位（初始状态空置） */
 export function addStallApi(data: StallAddDTO): Promise<null> {
   return post<null>('/property/lease/stall/add', data)
 }
 
-/** 编辑摊位 */
+/** 编辑铺位 */
 export function updateStallApi(data: StallUpdateDTO): Promise<null> {
   return post<null>('/property/lease/stall/update', data)
 }
 
-/** 删除摊位（有合同禁止删除，逻辑删除） */
+/** 删除铺位（有合同禁止删除，逻辑删除） */
 export function deleteStallApi(id: number): Promise<null> {
   return post<null>('/property/lease/stall/delete', { id })
 }
 
-/* ------------------------------ 摊位收费规则绑定 ------------------------------ */
+/* ------------------------------ 铺位收费规则绑定 ------------------------------ */
 
 /** 收费规则下拉选项（仅启用，按收费类型分组展示） */
 export interface FeeRuleOption {
@@ -145,7 +145,7 @@ export interface FeeRuleOption {
   status?: number
 }
 
-/** 摊位已绑定收费规则（编辑回显） */
+/** 铺位已绑定收费规则（编辑回显） */
 export interface StallRuleRel {
   relId: number
   ruleId: number
@@ -162,17 +162,17 @@ export interface StallRuleRel {
   overdueRate?: number
 }
 
-/** 启用中的收费规则选项（摊位绑定下拉选择） */
+/** 启用中的收费规则选项（铺位绑定下拉选择） */
 export function getStallRuleOptionsApi(): Promise<FeeRuleOption[]> {
   return get<FeeRuleOption[]>('/property/lease/stall/ruleOptions')
 }
 
-/** 摊位已绑定收费规则（编辑回显） */
+/** 铺位已绑定收费规则（编辑回显） */
 export function getStallRuleRelListApi(stallId: number): Promise<StallRuleRel[]> {
   return get<StallRuleRel[]>('/property/lease/stall/ruleRel/list', { stallId })
 }
 
-/* ------------------------------ 摊位联动下拉（水电表绑定等复用） ------------------------------ */
+/* ------------------------------ 铺位联动下拉（水电表绑定等复用） ------------------------------ */
 
 export interface StallOptionVO {
   id: number
@@ -185,11 +185,11 @@ export interface StallOptionVO {
   stallNumber?: string
   marketName?: string
   rentPeriodType?: number
-  /** 摊位面积(平方米，按面积收费规则计算用) */
+  /** 铺位面积(平方米，按面积收费规则计算用) */
   stallArea?: number
 }
 
-/** 摊位联动下拉选项（市场/租赁分类过滤，company 后端自动隔离） */
+/** 铺位联动下拉选项（市场/租赁分类过滤，company 后端自动隔离） */
 export function getStallOptionsApi(params: {
   marketId?: number
   stallCategoryId?: number
@@ -257,17 +257,17 @@ export interface ContractVO {
   createTime?: string
 }
 
-/** 合同分页（含租户/摊位/分类名称） */
+/** 合同分页（含租户/铺位/分类名称） */
 export function getContractPageApi(params: ContractQueryDTO): Promise<PageResult<ContractVO>> {
   return get<PageResult<ContractVO>>('/property/lease/contract/page', params)
 }
 
-/** 新增合同（摊位置为已租，押金写收入流水） */
+/** 新增合同（铺位置为已租，押金写收入流水） */
 export function addContractApi(data: ContractAddDTO): Promise<null> {
   return post<null>('/property/lease/contract/add', data)
 }
 
-/** 退租（高危：摊位置空、押金退费支出流水、强制审计） */
+/** 退租（高危：铺位置空、押金退费支出流水、强制审计） */
 export function terminateContractApi(data: ContractTerminateDTO): Promise<null> {
   return post<null>('/property/lease/contract/terminate', data)
 }

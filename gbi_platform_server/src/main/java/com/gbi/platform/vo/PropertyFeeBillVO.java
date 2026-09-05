@@ -44,6 +44,12 @@ public class PropertyFeeBillVO implements Serializable {
     @Schema(description = "商户ID")
     private Long merchantId;
 
+    @Schema(description = "租户名称（由合同关联查询）")
+    private String tenantName;
+
+    @Schema(description = "是否已生成统一账单（biz_fee_bill，source_bill_id 关联）")
+    private Boolean hasFeeBill;
+
     @Schema(description = "账单月份 yyyy-MM")
     private String billMonth;
 

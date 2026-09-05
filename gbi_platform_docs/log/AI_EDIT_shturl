@@ -14,3 +14,75 @@
   - 升级脚本中的 DROP+CREATE 已过滤（全量安装只需建一次表）
   - 执行方式: mysql -uroot -p21145211 --default-character-set=utf8mb4 group_rent_db < install.sql
   - 无特殊风险
+
+## 【2026-09-03 09:46:03】UnifiedPayServiceImpl 补齐租赁费缴费路由
+- 用户原始需求：检查 UnifiedPayServiceImpl 中 pay() 方法是否只处理了水电费和物业费，缺少租赁合同缴费处理，如缺少则补齐并加注释
+- 涉及修改/新增文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/UnifiedPayServiceImpl.java
+- 变更摘要：
+  1. pay() 方法增加 BIZ_TYPE_RENT 分支，调用 payRent()
+  2. findOrCreateBizBill() 增加 BIZ_TYPE_RENT 分支，调用 createBizBillFromRent()
+  3. 新增 findRentBizBill() 方法：按 contractId + billMonth 查询租赁费统一账单
+  4. 新增 createBizBillFromRent() 方法：复用合同签订时已写入的租赁费账单记录
+  5. 新增 payRent() 方法：校验合同→构建缴费记录→写流水→更新账单状态→审计日志（不触发应收应付核销）
+- 风险与注意事项：
+  - 租赁费账单由合同签订时提前写入，缴费时直接复用，无需新建
+  - sourceBillId 存储 stall_contract.id，用于缴费时定位关联合同
+  - 无特殊风险
+
+- 编译产物：gbi_platform_server/target/gbi_platform_server.jar（972KB）
+
+## 【2026-09-03 09:52:00】修复未支付订单租赁费缴费失败问题
+- 用户原始需求：未支付订单缴费时报"创建支付订单失败，请重试"，需定位并修复
+- 涉及修改/新增文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/UnifiedPayServiceImpl.java
+- 变更摘要：
+  1. 数据库修复：UPDATE biz_fee_bill SET source_bill_id=23 WHERE id IN (58,59) AND source_bill_id IS NULL
+     （id=58押金、id=59租金，为旧数据，source_bill_id未赋值）
+  2. findOrCreateBizBill() 放宽条件：去掉 getSourceBillId() != null 判断
+     使已存在的 biz_fee_bill 记录即使 sourceBillId 为 null 也能被直接复用
+  3. payRent() 增加回退逻辑：contractMapper.selectById(sourceBillId != null ? sourceBillId : bizBill.getId())
+     避免旧数据 sourceBillId=null 时 NPE 或查不到合同
+- 风险与注意事项：
+  - 新创建的租赁合同账单已正确设置 sourceBillId，此修复仅覆盖旧数据
+  - 新数据不受影响，逻辑兼容
+  - 无特殊风险
+
+## 【2026-09-03 10:35:00】UnifiedPayServiceImpl 补齐deposit业务类型缴费支持
+- 用户原始需求：未支付订单缴费时报"不支持的业务类型：deposit"，需增加押金业务类型的缴费支持
+- 涉及修改/新增文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/UnifiedPayServiceImpl.java
+- 变更摘要：
+  1. pay()方法增加BIZ_TYPE_DEPOSIT分支，调用payDeposit()
+  2. findOrCreateBizBill()增加BIZ_TYPE_DEPOSIT分支，调用createBizBillFromDeposit()
+  3. 新增findDepositBizBill()方法：按contractId+billMonth查询押金账单
+  4. 新增createBizBillFromDeposit()方法：复用合同签订时已写入的押金账单
+  5. 新增payDeposit()方法：缴费记录写入、状态更新、财务流水、审计日志
+- 风险与注意事项：
+  - 押金缴费逻辑与租金完全一致，仅bizType不同
+  - 不触发应收应付核销（租赁合同应收通过收款计划单独管理）
+  - 无特殊风险
+## 【2026-09-05 10:30:00】财务流水页添加展开列展示缴费单明细
+- 用户原始需求：在 finance_flow.vue 第44行前添加"展开"列，展开后展示 finance_pay_order_item 表的关联数据
+- 涉及修改/新增文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/entity/BizPayOrderItem.java（新增）
+  - gbi_platform_server/src/main/java/com/gbi/platform/mapper/BizPayOrderItemMapper.java（新增）
+  - gbi_platform_server/src/main/java/com/gbi/platform/vo/PayOrderItemVO.java（新增）
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/FinanceService.java（修改）
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/FinanceServiceImpl.java（修改）
+  - gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/FinanceController.java（修改）
+  - gbi_platform_admin/src/api/finance.ts（修改）
+  - gbi_platform_admin/src/views/finance/financeFlow.vue（修改）
+- 变更摘要：
+  1. 新增 BizPayOrderItem 实体类，映射 finance_pay_order_item 表
+  2. 新增 BizPayOrderItemMapper 接口
+  3. 新增 PayOrderItemVO 返回对象
+  4. FinanceService 接口新增 getPayOrderItems 方法
+  5. FinanceServiceImpl 实现 getPayOrderItems 方法，通过 bill_id 关联查询明细
+  6. FinanceController 新增 /finance/flow/{flowId}/items 接口
+  7. 前端 api/finance.ts 新增 PayOrderItemVO 接口和 getFinanceFlowItemsApi 函数
+  8. 前端 financeFlow.vue 新增展开列，点击展开显示缴费单明细表格
+- 风险与注意事项：
+  - 展开列数据采用懒加载，首次展开时调用 API 获取明细
+  - 关联关系：finance_pay_flow.bill_id = finance_pay_order_item.bill_id
+  - 无特殊风险

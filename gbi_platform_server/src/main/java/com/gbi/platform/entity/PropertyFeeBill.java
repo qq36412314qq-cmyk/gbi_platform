@@ -9,14 +9,14 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 物业费月度账单实体：property_bill
+ * 物业费月度账单实体：property_fee_bill
  * 规则驱动，定额/按面积，周期系数计算，按月批量生成
  *
  * @author gbi
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("property_bill")
+@TableName("property_fee_bill")
 public class PropertyFeeBill extends BaseEntity {
 
     /** 所属子公司ID */
@@ -31,10 +31,10 @@ public class PropertyFeeBill extends BaseEntity {
     /** 账单月份 yyyy-MM */
     private String billMonth;
 
-    /** 计费规则ID（biz_fee_rule，快照） */
+    /** 计费规则ID（finance_fee_rule，快照） */
     private Long ruleId;
 
-    /** 收费类型ID（biz_fee_item，固定=物业费） */
+    /** 收费类型ID（finance_fee_item，固定=物业费） */
     private Long feeItemId;
 
     /** 收费方式 1定额 2按面积 */
@@ -66,4 +66,7 @@ public class PropertyFeeBill extends BaseEntity {
 
     /** 缴费完成时间 */
     private LocalDateTime payTime;
+
+    /** 关联合同ID */
+    private Long contractId;
 }

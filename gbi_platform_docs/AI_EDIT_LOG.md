@@ -66,7 +66,7 @@
 ## 【2026-08-26 07:38:00】权限常量补全+后端重启
 - 用户原始需求：修复property/tenant页面500错误
 - 问题根因：PermissionConst缺少TENANT_LIST/LEASE_STALL_LIST/FINANCE_REPORT_LIST等16个常量
-- 修复内容：在PermissionConst.java中新增租户/摊位/收费类型/收费规则/财务汇总共24个权限常量
+- 修复内容：在PermissionConst.java中新增租户/铺位/收费类型/收费规则/财务汇总共24个权限常量
 - 涉及修改文件：gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java
 - 验证结果：登录+17个接口全部返回200
 - 风险与注意事项：无特殊风险

@@ -87,7 +87,7 @@
 
 <script setup lang="ts">
 /**
- * 市场管理页：园区/商圈维度维护，摊位与市场地图统一关联
+ * 市场管理页：园区/商圈维度维护，铺位与市场地图统一关联
  */
 import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -175,7 +175,7 @@ async function handleSubmit(): Promise<void> {
 
 /* ---------------- 删除 ---------------- */
 async function handleDelete(row: MarketVO): Promise<void> {
-  await ElMessageBox.confirm(`确定删除市场「${row.marketName}」吗？市场下存在摊位的无法删除。`, '提示', {
+  await ElMessageBox.confirm(`确定删除市场「${row.marketName}」吗？市场下存在铺位的无法删除。`, '提示', {
     type: 'warning'
   })
   await deleteMarketApi(row.id)

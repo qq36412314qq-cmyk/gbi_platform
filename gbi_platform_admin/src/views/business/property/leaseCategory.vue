@@ -156,7 +156,7 @@ async function handleSubmit(): Promise<void> {
 
 /* ---------------- 删除 ---------------- */
 async function handleDelete(row: CategoryVO): Promise<void> {
-  await ElMessageBox.confirm(`确定删除分类「${row.categoryName}」吗？分类下存在摊位的无法删除。`, '提示', {
+  await ElMessageBox.confirm(`确定删除分类「${row.categoryName}」吗？分类下存在铺位的无法删除。`, '提示', {
     type: 'warning'
   })
   await deleteCategoryApi(row.id)

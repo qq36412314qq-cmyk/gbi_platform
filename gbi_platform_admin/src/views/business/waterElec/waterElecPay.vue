@@ -34,12 +34,26 @@
     <!-- 表格展示区 -->
     <TablePage v-model:page-num="query.pageNum" v-model:page-size="query.pageSize" :total="total" @refresh="loadData">
       <el-table v-loading="loading" :data="records" border stripe>
-        <el-table-column label="记录类型" width="90" align="center">
+                <el-table-column prop="id" label="流水ID" width="90" align="center" />
+        <el-table-column prop="createTime" label="生成时间" min-width="120" align="center" />
+        <el-table-column label="所属公司" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag size="small" :type="row.companyId === 0 ? 'primary' : 'success'">
+              {{ row.companyId === 0 ? '集团' : `公司${row.companyId}` }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="业务类型" width="100" align="center">
           <template #default="{ row }">
             <el-tag size="small" :type="row.recordType === 1 ? 'success' : 'danger'">{{ row.recordTypeText }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="payAmount" label="金额" width="110" align="right">
+        <el-table-column label="收支方向" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag size="small" :type="row.recordType === 1 ? 'danger' : 'success'">{{ row.recordType === 1 ? '收入' : '支出' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="payAmount" label="缴费金额" width="110" align="right">
           <template #default="{ row }">
             <span :class="row.recordType === 1 ? 'g-money' : 'g-money-out'">{{ Number(row.payAmount).toFixed(2) }}</span>
           </template>
@@ -49,28 +63,30 @@
             <el-tag size="small">{{ row.payTypeText }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="billId" label="账单ID" width="90" align="center" />
         <el-table-column prop="flowNo" label="流水单号" width="180" align="center" />
-        <el-table-column label="绑定摊位" min-width="180" align="center" show-overflow-tooltip>
+        <el-table-column label="缴费人" min-width="120" align="center" v-if="showPayerColumn">
           <template #default="{ row }">
-            <span v-if="row.stallName">{{ row.stallMarketName || '未知市场' }} / {{ row.categoryName || '未分类' }} / {{ row.stallName }}（{{ row.stallNumber }}）</span>
-            <span v-else>摊位#{{ row.stallId }}</span>
+            <span>{{ row.merchantName || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="退费状态" width="100" align="center">
+        <el-table-column label="绑定铺位" min-width="160" align="center" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span v-if="row.stallName">{{ row.stallMarketName || '未知市场' }} / {{ row.categoryName || '未分类' }} / {{ row.stallName }}（{{ row.stallNumber }}）</span>
+            <span v-else>铺位#{{ row.stallId }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
             <template v-if="row.recordType === 1">
               <el-tag size="small" :type="row.refundStatus === 1 ? 'info' : 'primary'">
                 {{ row.refundStatus === 1 ? '已退费' : '正常' }}
               </el-tag>
             </template>
-            <span v-else>-</span>
+            <span v-else>正常</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createByName" label="操作人" width="100" align="center" />
-        <el-table-column prop="createTime" label="操作时间" min-width="160" align="center" />
-        <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
-        <el-table-column label="操作" width="90" align="center" fixed="right">
+        <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip />
+        <el-table-column label="操作" width="150" align="center" fixed="right">
           <template #default="{ row }">
             <AuthBtn
               v-if="row.recordType === 1 && row.refundStatus === 0"
@@ -101,7 +117,7 @@
         </el-form-item>
         <el-form-item label="账单信息" v-if="billDetail">
           <div class="b-bill-info">
-            <div>月份：{{ billDetail.billMonth }}　摊位：{{ billDetail.stallName ? `${billDetail.stallMarketName || '未知市场'} / ${billDetail.categoryName || '未分类'} / ${billDetail.stallName}（${billDetail.stallNumber}）` : `摊位#${billDetail.stallId}` }}　状态：{{ billDetail.payStatusText }}</div>
+            <div>月份：{{ billDetail.billMonth }}　铺位：{{ billDetail.stallName ? `${billDetail.stallMarketName || '未知市场'} / ${billDetail.categoryName || '未分类'} / ${billDetail.stallName}（${billDetail.stallNumber}）` : `铺位#${billDetail.stallId}` }}　状态：{{ billDetail.payStatusText }}</div>
             <div>
               应收合计：<span class="g-money">{{ Number(billDetail.amount || billDetail.totalAmount || 0).toFixed(2) }} 元</span>
               <el-tag v-if="billDetail.payStatus === 1" size="small" type="warning" style="margin-left: 8px">已缴清，不可重复缴费</el-tag>
@@ -132,7 +148,7 @@
  * 缴费管理页：线下缴费登记（requestId 幂等）+ 退费（写支出流水）
  * 支持物业费和水电费两种账单类型
  */
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
@@ -145,6 +161,8 @@ import {
 } from '@/api/waterElec'
 import { getFeeBillDetailApi, payPropertyFeeApi, type PropertyFeeBillVO } from '@/api/propertyFee'
 import { useTable } from '@/hooks/useTable'
+
+const showPayerColumn = computed(() => records.value.some(r => !!r.merchantName))
 
 const route = useRoute()
 
@@ -312,4 +330,5 @@ watch(
   font-weight: 600;
 }
 </style>
+
 

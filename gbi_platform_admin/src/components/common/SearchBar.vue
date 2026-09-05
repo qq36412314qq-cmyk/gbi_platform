@@ -17,7 +17,7 @@
  *         <el-form-item label="名称"><el-input v-model="query.name" /></el-form-item>
  *       </SearchBar>
  */
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { Search, Refresh } from '@element-plus/icons-vue'
 
 const props = withDefaults(
@@ -31,6 +31,11 @@ const props = withDefaults(
 const emit = defineEmits<{ (e: 'search'): void; (e: 'reset'): void }>()
 
 const defaultModel = ref<Record<string, unknown>>({ ...props.model })
+
+// 监听 model 变化，同步 defaultModel，避免重置时访问 undefined 字段
+watch(() => props.model, (newModel) => {
+  defaultModel.value = { ...newModel }
+}, { deep: true })
 
 function handleSearch(): void {
   emit('search')

@@ -6,6 +6,8 @@ import com.gbi.platform.vo.PageVO;
 import com.gbi.platform.vo.PropertyFeeBillVO;
 import com.gbi.platform.vo.PropertyFeeBillPreviewVO;
 
+import java.util.List;
+
 /**
  * 物业费月度账单服务：分页查询 + 批量/单条生成
  *
@@ -41,4 +43,11 @@ public interface PropertyFeeBillService {
      * 供「生成账单」按钮直接使用现有记录数据
      */
     String syncToUnpaidBill(Long id);
+
+    /**
+     * 批量将物业费记录同步写入未支付订单
+     * @param ids 账单ID列表
+     * @return 成功同步数量
+     */
+    int batchSyncToUnpaidBill(List<Long> ids);
 }

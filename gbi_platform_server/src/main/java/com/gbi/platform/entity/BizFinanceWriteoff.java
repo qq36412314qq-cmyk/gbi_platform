@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_finance_writeoff")
+@TableName("finance_writeoff")
 public class BizFinanceWriteoff extends BaseEntity {
 
     /** 所属子公司ID */

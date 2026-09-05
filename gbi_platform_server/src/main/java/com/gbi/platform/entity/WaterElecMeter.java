@@ -14,7 +14,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("water_elec_meter")
+@TableName("property_water_elec_meter")
 public class WaterElecMeter extends BaseEntity {
 
     /** 所属子公司ID */

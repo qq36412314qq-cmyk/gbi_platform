@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("market_info")
+@TableName("property_market")
 public class MarketInfo extends BaseEntity {
 
     /** 所属子公司ID，0集团模板 */

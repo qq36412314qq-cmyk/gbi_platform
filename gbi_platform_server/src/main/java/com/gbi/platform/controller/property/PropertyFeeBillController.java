@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * 物业费月度账单接口（物业模块）
  *
@@ -71,11 +73,19 @@ public class PropertyFeeBillController {
         return Result.success(propertyFeeBillService.preview(dto));
     }
 
-    @Operation(summary = "同步已有账单记录到未支付订单（biz_fee_bill）")
+    @Operation(summary = "同步已有账单记录到未支付订单（finance_fee_pay_bill）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).PROPERTY_FEE_BILL_LIST,'')")
     @PostMapping("/sync/{id}")
     public Result<String> syncToUnpaidBill(@PathVariable Long id) {
         String msg = propertyFeeBillService.syncToUnpaidBill(id);
         return Result.success(msg);
+    }
+
+    @Operation(summary = "批量将物业费记录同步到未支付订单（finance_fee_pay_bill）")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).PROPERTY_FEE_BILL_LIST,'')")
+    @PostMapping("/batchSync")
+    public Result<Integer> batchSyncToUnpaidBill(@RequestBody List<Long> ids) {
+        int count = propertyFeeBillService.batchSyncToUnpaidBill(ids);
+        return Result.success("批量同步成功", count);
     }
 }

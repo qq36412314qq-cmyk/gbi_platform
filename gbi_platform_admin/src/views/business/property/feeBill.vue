@@ -1,11 +1,10 @@
-<!-- 
+<!--
   物业费记录管理页面
   数据表：property_fee_bill
-  关联表：biz_fee_bill
+  关联表：finance_fee_pay_bill
   权限：propertyFee:bill:*
 -->
 <template>
-  <!-- 数据表: property_fee_bill -->
   <div class="g-page-wrap property-fee-bill-wrap">
     <div class="g-page-header">
       <span class="g-page-title">物业费记录管理</span>
@@ -42,15 +41,16 @@
       <el-table v-loading="loading" :data="records" border stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column prop="billMonth" label="记录月份" width="110" align="center" />
+        <el-table-column prop="tenantName" label="租户名称" width="130" show-overflow-tooltip />
         <el-table-column label="计费方式" width="90" align="center">
           <template #default="{ row }">
             <el-tag size="small" :type="row.calcMode === 2 ? 'warning' : 'info'">{{ row.calcModeText || '-' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="绑定摊位" min-width="200" align="center" show-overflow-tooltip>
+        <el-table-column label="绑定铺位" min-width="200" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.stallName">{{ row.stallMarketName || '未知市场' }} / {{ row.categoryName || '未分类' }} / {{ row.stallName }}（{{ row.stallNumber }}）</span>
-            <span v-else>摊位#{{ row.stallId }}</span>
+            <span v-else>铺位#{{ row.stallId }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="usage" label="用量(㎡)" width="90" align="right">
@@ -82,7 +82,7 @@
         </el-table-column>
         <el-table-column label="操作" width="150" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" :disabled="row.payStatus === 2" @click="handleSync(row)">生成账单</el-button>
+            <el-button type="primary" link size="small" :disabled="row.payStatus === 2 || row.hasFeeBill" @click="handleSync(row)">{{ row.hasFeeBill ? "账单已生成" : "生成账单" }}</el-button>
             <el-button type="info" link size="small" @click="handleDetail(row)">详情</el-button>
           </template>
         </el-table-column>
@@ -105,8 +105,8 @@
             <el-option v-for="c in categoryOptions" :key="c.id" :label="c.categoryName" :value="c.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="摊位">
-          <el-select v-model="singleForm.stallId" filterable placeholder="搜索摊位" style="width: 100%" @change="handleStallSelect">
+        <el-form-item label="铺位">
+          <el-select v-model="singleForm.stallId" filterable placeholder="搜索铺位" style="width: 100%" @change="handleStallSelect">
             <el-option v-for="s in stallOptions" :key="s.id" :label="`${s.stallNumber} ${s.stallName}`" :value="s.id" />
           </el-select>
         </el-form-item>
@@ -135,6 +135,7 @@ import {
   previewPropertyFeeBillApi,
   getPropertyFeeBillDetailApi,
   syncPropertyFeeBillApi,
+  batchSyncPropertyFeeBillApi,
   type PropertyFeeBillVO
 } from '@/api/propertyFee'
 import { getMarketListApi, type MarketVO } from '@/api/market'
@@ -157,30 +158,32 @@ function handleSelectionChange(rows: PropertyFeeBillVO[]): void {
 
 function handleReset(): void { resetQuery(); loadData() }
 
-// 批量生成
+// 批量生成账单：将选中记录同步到 finance_fee_pay_bill（统一账单表）
 async function handleBatchGenerate(): Promise<void> {
   if (selectedRows.value.length === 0) {
     ElMessage.warning('请先选择记录')
     return
   }
-  const month = query.billMonth || selectedRows.value[0].billMonth
-  if (!month) {
-    ElMessage.warning('请选择账单月份')
+  // 过滤出尚未同步到 finance_fee_pay_bill 的记录（hasFeeBill=false 且未完全缴费）
+  const pendingRows = selectedRows.value.filter((r) => !r.hasFeeBill && r.payStatus !== 2)
+  if (pendingRows.length === 0) {
+    ElMessage.warning('选中的记录已全部生成账单或已缴费，无需重复生成')
     return
   }
+  const ids = pendingRows.map((r) => r.id)
   try {
-    const count = await generatePropertyFeeBillApi({ billMonth: month, marketId: query.marketId })
-    ElMessage.success(`批量生成成功，共 ${count} 条记录`)
+    const count = await batchSyncPropertyFeeBillApi(ids)
+    ElMessage.success('批量生成成功，共写入 ${count} 条未支付订单')
     selectedRows.value = []
     loadData()
   } catch (e: any) {
-    ElMessage.error(e?.msg || '生成失败')
+    ElMessage.error(e?.msg || '批量生成失败')
   }
 }
 
-// 同步账单到未支付订单
+// 同步账单到未支付订单（单条）
 async function handleSync(row: PropertyFeeBillVO): Promise<void> {
-  if (row.payStatus === 2) { ElMessage.warning('该记录已缴费，无需生成账单'); return }
+  if (row.payStatus === 2 || row.hasFeeBill) { ElMessage.warning('该记录已生成账单'); return }
   try {
     const msg = await syncPropertyFeeBillApi(row.id)
     ElMessage.success(msg)
@@ -200,7 +203,7 @@ const payStatusType = (status?: number) => {
 const handleDetail = async (row: PropertyFeeBillVO) => {
   try {
     const detail = await getPropertyFeeBillDetailApi(row.id)
-    ElMessage.info(`账单金额: ${Number(detail.amount).toFixed(2)} 元`)
+    ElMessage.info('账单金额: ${Number(detail.amount).toFixed(2)} 元')
   } catch {
     ElMessage.info('账单ID: ' + row.id)
   }
@@ -227,7 +230,7 @@ const showSingleGenerateDialog = async () => {
       categoryOptions.value = await getCategoryListApi()
     } catch { /* 静默失败 */ }
   }
-  singleForm.billMonth = query.billMonth || ''
+  singleForm.billMonth = typeof query.billMonth === 'string' ? query.billMonth : ''
   singleForm.marketId = null
   singleForm.categoryId = null
   singleForm.stallId = null
@@ -236,7 +239,7 @@ const showSingleGenerateDialog = async () => {
   singleDialogVisible.value = true
 }
 
-// 市场切换时清空分类和摊位
+// 市场切换时清空分类和铺位
 const handleSingleMarketChange = () => {
   singleForm.categoryId = null
   singleForm.stallId = null
@@ -244,7 +247,7 @@ const handleSingleMarketChange = () => {
   singlePreview.value = {}
 }
 
-// 分类切换时清空摊位
+// 分类切换时清空铺位
 const handleSingleCategoryChange = async () => {
   singleForm.stallId = null
   singlePreview.value = {}
@@ -253,7 +256,7 @@ const handleSingleCategoryChange = async () => {
   }
 }
 
-// 选择摊位时预览金额
+// 选择铺位时预览金额
 const handleStallSelect = async (stallId: number) => {
   if (!singleForm.billMonth || !stallId) { singlePreview.value = {}; return }
   try {

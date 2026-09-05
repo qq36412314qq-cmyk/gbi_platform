@@ -4,10 +4,13 @@ import com.gbi.platform.common.constant.PermissionConst;
 import com.gbi.platform.common.result.Result;
 import com.gbi.platform.dto.FinanceFlowQueryDTO;
 import com.gbi.platform.dto.FinanceSummaryQueryDTO;
+import com.gbi.platform.dto.PayOrderQueryDTO;
 import com.gbi.platform.service.FinanceService;
 import com.gbi.platform.vo.FinanceFlowVO;
 import com.gbi.platform.vo.FinanceSummaryVO;
 import com.gbi.platform.vo.PageVO;
+import com.gbi.platform.vo.PayOrderItemVO;
+import com.gbi.platform.vo.PayOrderVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -81,6 +84,28 @@ public class FinanceController {
     @GetMapping("/flow/{flowId}/print")
     public Result<String> print(@PathVariable Long flowId) {
         return Result.success(financeService.getPrintHtml(flowId));
+    }
+
+    @Operation(summary = "获取流水关联的缴费单明细")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).FINANCE_FLOW_LIST,'')")
+    @GetMapping("/flow/{flowId}/items")
+    public Result<List<PayOrderItemVO>> getPayOrderItems(@PathVariable Long flowId) {
+        return Result.success(financeService.getPayOrderItems(flowId));
+    }
+
+    @Operation(summary = "缴费单分页列表")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).FINANCE_PAY_ORDER_LIST,'')")
+    @GetMapping("/payOrder/page")
+    public Result<PageVO<PayOrderVO>> pagePayOrders(@Valid PayOrderQueryDTO dto) {
+        return Result.success(financeService.pagePayOrders(dto));
+    }
+
+
+    @Operation(summary = "按缴费单ID查询明细列表")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).FINANCE_PAY_ORDER_LIST,'')")
+    @GetMapping("/payOrder/{payOrderId}/items")
+    public Result<List<PayOrderItemVO>> getPayOrderItemsById(@PathVariable Long payOrderId) {
+        return Result.success(financeService.getPayOrderItemsById(payOrderId));
     }
 
     // ---- DTOs ----

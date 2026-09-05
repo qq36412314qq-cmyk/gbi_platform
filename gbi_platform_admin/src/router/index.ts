@@ -218,6 +218,12 @@ export const constantRoutes: RouteRecordRaw[] = [
         name: 'DiscountApply',
         component: () => import('@/views/finance/discountApply/index.vue'),
         meta: { title: '优惠申请', icon: 'Ticket', permission: 'discount:apply:list', isCache: true }
+      },
+      {
+        path: 'payOrder',
+        name: 'FinancePay',
+        component: () => import('@/views/finance/financePay.vue'),
+        meta: { title: '缴费明细单', icon: 'DocumentChecked', permission: 'finance:payOrder:list', isCache: true }
       }
     ]
   },
@@ -384,5 +390,3 @@ router.beforeEach(async (to, _from, next) => {
 })
 
 export default router
-
-

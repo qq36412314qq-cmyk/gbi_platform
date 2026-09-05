@@ -40,7 +40,25 @@
 
     <!-- 表格展示区 -->
     <TablePage v-model:page-num="query.pageNum" v-model:page-size="query.pageSize" :total="total" @refresh="loadData">
-      <el-table v-loading="loading" :data="records" border stripe>
+      <el-table v-loading="loading" :data="records" border stripe @expand="loadFlowItems">
+        <el-table-column type="expand" width="50">
+          <template #default="{ row }">
+            <el-table :data="expandedItems[row.id] || []" border stripe size="small" style="margin: 0 20px">
+              <el-table-column prop="bizTypeText" label="业务类型" width="100" align="center" />
+              <el-table-column prop="feeItemType" label="收费项" width="120" align="center" />
+              <el-table-column prop="billMonth" label="账期" width="100" align="center" />
+              <el-table-column prop="amount" label="应收金额" width="100" align="right">
+                <template #default="{ row: item }">
+                  <span class="g-money">{{ Number(item.amount).toFixed(2) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="discountAmount" label="优惠抵扣" width="100" align="right" />
+              <el-table-column prop="paidAmount" label="已缴金额" width="100" align="right" />
+              <el-table-column prop="unpaidAmount" label="未缴金额" width="100" align="right" />
+              <el-table-column prop="ruleName" label="收费规则" min-width="120" show-overflow-tooltip />
+            </el-table>
+          </template>
+        </el-table-column>
         <el-table-column prop="id" label="流水ID" width="90" align="center" />
         <el-table-column prop="createTime" label="生成时间" min-width="120" align="center" />
         <el-table-column label="所属公司" width="90" align="center">
@@ -163,7 +181,9 @@ import {
   redFlushFlowApi,
   voidFlowApi,
   getPrintHtmlApi,
-  type FinanceFlowVO
+  type FinanceFlowVO,
+  type PayOrderItemVO,
+  getFinanceFlowItemsApi
 } from '@/api/finance'
 import { useTable } from '@/hooks/useTable'
 
@@ -222,6 +242,19 @@ async function handleExport(): Promise<void> {
 }
 
 /* ---------------- 打印 ---------------- */
+/** 展开行数据缓存 */
+const expandedItems = ref<Record<number, PayOrderItemVO[]>>({})
+
+async function loadFlowItems(row: FinanceFlowVO): Promise<void> {
+  if (!expandedItems.value[row.id]) {
+    try {
+      expandedItems.value[row.id] = await getFinanceFlowItemsApi(row.id)
+    } catch {
+      expandedItems.value[row.id] = []
+    }
+  }
+}
+
 async function handlePrint(row: FinanceFlowVO): Promise<void> {
   try {
     const html = await getPrintHtmlApi(row.id)

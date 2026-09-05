@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("water_elec_bill")
+@TableName("property_water_elec_bill")
 public class WaterElecBill extends BaseEntity {
 
     /** 所属子公司ID */

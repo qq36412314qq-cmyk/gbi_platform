@@ -12,11 +12,13 @@ import com.gbi.platform.dto.PropertyFeeBillQueryDTO;
 import com.gbi.platform.entity.BillPlanRel;
 import com.gbi.platform.entity.BizFeeBill;
 import com.gbi.platform.entity.PropertyFeeBill;
+import com.gbi.platform.entity.StallContract;
 import com.gbi.platform.mapper.BillPlanRelMapper;
 import com.gbi.platform.mapper.BizFeeBillMapper;
 import com.gbi.platform.mapper.PropertyFeeBillMapper;
 import com.gbi.platform.mapper.StallContractMapper;
 import com.gbi.platform.service.FeeRuleStallRelService;
+import com.gbi.platform.service.LeaseContractService;
 import com.gbi.platform.service.LeaseStallService;
 import com.gbi.platform.service.PropertyFeeBillService;
 import com.gbi.platform.service.RecvPayPlanService;
@@ -35,10 +37,13 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 物业费月度账单服务实现
@@ -53,6 +58,7 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
     private final LeaseStallService leaseStallService;
     private final FeeRuleStallRelService feeRuleStallRelService;
     private final StallContractMapper stallContractMapper;
+    private final LeaseContractService leaseContractService;
     private final RecvPayPlanService recvPayPlanService;
     private final BillPlanRelMapper billPlanRelMapper;
     private final AuditLogUtil auditLogUtil;
@@ -69,8 +75,10 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
                 .orderByDesc(PropertyFeeBill::getId);
         Page<PropertyFeeBill> result = billMapper.selectPage(page, wrapper);
         Map<Long, StallOptionVO> stallMap = loadStallMap(result.getRecords());
+        Map<Long, String> tenantNameMap = loadTenantNameMap(result.getRecords());
+        Set<Long> feeBillIds = loadFeeBillIds(result.getRecords());
         List<PropertyFeeBillVO> voList = result.getRecords().stream()
-                .map(b -> toVO(b, stallMap)).toList();
+                .map(b -> toVO(b, stallMap, tenantNameMap, feeBillIds)).toList();
         return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
     }
 
@@ -79,7 +87,9 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
         PropertyFeeBill bill = billMapper.selectById(id);
         if (bill == null) throw new BizException("账单不存在或已删除");
         Map<Long, StallOptionVO> stallMap = loadStallMap(List.of(bill));
-        return toVO(bill, stallMap);
+        Map<Long, String> tenantNameMap = loadTenantNameMap(List.of(bill));
+        Set<Long> feeBillIds = loadFeeBillIds(List.of(bill));
+        return toVO(bill, stallMap, tenantNameMap, feeBillIds);
     }
 
     @Override
@@ -315,12 +325,79 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
         return "同步成功";
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchSyncToUnpaidBill(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        int synced = 0;
+        for (Long id : ids) {
+            try {
+                String msg = syncToUnpaidBill(id);
+                if (!msg.contains("重复")) {
+                    synced++;
+                }
+            } catch (Exception e) {
+                log.warn("批量同步失败，跳过账单ID={}: {}", id, e.getMessage());
+            }
+        }
+        log.info("物业费批量同步完成：请求数={}, 成功数={}", ids.size(), synced);
+        return synced;
+    }
+
     private Map<Long, StallOptionVO> loadStallMap(List<PropertyFeeBill> bills) {
         List<Long> stallIds = bills.stream().map(PropertyFeeBill::getStallId).filter(Objects::nonNull).distinct().toList();
         return stallIds.isEmpty() ? Collections.emptyMap() : leaseStallService.getOptionsByIds(stallIds);
     }
 
-    private PropertyFeeBillVO toVO(PropertyFeeBill bill, Map<Long, StallOptionVO> stallMap) {
+    /**
+     * 批量加载摊位关联的租户名称（通过 stall_contract 表关联查询）
+     */
+    private Map<Long, String> loadTenantNameMap(List<PropertyFeeBill> bills) {
+        List<Long> stallIds = bills.stream()
+                .map(PropertyFeeBill::getStallId).filter(Objects::nonNull).distinct().toList();
+        if (stallIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        // 查询生效中合同，获取 stallId -> tenantId 映射
+        List<StallContract> contracts = stallContractMapper.selectList(
+                new LambdaQueryWrapper<StallContract>()
+                        .in(StallContract::getStallId, stallIds)
+                        .eq(StallContract::getContractStatus, CommonConst.CONTRACT_STATUS_EFFECTIVE));
+        Map<Long, Long> stallTenantMap = contracts.stream()
+                .filter(c -> c.getTenantId() != null)
+                .collect(Collectors.toMap(StallContract::getStallId, StallContract::getTenantId, (a, b) -> a));
+        if (stallTenantMap.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        // 批量查询租户名称
+        List<Long> tenantIds = new ArrayList<>(stallTenantMap.values());
+        Map<Long, String> tenantNameMap = leaseContractService.mapTenantNames(tenantIds);
+        // 组装 stallId -> tenantName
+        return stallTenantMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> tenantNameMap.getOrDefault(e.getValue(), null)));
+    }
+
+    /**
+     * 批量加载已写入 biz_fee_bill 的源账单 ID（用于 hasFeeBill 字段）
+     */
+    private Set<Long> loadFeeBillIds(List<PropertyFeeBill> bills) {
+        List<Long> billIds = bills.stream()
+                .map(PropertyFeeBill::getId).filter(Objects::nonNull).distinct().toList();
+        if (billIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<BizFeeBill> existing = bizFeeBillMapper.selectList(
+                new LambdaQueryWrapper<BizFeeBill>()
+                        .in(BizFeeBill::getSourceBillId, billIds));
+        return existing.stream()
+                .map(BizFeeBill::getSourceBillId)
+                .collect(Collectors.toSet());
+    }
+
+    private PropertyFeeBillVO toVO(PropertyFeeBill bill, Map<Long, StallOptionVO> stallMap,
+                                    Map<Long, String> tenantNameMap, Set<Long> feeBillIds) {
         PropertyFeeBillVO vo = new PropertyFeeBillVO();
         vo.setId(bill.getId());
         vo.setCompanyId(bill.getCompanyId());
@@ -332,6 +409,8 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
             vo.setStallMarketName(stall.getMarketName());
             vo.setCategoryName(stall.getCategoryName());
         }
+        vo.setTenantName(tenantNameMap.get(bill.getStallId()));
+        vo.setHasFeeBill(feeBillIds.contains(bill.getId()));
         vo.setBillMonth(bill.getBillMonth());
         vo.setRuleId(bill.getRuleId());
         vo.setCalcMode(bill.getCalcMode());
@@ -415,7 +494,3 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
         log.info("[DEBUG] writeToUnifiedBill 同步成功：sourceBillId={}, bizBillId={}", billId, unifiedBill.getId());
     }
 }
-
-
-
-

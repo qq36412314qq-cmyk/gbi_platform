@@ -17,7 +17,7 @@ import java.time.LocalDate;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_recv_pay_plan")
+@TableName("finance_recv_pay_plan")
 public class BizRecvPayPlan extends BaseEntity {
 
     /** 所属子公司ID */

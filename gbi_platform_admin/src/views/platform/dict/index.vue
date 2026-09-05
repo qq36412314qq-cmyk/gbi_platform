@@ -97,7 +97,7 @@
     >
       <el-form ref="typeFormRef" :model="typeForm" :rules="typeRules" label-width="90px">
         <el-form-item label="字典名称" prop="dictName">
-          <el-input v-model="typeForm.dictName" placeholder="如 摊位状态" maxlength="128" />
+          <el-input v-model="typeForm.dictName" placeholder="如 铺位状态" maxlength="128" />
         </el-form-item>
         <el-form-item label="字典编码" prop="dictCode">
           <el-input

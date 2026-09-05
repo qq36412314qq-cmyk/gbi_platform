@@ -2,20 +2,20 @@
   <div class="g-page-wrap lease-stall-wrap">
     <!-- 顶部操作区 -->
     <div class="g-page-header">
-      <span class="g-page-title">摊位管理</span>
-        <router-link to="/property/lease/canvas" class="canvas-link" title="摊位布局画布">
+      <span class="g-page-title">铺位管理</span>
+        <router-link to="/property/lease/canvas" class="canvas-link" title="铺位布局画布">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          摊位画布
+          铺位画布
         </router-link>
         <div>
-          <AuthBtn permission="lease:stall:add" type="primary" @click="openDialog()">新增摊位</AuthBtn>
+          <AuthBtn permission="lease:stall:add" type="primary" @click="openDialog()">新增铺位</AuthBtn>
         </div>
     </div>
 
     <!-- 搜索筛选区 -->
     <SearchBar :model="query" @search="loadData" @reset="handleReset">
-      <el-form-item label="摊位编号">
-        <el-input v-model="query.stallNumber" placeholder="输入摊位编号" clearable style="width: 160px" />
+      <el-form-item label="铺位编号">
+        <el-input v-model="query.stallNumber" placeholder="输入铺位编号" clearable style="width: 160px" />
       </el-form-item>
       <el-form-item label="租赁分类">
         <el-select v-model="query.stallCategoryId" placeholder="全部" clearable style="width: 140px">
@@ -27,7 +27,7 @@
           <el-option v-for="m in marketOptions" :key="m.id" :label="m.marketName" :value="m.id" />
         </el-select>
       </el-form-item>
-      <el-form-item label="摊位状态">
+      <el-form-item label="铺位状态">
         <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
           <el-option label="空置" :value="0" />
           <el-option label="已租" :value="1" />
@@ -40,10 +40,10 @@
     <!-- 表格展示区 -->
     <TablePage v-model:page-num="query.pageNum" v-model:page-size="query.pageSize" :total="total" @refresh="loadData">
       <el-table v-loading="loading" :data="records" border stripe>
-        <el-table-column prop="stallNumber" label="摊位编号" min-width="120" />
+        <el-table-column prop="stallNumber" label="铺位编号" min-width="120" />
         <el-table-column prop="marketName" label="所属市场" width="130" align="center" />
         <el-table-column prop="categoryName" label="租赁分类" width="100" align="center" />
-        <el-table-column prop="stallName" label="摊位名称" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="stallName" label="铺位名称" min-width="140" show-overflow-tooltip />
         <el-table-column prop="stallArea" label="面积(㎡)" width="100" align="right" />
         <el-table-column label="收费规则" min-width="200">
           <template #default="{ row }">
@@ -79,7 +79,7 @@
     <!-- 新增/编辑弹窗 -->
     <CommonDialog
       v-model="dialogVisible"
-      :title="form.id ? '编辑摊位' : '新增摊位'"
+      :title="form.id ? '编辑铺位' : '新增铺位'"
       width="560px"
       :loading="submitLoading"
       @confirm="handleSubmit"
@@ -95,16 +95,16 @@
             <el-option v-for="c in categoryOptions" :key="c.id" :label="c.categoryName" :value="c.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="摊位编号" prop="stallNumber">
-          <el-input v-model="form.stallNumber" placeholder="输入摊位编号（同公司唯一）" maxlength="64" />
+        <el-form-item label="铺位编号" prop="stallNumber">
+          <el-input v-model="form.stallNumber" placeholder="输入铺位编号（同公司唯一）" maxlength="64" />
         </el-form-item>
-        <el-form-item label="摊位名称" prop="stallName">
-          <el-input v-model="form.stallName" placeholder="输入摊位名称（可空）" maxlength="128" />
+        <el-form-item label="铺位名称" prop="stallName">
+          <el-input v-model="form.stallName" placeholder="输入铺位名称（可空）" maxlength="128" />
         </el-form-item>
         <el-form-item label="面积(㎡)" prop="stallArea">
           <el-input-number v-model="form.stallArea" :min="0" :precision="2" style="width: 100%" />
         </el-form-item>
-        <el-form-item v-if="form.id" label="摊位状态" prop="status">
+        <el-form-item v-if="form.id" label="铺位状态" prop="status">
           <el-select v-model="form.status" style="width: 100%">
             <el-option label="空置" :value="0" />
             <el-option label="已租" :value="1" />
@@ -143,7 +143,7 @@
 
 <script setup lang="ts">
 /**
- * 租赁摊位页：商铺/仓库/车位等租赁标的，分类下拉取自租赁分类
+ * 租赁铺位页：商铺/仓库/车位等租赁标的，分类下拉取自租赁分类
  */
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -266,8 +266,8 @@ function periodText(periodType?: number): string {
 const rules: FormRules = {
   marketId: [{ required: true, message: '请选择市场', trigger: 'change' }],
   stallNumber: [
-    { required: true, message: '请输入摊位编号', trigger: 'blur' },
-    { max: 64, message: '摊位编号不能超过64字符', trigger: 'blur' }
+    { required: true, message: '请输入铺位编号', trigger: 'blur' },
+    { max: 64, message: '铺位编号不能超过64字符', trigger: 'blur' }
   ]
 }
 
@@ -329,7 +329,7 @@ async function handleSubmit(): Promise<void> {
 
 /* ---------------- 删除 ---------------- */
 async function handleDelete(row: StallVO): Promise<void> {
-  await ElMessageBox.confirm(`确定删除摊位「${row.stallNumber}」吗？存在租赁合同的摊位无法删除。`, '提示', {
+  await ElMessageBox.confirm(`确定删除铺位「${row.stallNumber}」吗？存在租赁合同的铺位无法删除。`, '提示', {
     type: 'warning'
   })
   await deleteStallApi(row.id)
@@ -346,7 +346,7 @@ async function handleDelete(row: StallVO): Promise<void> {
   color: var(--el-text-color-placeholder);
 }
 
-/* 摊位画布快捷入口 */
+/* 铺位画布快捷入口 */
 .canvas-link {
   display: inline-flex;
   align-items: center;

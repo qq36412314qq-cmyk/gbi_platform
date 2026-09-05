@@ -1,6 +1,7 @@
 package com.gbi.platform.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gbi.platform.common.constant.CommonConst;
@@ -17,6 +18,13 @@ import com.gbi.platform.util.AuditLogUtil;
 import com.gbi.platform.vo.FinanceFlowVO;
 import com.gbi.platform.vo.FinanceSummaryVO;
 import com.gbi.platform.vo.PageVO;
+import com.gbi.platform.entity.BizPayOrder;
+import com.gbi.platform.entity.BizPayOrderItem;
+import com.gbi.platform.mapper.BizPayOrderMapper;
+import com.gbi.platform.mapper.BizPayOrderItemMapper;
+import com.gbi.platform.vo.PayOrderItemVO;
+import com.gbi.platform.dto.PayOrderQueryDTO;
+import com.gbi.platform.vo.PayOrderVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,6 +57,8 @@ public class FinanceServiceImpl implements FinanceService {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final BizFinanceFlowMapper financeFlowMapper;
+    private final BizPayOrderMapper payOrderMapper;
+    private final BizPayOrderItemMapper payOrderItemMapper;
     private final AuditLogUtil auditLogUtil;
     private final FlowEngineService flowEngineService;
 
@@ -96,7 +106,7 @@ public class FinanceServiceImpl implements FinanceService {
         }
         return result;
     }
-
+    /** 导出 CSV 文件 */
     @Override
     public String exportCsv(FinanceFlowQueryDTO dto) {
         LoginUser loginUser = UserContext.getLoginUser();
@@ -151,7 +161,7 @@ public class FinanceServiceImpl implements FinanceService {
         auditLogUtil.record(CommonConst.MODULE_FINANCE, CommonConst.OPER_TYPE_EXPORT, fileName, null, null);
         return "/upload/export/" + fileName;
     }
-
+    
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void redFlush(Long flowId, String reason) {
@@ -472,8 +482,115 @@ public class FinanceServiceImpl implements FinanceService {
         if (value instanceof BigDecimal bd) return bd;
         return new BigDecimal(value.toString());
     }
+
+    @Override
+    public List<PayOrderItemVO> getPayOrderItems(Long flowId) {
+        log.info("根据流水ID查询缴费单明细，flowId={}", flowId);
+        BizFinanceFlow flow = financeFlowMapper.selectById(flowId);
+        if (flow == null) { return Collections.emptyList(); }
+        BizPayOrder payOrder = payOrderMapper.selectBySourceId(Long.valueOf(flow.getBillId()));
+        if (payOrder == null) { return Collections.emptyList(); }
+        LambdaQueryWrapper<BizPayOrderItem> wrapper = new LambdaQueryWrapper<BizPayOrderItem>()
+                .eq(BizPayOrderItem::getPayBillId, payOrder.getId())
+                .orderByAsc(BizPayOrderItem::getCreateTime);
+        List<BizPayOrderItem> items = payOrderItemMapper.selectList(wrapper);
+        return items.stream().map(item -> {
+            PayOrderItemVO vo = new PayOrderItemVO();
+            vo.setId(item.getId());
+            vo.setPayBillId(item.getPayBillId());
+            vo.setBillId(item.getBillId());
+            vo.setBizType(item.getBizType());
+            vo.setBizTypeText(bizTypeText(item.getBizType()));
+            vo.setRuleName(item.getRuleName());
+            vo.setFeeItemType(item.getFeeItemType());
+            vo.setBillMonth(item.getBillMonth());
+            vo.setAmount(item.getAmount());
+            vo.setDiscountAmount(item.getDiscountAmount());
+            vo.setPaidAmount(item.getPaidAmount());
+            vo.setUnpaidAmount(item.getUnpaidAmount());
+            vo.setCreateTime(item.getCreateTime());
+            return vo;
+        }).toList();
+    }
+
+
+    @Override
+    public PageVO<PayOrderVO> pagePayOrders(PayOrderQueryDTO dto) {
+        Page<BizPayOrder> page = new Page<>(dto.getPageNum(), dto.getPageSize());
+        IPage<BizPayOrder> result = payOrderMapper.selectPageByQuery(page, dto);
+        List<PayOrderVO> records = result.getRecords().stream().map(order -> {
+            PayOrderVO vo = new PayOrderVO();
+            vo.setId(order.getId());
+            vo.setPayBillNo(order.getPayBillNo());
+            vo.setCompanyId(order.getCompanyId());
+            vo.setSourceType(order.getSourceType());
+            vo.setSourceTypeText(sourceTypeText(order.getSourceType()));
+            vo.setSourceId(order.getSourceId());
+            vo.setStallId(order.getStallId());
+            vo.setMerchantId(order.getMerchantId());
+            vo.setTotalAmount(order.getTotalAmount());
+            vo.setPaidAmount(order.getPaidAmount());
+            vo.setUnpaidAmount(order.getUnpaidAmount());
+            vo.setPayStatus(order.getPayStatus());
+            vo.setPayStatusText(payStatusText(order.getPayStatus()));
+            vo.setPayTime(order.getPayTime());
+            vo.setCreateTime(order.getCreateTime());
+            return vo;
+        }).toList();
+        return new PageVO<>(records, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
+    }
+
+    private String sourceTypeText(String sourceType) {
+        if (sourceType == null) return null;
+        return switch (sourceType) {
+            case "fee_bill" -> "物业费";
+            case "water_elec" -> "水电费";
+            default -> sourceType;
+        };
+    }
+
+    private String payStatusText(Integer payStatus) {
+        if (payStatus == null) return null;
+        return switch (payStatus) {
+            case 0 -> "待缴";
+            case 1 -> "已缴";
+            case 2 -> "部分缴费";
+            default -> String.valueOf(payStatus);
+        };
+    }
+
+
+    @Override
+    public List<PayOrderItemVO> getPayOrderItemsById(Long payOrderId) {
+        LambdaQueryWrapper<BizPayOrderItem> wrapper = new LambdaQueryWrapper<BizPayOrderItem>()
+                .eq(BizPayOrderItem::getPayBillId, payOrderId)
+                .orderByAsc(BizPayOrderItem::getCreateTime);
+        List<BizPayOrderItem> items = payOrderItemMapper.selectList(wrapper);
+        return items.stream().map(item -> {
+            PayOrderItemVO vo = new PayOrderItemVO();
+            vo.setId(item.getId());
+            vo.setPayBillId(item.getPayBillId());
+            vo.setBillId(item.getBillId());
+            vo.setBizType(item.getBizType());
+            vo.setBizTypeText(bizTypeText(item.getBizType()));
+            vo.setRuleName(item.getRuleName());
+            vo.setFeeItemType(item.getFeeItemType());
+            vo.setBillMonth(item.getBillMonth());
+            vo.setAmount(item.getAmount());
+            vo.setDiscountAmount(item.getDiscountAmount());
+            vo.setPaidAmount(item.getPaidAmount());
+            vo.setUnpaidAmount(item.getUnpaidAmount());
+            vo.setCreateTime(item.getCreateTime());
+            return vo;
+        }).toList();
+    }
+
+    private String bizTypeText(String bizType) {
+        if (bizType == null) return null;
+        return switch (bizType) {
+            case CommonConst.BIZ_TYPE_WATER_ELEC -> "水电费";
+            case CommonConst.BIZ_TYPE_PROPERTY_FEE -> "物业费";
+            default -> bizType;
+        };
+    }
 }
-
-
-
-

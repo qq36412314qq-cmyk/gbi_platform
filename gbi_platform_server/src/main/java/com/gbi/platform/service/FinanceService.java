@@ -2,9 +2,12 @@ package com.gbi.platform.service;
 
 import com.gbi.platform.dto.FinanceFlowQueryDTO;
 import com.gbi.platform.dto.FinanceSummaryQueryDTO;
+import com.gbi.platform.dto.PayOrderQueryDTO;
 import com.gbi.platform.vo.FinanceSummaryVO;
 import com.gbi.platform.vo.PageVO;
 import com.gbi.platform.vo.FinanceFlowVO;
+import com.gbi.platform.vo.PayOrderItemVO;
+import com.gbi.platform.vo.PayOrderVO;
 
 import java.util.List;
 
@@ -44,7 +47,7 @@ public interface FinanceService {
     /**
      * 冲红审批通过：激活原流水反向状态，激活反向流水
      *
-     * @param flowId       原流水ID
+     * @param flowId         原流水ID
      * @param redFlushFlowId 反向流水ID（审批通过时由引擎传入）
      */
     void approveRedFlush(Long flowId, Long redFlushFlowId);
@@ -71,5 +74,25 @@ public interface FinanceService {
      * @return HTML 字符串
      */
     String getPrintHtml(Long flowId);
-}
 
+    /**
+     * 获取流水关联的缴费单明细列表
+     *
+     * @param flowId 流水ID（通过 bill_id 关联 finance_pay_order_item.bill_id）
+     * @return 缴费单明细列表
+     */
+    List<PayOrderItemVO> getPayOrderItems(Long flowId);
+
+    /**
+     * 缴费单分页列表
+     *
+     * @param dto 查询条件
+     * @return 分页结果
+     */
+    PageVO<PayOrderVO> pagePayOrders(PayOrderQueryDTO dto);
+
+    /**
+     * 按缴费单ID查询明细列表
+     */
+    List<PayOrderItemVO> getPayOrderItemsById(Long payOrderId);
+}

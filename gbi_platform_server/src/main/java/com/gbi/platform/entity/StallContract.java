@@ -15,7 +15,7 @@ import java.time.LocalDate;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("stall_contract")
+@TableName("property_stall_contract")
 public class StallContract extends BaseEntity {
 
     /** 所属子公司ID */

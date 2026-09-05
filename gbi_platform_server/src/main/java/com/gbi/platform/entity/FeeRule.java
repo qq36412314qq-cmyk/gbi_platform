@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_fee_rule")
+@TableName("finance_fee_rule")
 public class FeeRule extends BaseEntity {
 
     /** 所属子公司ID，0集团模板 */

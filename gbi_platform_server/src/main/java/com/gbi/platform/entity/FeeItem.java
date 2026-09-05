@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_fee_item")
+@TableName("finance_fee_item")
 public class FeeItem extends BaseEntity {
 
     /** 所属子公司ID，0集团模板 */

@@ -1,14 +1,22 @@
 <!--
   未支付订单管理页面
   数据表：biz_fee_bill
-  关联表：stall_info（摊位）
+  关联表：stall_info（铺位）
   权限：property:fee:*
+  功能：多选合并缴费、单条缴费、缴费人显示
 -->
 <template>
   <div class="g-page-wrap unpaid-bill-wrap">
     <!-- 顶部操作区 -->
     <div class="g-page-header">
       <span class="g-page-title">未支付订单</span>
+      <el-button
+        type="primary"
+        :disabled="selectedIds.length === 0"
+        @click="openMergePayDialog"
+      >
+        合并缴费（{{ selectedIds.length }}）
+      </el-button>
     </div>
 
     <!-- 搜索筛选区 -->
@@ -27,21 +35,33 @@
 
     <!-- 表格展示区 -->
     <TablePage v-model:page-num="query.pageNum" v-model:page-size="query.pageSize" :total="total" @refresh="loadData">
-      <el-table v-loading="loading" :data="records" border stripe>
+      <el-table
+        v-loading="loading"
+        :data="records"
+        border
+        stripe
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="业务类型" width="100" align="center">
           <template #default="{ row }">
-            <el-tag size="small" :type="row.businessType === 'property_fee' ? 'primary' : 'success'">
+            <el-tag size="small" :type="getBizTypeTag(row.businessType)">
               {{ row.businessTypeText }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="billMonth" label="账单月份" width="110" align="center" />
-        <el-table-column label="绑定摊位" min-width="200" align="center" show-overflow-tooltip>
+        <el-table-column label="绑定铺位" min-width="200" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.stallName">
               {{ row.stallMarketName || '未知市场' }} / {{ row.categoryName || '未分类' }} / {{ row.stallName }}（{{ row.stallNumber }}）
             </span>
-            <span v-else>摊位 #{{ row.stallId }}</span>
+            <span v-else>铺位 #{{ row.stallId }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="payerName" label="缴费人" width="100" align="center" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span>{{ row.payerName || '未填写' }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="amount" label="金额（元）" width="110" align="right">
@@ -65,7 +85,7 @@
       </el-table>
     </TablePage>
 
-    <!-- 线下缴费弹窗 -->
+    <!-- 单条缴费弹窗 -->
     <CommonDialog
       v-model="payDialogVisible"
       title="线下缴费"
@@ -76,14 +96,14 @@
       <el-form ref="payFormRef" :model="payForm" :rules="payRules" label-width="100px">
         <!-- 账单信息（只读，自动带入） -->
         <el-form-item label="业务类型">
-          <el-tag size="small" :type="payForm.billType === 'property_fee' ? 'primary' : 'success'">
+          <el-tag size="small" :type="getBizTypeTag(payForm.businessType)">
             {{ payForm.businessTypeText }}
           </el-tag>
         </el-form-item>
         <el-form-item label="账单月份">
           <span>{{ payForm.billMonth }}</span>
         </el-form-item>
-        <el-form-item label="绑定摊位">
+        <el-form-item label="绑定铺位">
           <span>{{ getStallDisplay() }}</span>
         </el-form-item>
         <el-form-item label="缴费金额">
@@ -114,22 +134,91 @@
         </el-form-item>
       </el-form>
     </CommonDialog>
+
+    <!-- 合并缴费弹窗 -->
+    <CommonDialog
+      v-model="mergePayDialogVisible"
+      title="合并缴费"
+      width="640px"
+      :loading="mergePayLoading"
+      @confirm="handleSubmitMerge"
+    >
+      <el-alert
+        type="info"
+        :closable="false"
+        style="margin-bottom: 16px"
+      >
+        已选择 {{ selectedIds.length }} 条订单，总金额 <span class="g-money">{{ mergeTotalAmount.toFixed(2) }}</span> 元
+      </el-alert>
+
+      <el-form ref="mergePayFormRef" :model="mergePayForm" :rules="mergePayRules" label-width="100px">
+        <!-- 缴费人信息 -->
+        <el-form-item label="缴费人姓名" prop="payerName">
+          <el-input v-model="mergePayForm.payerName" placeholder="请输入缴费人姓名" maxlength="64" />
+        </el-form-item>
+        <el-form-item label="缴费人手机" prop="payerPhone">
+          <el-input v-model="mergePayForm.payerPhone" placeholder="请输入手机号" maxlength="32" />
+        </el-form-item>
+        <!-- 支付渠道 -->
+        <el-form-item label="支付渠道" prop="payType">
+          <el-radio-group v-model="mergePayForm.payType">
+            <el-radio :value="1">微信</el-radio>
+            <el-radio :value="2">支付宝</el-radio>
+            <el-radio :value="3">线下现金</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <!-- 幂等请求ID -->
+        <el-form-item label="幂等请求ID">
+          <el-input v-model="mergePayForm.requestId" disabled />
+          <div class="b-tip">自动生成，防止重复提交</div>
+        </el-form-item>
+        <!-- 备注 -->
+        <el-form-item label="备注" prop="remark">
+          <el-input
+            v-model="mergePayForm.remark"
+            type="textarea"
+            :rows="2"
+            placeholder="缴费备注（可空）"
+            maxlength="500"
+          />
+        </el-form-item>
+      </el-form>
+
+      <!-- 明细列表 -->
+      <div class="merge-detail-list">
+        <div class="merge-detail-header">
+          <span>业务类型</span>
+          <span>账单月份</span>
+          <span>铺位</span>
+          <span class="merge-amount">金额</span>
+        </div>
+        <div v-for="item in selectedBills" :key="item.id" class="merge-item">
+          <el-tag size="small" :type="getBizTypeTag(item.businessType)">{{ item.businessTypeText }}</el-tag>
+          <span>{{ item.billMonth }}</span>
+          <span class="merge-stall">{{ item.stallName || '铺位' + item.stallId }}</span>
+          <span class="merge-amount g-money">{{ Number(item.amount).toFixed(2) }}</span>
+        </div>
+      </div>
+    </CommonDialog>
   </div>
 </template>
 
 <script setup lang="ts">
 /**
- * 未支付订单页：聚合物业费账单 + 水电费账单
- * 点击"缴费"直接在当前页弹出线下缴费弹窗，无需跳转
- *
- * 缴费逻辑：
- * 1. 生成幂等请求ID（requestId），防止重复提交
- * 2. 调用 /property/unifiedPay/pay 统一缴费接口
- * 3. 缴费成功后刷新列表
+ * 未支付订单页：聚合物业费账单 + 水电费账单 + 租赁费 + 押金
+ * 支持单条缴费和合并缴费
  */
 import { reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { getUnpaidBillPageApi, type UnpaidBillVO, unifiedPayApi } from '@/api/propertyFee'
+import {
+  getUnpaidBillPageApi,
+  unifiedPayApi,
+  createPayBillApi,
+  payPayBillApi,
+  type UnpaidBillVO,
+  type PayBillCreateDTO,
+  type PayBillPayDTO
+} from '@/api/propertyFee'
 import { useTable } from '@/hooks/useTable'
 
 const { query, records, total, loading, loadData, resetQuery } = useTable<UnpaidBillVO>(getUnpaidBillPageApi, {
@@ -141,12 +230,36 @@ function handleReset(): void {
   loadData()
 }
 
-/** 生成幂等请求ID（满足后端 8-64 位字母/数字/横线规则） */
+/** 生成幂等请求ID */
 function buildRequestId(): string {
   return `PAY${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-/* ---------------- 缴费弹窗 ---------------- */
+/** 获取业务类型标签颜色 */
+function getBizTypeTag(bizType: string): string {
+  const map: Record<string, string> = {
+    property_fee: 'primary',
+    water_elec: 'success',
+    rent: 'warning',
+    deposit: 'info',
+    kindergarten: 'danger'
+  }
+  return map[bizType] || 'info'
+}
+
+/* ---------------- 多选状态 ---------------- */
+const selectedIds = ref<number[]>([])
+const selectedBills = ref<UnpaidBillVO[]>([])
+
+function handleSelectionChange(rows: UnpaidBillVO[]): void {
+  selectedIds.value = rows.map(r => r.id)
+  selectedBills.value = rows
+}
+
+/** 合并缴费总金额 */
+const mergeTotalAmount = ref(0)
+
+/* ---------------- 单条缴费弹窗 ---------------- */
 const payDialogVisible = ref(false)
 const payLoading = ref(false)
 const payFormRef = ref<FormInstance>()
@@ -177,7 +290,6 @@ const payRules: FormRules = {
   payType: [{ required: true, message: '请选择支付渠道', trigger: 'change' }]
 }
 
-/** 打开缴费弹窗，自动带入当前行数据 */
 function openPayDialog(row: UnpaidBillVO): void {
   payFormRef.value?.clearValidate()
   Object.assign(payForm, {
@@ -198,15 +310,13 @@ function openPayDialog(row: UnpaidBillVO): void {
   payDialogVisible.value = true
 }
 
-/** 拼接摊位显示文本 */
 function getStallDisplay(): string {
   if (payForm.stallName) {
     return `${payForm.stallMarketName || '未知市场'} / ${payForm.categoryName || '未分类'} / ${payForm.stallName}（${payForm.stallNumber || ''}）`
   }
-  return `摊位 #${payForm.stallId}`
+  return `铺位 #${payForm.stallId}`
 }
 
-/** 提交缴费 */
 async function handleSubmit(): Promise<void> {
   if (!payFormRef.value) return
   await payFormRef.value.validate(async (valid) => {
@@ -227,11 +337,82 @@ async function handleSubmit(): Promise<void> {
       ElMessage.success('缴费成功')
       payDialogVisible.value = false
       loadData()
-    } catch (e) {
-      // 拦截器已显示 ElMessage.error，此处仅阻止 Uncaught 爆日志
+    } catch (e: any) {
       console.warn('[缴费] 后端提示：', e?.message || e)
     } finally {
       payLoading.value = false
+    }
+  })
+}
+
+/* ---------------- 合并缴费弹窗 ---------------- */
+const mergePayDialogVisible = ref(false)
+const mergePayLoading = ref(false)
+const mergePayFormRef = ref<FormInstance>()
+
+const mergePayForm = reactive<{
+  payerName?: string
+  payerPhone?: string
+  payType: number
+  requestId: string
+  remark?: string
+}>({
+  payType: 3,
+  requestId: buildRequestId(),
+  remark: ''
+})
+
+const mergePayRules: FormRules = {
+  payType: [{ required: true, message: '请选择支付渠道', trigger: 'change' }]
+}
+
+function openMergePayDialog(): void {
+  if (selectedIds.value.length === 0) {
+    ElMessage.warning('请先选择要缴费的订单')
+    return
+  }
+  mergeTotalAmount.value = selectedBills.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  Object.assign(mergePayForm, {
+    payerName: '',
+    payerPhone: '',
+    payType: 3,
+    requestId: buildRequestId(),
+    remark: ''
+  })
+  mergePayDialogVisible.value = true
+}
+
+async function handleSubmitMerge(): Promise<void> {
+  if (!mergePayFormRef.value) return
+  await mergePayFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    // 1. 创建缴费单
+    mergePayLoading.value = true
+    try {
+      const createDto: PayBillCreateDTO = {
+        bizFeeBillIds: selectedIds.value,
+        remark: mergePayForm.remark
+      }
+      const payBillId = await createPayBillApi(createDto)
+
+      // 2. 缴费
+      const payDto: PayBillPayDTO = {
+        payBillId,
+        payType: mergePayForm.payType,
+        requestId: mergePayForm.requestId
+      }
+      await payPayBillApi(payDto)
+
+      ElMessage.success('合并缴费成功')
+      mergePayDialogVisible.value = false
+      selectedIds.value = []
+      selectedBills.value = []
+      loadData()
+    } catch (e: any) {
+      console.warn('[合并缴费] 后端提示：', e?.message || e)
+    } finally {
+      mergePayLoading.value = false
     }
   })
 }
@@ -247,4 +428,44 @@ async function handleSubmit(): Promise<void> {
   color: var(--el-text-color-secondary);
   line-height: 1.5;
 }
+.merge-detail-list {
+  margin-top: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+  padding: 8px;
+}
+.merge-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+.merge-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  font-size: 13px;
+}
+.merge-item:last-child {
+  border-bottom: none;
+}
+.merge-stall {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.merge-amount {
+  flex-shrink: 0;
+  font-weight: 600;
+}
 </style>
+

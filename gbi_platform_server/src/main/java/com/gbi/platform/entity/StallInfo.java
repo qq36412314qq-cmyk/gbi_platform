@@ -14,7 +14,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("stall_info")
+@TableName("property_stall_info")
 public class StallInfo extends BaseEntity {
 
     /** 所属子公司ID */

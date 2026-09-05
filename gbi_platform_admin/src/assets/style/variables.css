@@ -11,11 +11,11 @@
 
   /* 状态色（不可自定义） */
   --color-success: #18a058;
-  --color-success-light: #d9f2e5;   /* 空置摊位底色 */
+  --color-success-light: #d9f2e5;   /* 空置铺位底色 */
   --color-warning: #f0a020;
-  --color-warning-light: #fdf0dc;   /* 即将到期摊位 */
+  --color-warning-light: #fdf0dc;   /* 即将到期铺位 */
   --color-danger: #e5484d;
-  --color-danger-light: #fde8e8;    /* 欠费摊位 */
+  --color-danger-light: #fde8e8;    /* 欠费铺位 */
   --color-info: #909399;
 
   /* 中性灰度体系 */

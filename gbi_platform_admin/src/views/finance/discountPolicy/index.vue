@@ -41,7 +41,7 @@
           <template #default="{ row }">￥{{ formatMoney(row.deductAmount) }}</template>
         </el-table-column>
         <el-table-column label="适用范围" width="90" align="center">
-          <template #default="{ row }">{{ row.scopeType === 2 ? '按摊位' : '按合同' }}</template>
+          <template #default="{ row }">{{ row.scopeType === 2 ? '按铺位' : '按合同' }}</template>
         </el-table-column>
         <el-table-column label="生效时间" width="110">
           <template #default="{ row }">{{ row.startTime || '-' }}</template>
@@ -96,7 +96,7 @@
         <el-form-item label="适用范围" prop="scopeType">
           <el-radio-group v-model="form.scopeType">
             <el-radio :label="1">按合同</el-radio>
-            <el-radio :label="2">按摊位</el-radio>
+            <el-radio :label="2">按铺位</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="生效时间">

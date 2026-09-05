@@ -1,8 +1,8 @@
 package com.gbi.platform.common.constant;
 
 /**
- * 权限标识常量��与前端路由 meta.permission、sys_menu.permission 对齐
- * 禁止硬编码权限字符串��对齐《后端编码规范》九��
+ * 权限标识常量，与前端路由 meta.permission、sys_menu.permission 对齐
+ * 禁止硬编码权限字符串，对齐《后端编码规范》九
  *
  * @author gbi
  */
@@ -14,7 +14,7 @@ public final class PermissionConst {
     /** 超级管理员通配权限 */
     public static final String ALL_PERMISSION = "*:*:*";
 
-    /* ------------------------------ �� ------------------------------ */
+    /* ------------------------------ 组织 ------------------------------ */
     public static final String ORG_LIST = "org:list";
     public static final String ORG_ADD = "org:add";
     public static final String ORG_EDIT = "org:edit";
@@ -53,11 +53,11 @@ public final class PermissionConst {
     public static final String CONFIG_EDIT = "config:edit";
     public static final String CONFIG_DELETE = "config:delete";
 
-    /* ------------------------------ UI�题 ------------------------------ */
+    /* ------------------------------ UI主题 ------------------------------ */
     public static final String THEME_LIST = "theme:list";
     public static final String THEME_EDIT = "theme:edit";
 
-    /* ------------------------------ 审计日� ------------------------------ */
+    /* ------------------------------ 审计日志 ------------------------------ */
     public static final String AUDIT_LIST = "audit:list";
     public static final String AUDIT_EXPORT = "audit:export";
 
@@ -100,18 +100,24 @@ public final class PermissionConst {
     /* ------------------------------ 物业费-缴费管理 ------------------------------ */
     public static final String PROPERTY_FEE_PAY_ADD = "property:feePay:add";
     public static final String UNIFIED_PAY_ADD = "property:unifiedPay:add";
+
+    /* ------------------------------ 财务流水 ------------------------------ */
     public static final String FINANCE_FLOW_LIST = "finance:flow:list";
     public static final String FINANCE_FLOW_EXPORT = "finance:flow:export";
+    public static final String FINANCE_REPORT_LIST = "finance:report:list";
+    public static final String FINANCE_FLOW_APPROVE = "finance:flow:approve";
+    public static final String FINANCE_FLOW_RED_FLUSH = "finance:flow:redFlush";
+    public static final String FINANCE_FLOW_VOID = "finance:flow:void";
 
-    /* ------------------------------ 财务汇总 ------------------------------ */
-    public static final String FINANCE_SUMMARY_LIST = "finance:summary:list";
+    /* ------------------------------ 缴费单 ------------------------------ */
+    public static final String FINANCE_PAY_ORDER_LIST = "finance:payOrder:list";
 
     /* ------------------------------ 优惠申请 ------------------------------ */
     public static final String DISCOUNT_APPLY_LIST = "discount:apply:list";
     public static final String DISCOUNT_APPLY_ADD = "discount:apply:add";
     public static final String DISCOUNT_APPLY_AUDIT = "discount:apply:audit";
 
-    /* ------------------------------ 优惠�策 ------------------------------ */
+    /* ------------------------------ 优惠政策 ------------------------------ */
     public static final String DISCOUNT_POLICY_LIST = "discount:policy:list";
     public static final String DISCOUNT_POLICY_ADD = "discount:policy:add";
     public static final String DISCOUNT_POLICY_EDIT = "discount:policy:edit";
@@ -130,7 +136,7 @@ public final class PermissionConst {
     public static final String OA_CLOCK_EDIT = "oa:clock:edit";
     public static final String OA_CLOCK_DELETE = "oa:clock:delete";
 
-    /* ------------------------------ OA-工作日� ------------------------------ */
+    /* ------------------------------ OA-工作报告 ------------------------------ */
     public static final String OA_WORK_REPORT_LIST = "oa:work-report:list";
     public static final String OA_WORK_REPORT_ADD = "oa:work-report:add";
     public static final String OA_WORK_REPORT_CANCEL = "oa:work-report:cancel";
@@ -182,21 +188,15 @@ public final class PermissionConst {
     public static final String LEASE_STALL_LIST = "lease:stall:list";
     public static final String LEASE_STALL_ADD = "lease:stall:add";
     public static final String LEASE_STALL_EDIT = "lease:stall:edit";
-        public static final String LEASE_STALL_DELETE = "lease:stall:delete";
+    public static final String LEASE_STALL_DELETE = "lease:stall:delete";
 
-    /* ------------------------------ 租赁分� ------------------------------ */
+    /* ------------------------------ 租赁分类 ------------------------------ */
     public static final String LEASE_CATEGORY_LIST = "lease:category:list";
     public static final String LEASE_CATEGORY_ADD = "lease:category:add";
     public static final String LEASE_CATEGORY_EDIT = "lease:category:edit";
     public static final String LEASE_CATEGORY_DELETE = "lease:category:delete";
 
-    /* ------------------------------ 财务汇总 ------------------------------ */
-    public static final String FINANCE_REPORT_LIST = "finance:report:list";
-    public static final String FINANCE_FLOW_APPROVE = "finance:flow:approve";
-    public static final String FINANCE_FLOW_RED_FLUSH = "finance:flow:redFlush";
-    public static final String FINANCE_FLOW_VOID = "finance:flow:void";
-
-    /* ------------------------------ 自定义收费�型 ------------------------------ */
+    /* ------------------------------ 自定义收费类型 ------------------------------ */
     public static final String FEE_ITEM_LIST = "fee:item:list";
     public static final String FEE_ITEM_ADD = "fee:item:add";
     public static final String FEE_ITEM_EDIT = "fee:item:edit";
@@ -207,8 +207,7 @@ public final class PermissionConst {
     public static final String FEE_RULE_ADD = "fee:rule:add";
     public static final String FEE_RULE_EDIT = "fee:rule:edit";
 
-
-    /* ------------------------------ �一审批中僼�flow��------------------------------ */
+    /* ------------------------------ 统一审批工作流 ------------------------------ */
     public static final String FLOW_TASK_LIST = "flow:task:list";
     public static final String FLOW_TASK_HANDLE = "flow:task:handle";
     public static final String FLOW_TASK_URGE = "flow:task:urge";
@@ -236,8 +235,7 @@ public final class PermissionConst {
     public static final String OA_MEETING_BOOKING_ADD = "oa:meeting:booking:add";
     public static final String OA_MEETING_BOOKING_CANCEL = "oa:meeting:booking:cancel";
 
-
-    /* ------------------------------ 应收应�计划��plan��------------------------------ */
+    /* ------------------------------ 应收应付计划 ------------------------------ */
     public static final String PLAN_RECVPAY_LIST = "plan:recvpay:list";
     public static final String PLAN_RECVPAY_GENERATE = "plan:recvpay:generate";
     public static final String PLAN_RECVPAY_ADJUST = "plan:recvpay:adjust";
@@ -249,8 +247,5 @@ public final class PermissionConst {
     public static final String LEASE_CONTRACT_LIST = "lease:contract:list";
     public static final String LEASE_CONTRACT_ADD = "lease:contract:add";
     public static final String LEASE_CONTRACT_TERMINATE = "lease:contract:terminate";
+
 }
-
-
-
-

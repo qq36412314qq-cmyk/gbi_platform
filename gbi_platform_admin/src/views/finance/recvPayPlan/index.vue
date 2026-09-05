@@ -41,7 +41,7 @@
         <el-table-column prop="planNo" label="计划编号" width="170" show-overflow-tooltip />
         <el-table-column prop="directionText" label="方向" width="70" align="center" />
         <el-table-column prop="bizTypeText" label="业务类型" width="110" />
-        <el-table-column prop="stallNumber" label="摊位" width="90" align="center">
+        <el-table-column prop="stallNumber" label="铺位" width="90" align="center">
           <template #default="{ row }">{{ row.stallNumber || '-' }}</template>
         </el-table-column>
         <el-table-column prop="periodNo" label="期次" width="90" align="center" />
@@ -96,7 +96,7 @@
           <el-descriptions-item label="计划编号">{{ detail.plan.planNo }}</el-descriptions-item>
           <el-descriptions-item label="方向">{{ detail.plan.directionText }}</el-descriptions-item>
           <el-descriptions-item label="业务类型">{{ detail.plan.bizTypeText }}</el-descriptions-item>
-          <el-descriptions-item label="摊位">{{ detail.plan.stallNumber || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="铺位">{{ detail.plan.stallNumber || '-' }}</el-descriptions-item>
           <el-descriptions-item label="期次">{{ detail.plan.periodNo }}</el-descriptions-item>
           <el-descriptions-item label="应收日期">{{ detail.plan.dueDate || '-' }}</el-descriptions-item>
           <el-descriptions-item label="计划金额">￥{{ formatMoney(detail.plan.planAmount) }}</el-descriptions-item>

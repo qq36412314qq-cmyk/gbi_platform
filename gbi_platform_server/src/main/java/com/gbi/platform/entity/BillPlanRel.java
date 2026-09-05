@@ -14,7 +14,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("bill_plan_rel")
+@TableName("finance_pay_plan_rel")
 public class BillPlanRel extends BaseEntity {
 
     /** 所属子公司ID */

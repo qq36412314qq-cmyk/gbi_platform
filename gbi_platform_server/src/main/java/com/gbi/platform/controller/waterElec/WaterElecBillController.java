@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * 水电物业月度账单接口（物业模块，前端 api/waterElec.ts bill 部分）
  *
@@ -55,11 +57,19 @@ public class WaterElecBillController {
         return Result.success("生成成功", count);
     }
 
-    @Operation(summary = "同步已有水电费记录到未支付订单（biz_fee_bill）")
+    @Operation(summary = "同步已有水电费记录到未支付订单（finance_fee_pay_bill）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).WATER_ELEC_BILL_LIST,'')")
     @PostMapping("/sync/{id}")
     public Result<String> syncToUnpaidBill(@PathVariable Long id) {
         String msg = waterElecBillService.syncToUnpaidBill(id);
         return Result.success(msg);
+    }
+
+    @Operation(summary = "批量将水电费记录同步到未支付订单（finance_fee_pay_bill）")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).WATER_ELEC_BILL_LIST,'')")
+    @PostMapping("/batchSync")
+    public Result<Integer> batchSyncToUnpaidBill(@RequestBody List<Long> ids) {
+        int count = waterElecBillService.batchSyncToUnpaidBill(ids);
+        return Result.success("批量同步成功", count);
     }
 }

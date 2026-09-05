@@ -1,9 +1,9 @@
 <template>
   <div class="g-page-wrap stall-canvas-wrap">
     <div class="g-page-header">
-      <span class="g-page-title">摊位布局画布</span>
+      <span class="g-page-title">铺位布局画布</span>
       <div class="g-page-actions">
-        <span class="canvas-hint">示例数据展示 · 点击摊位查看详情 · 滚轮缩放</span>
+        <span class="canvas-hint">示例数据展示 · 点击铺位查看详情 · 滚轮缩放</span>
       </div>
     </div>
     <div class="canvas-container">
@@ -99,12 +99,12 @@
       <Transition name="slide-fade">
         <div v-if="selectedStall" class="detail-panel" @click.stop>
           <div class="detail-header">
-            <span class="detail-title">摊位 {{ selectedStall.number }}</span>
+            <span class="detail-title">铺位 {{ selectedStall.number }}</span>
             <button class="close-btn" @click="selectedStall=null">X</button>
           </div>
           <div class="detail-body">
-            <div class="detail-row"><span class="detail-label">摊位编号</span><span class="detail-value">{{ selectedStall.number }}</span></div>
-            <div class="detail-row"><span class="detail-label">摊位名称</span><span class="detail-value">{{ selectedStall.name || '-' }}</span></div>
+            <div class="detail-row"><span class="detail-label">铺位编号</span><span class="detail-value">{{ selectedStall.number }}</span></div>
+            <div class="detail-row"><span class="detail-label">铺位名称</span><span class="detail-value">{{ selectedStall.name || '-' }}</span></div>
             <div class="detail-row"><span class="detail-label">所属市场</span><span class="detail-value">{{ selectedStall.market }}</span></div>
             <div class="detail-row"><span class="detail-label">租赁分类</span><span class="detail-value">{{ selectedStall.category }}</span></div>
             <div class="detail-row"><span class="detail-label">面积</span><span class="detail-value">{{ selectedStall.area }}m2</span></div>

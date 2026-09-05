@@ -36,10 +36,10 @@
             <el-tag size="small" :type="row.meterType === 1 ? 'primary' : 'warning'">{{ row.meterTypeText }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="绑定摊位" min-width="200" align="center" show-overflow-tooltip>
+        <el-table-column label="绑定铺位" min-width="200" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.stallName">{{ row.stallMarketName || '未知市场' }} / {{ row.categoryName || '未分类' }} / {{ row.stallName }}（{{ row.stallNumber }}）</span>
-            <span v-else>摊位#{{ row.stallId }}</span>
+            <span v-else>铺位#{{ row.stallId }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="gatewayCode" label="网关编码" min-width="120" show-overflow-tooltip />
@@ -78,7 +78,7 @@
       @confirm="handleSubmit"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <!-- 绑定摊位：市场 → 租赁分类 → 摊位 三级联动 -->
+        <!-- 绑定铺位：市场 → 租赁分类 → 铺位 三级联动 -->
         <el-form-item label="绑定市场" prop="formMarketId">
           <el-select v-model="form.formMarketId" placeholder="选择市场" clearable style="width: 100%" @change="handleMarketChange">
             <el-option v-for="m in marketOptions" :key="m.id" :label="m.marketName" :value="m.id" />
@@ -89,7 +89,7 @@
             <el-option v-for="c in categoryOptions" :key="c.id" :label="c.categoryName" :value="c.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="绑定摊位" prop="stallId">
+        <el-form-item label="绑定铺位" prop="stallId">
           <el-select v-model="form.stallId" placeholder="请先选择市场/分类" clearable filterable style="width: 100%" :disabled="!form.formMarketId && !form.formCategoryId">
             <el-option v-for="s in stallOptions" :key="s.id" :label="s.stallNumber + (s.stallName ? ` - ${s.stallName}` : '')" :value="s.id" />
           </el-select>
@@ -135,7 +135,7 @@
 <script setup lang="ts">
 /**
  * 水电表管理页：设备台账 + 远程抄表 + 合闸断电（合闸断电属于高危操作，二次确认）
- * 绑定摊位采用「市场 → 租赁分类 → 摊位」三级联动下拉（数据源 market_info / stall_category / stall_info）
+ * 绑定铺位采用「市场 → 租赁分类 → 铺位」三级联动下拉（数据源 market_info / stall_category / stall_info）
  */
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -170,7 +170,7 @@ onMounted(async () => {
   }
 })
 
-/* 市场/分类变化 → 清空已选摊位并重新加载摊位选项 */
+/* 市场/分类变化 → 清空已选铺位并重新加载铺位选项 */
 async function handleMarketChange(): Promise<void> {
   form.stallId = undefined
   await loadStallOptions()
@@ -223,7 +223,7 @@ const form = reactive<
 })
 
 const rules: FormRules = {
-  stallId: [{ required: true, message: '请选择绑定摊位', trigger: 'change' }],
+  stallId: [{ required: true, message: '请选择绑定铺位', trigger: 'change' }],
   meterNo: [
     { required: true, message: '请输入设备编号', trigger: 'blur' },
     { max: 64, message: '设备编号不能超过64字符', trigger: 'blur' }
@@ -236,7 +236,7 @@ function openDialog(_parentId?: number, row?: WaterElecMeterVO): void {
   Object.assign(form, {
     id: row?.id,
     stallId: row?.stallId,
-    // 编辑回显：用设备 VO 带回的市场/分类先回填，再加载该范围摊位选项匹配选中
+    // 编辑回显：用设备 VO 带回的市场/分类先回填，再加载该范围铺位选项匹配选中
     formMarketId: row?.stallMarketId ?? undefined,
     formCategoryId: row?.stallCategoryId ?? undefined,
     meterNo: row?.meterNo ?? '',

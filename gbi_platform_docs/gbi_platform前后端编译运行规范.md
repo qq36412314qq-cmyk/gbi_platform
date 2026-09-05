@@ -198,8 +198,8 @@ private BigDecimal usage;
 
 涉及关联查询的表，关键字段写入时固化快照值，禁止运行时关联：
 ```sql
-stall_number varchar(64) COMMENT '摊位编号快照（写入时固化，禁止修改）'
-stall_name varchar(128) COMMENT '摊位名称快照'
+stall_number varchar(64) COMMENT '铺位编号快照（写入时固化，禁止修改）'
+stall_name varchar(128) COMMENT '铺位名称快照'
 stall_market_name varchar(128) COMMENT '所属市场名称快照'
 merchant_name varchar(128) COMMENT '商户名称快照'
 ```

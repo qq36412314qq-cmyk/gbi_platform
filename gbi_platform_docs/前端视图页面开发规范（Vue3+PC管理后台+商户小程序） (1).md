@@ -2,7 +2,7 @@
 
 ## 文档描述
 
-本规范统一 PC 管理后台（Vue3\+Vite\+TS）、商户微信小程序全套前端开发标准，覆盖项目目录、命名、路由菜单、组件、表单表格、接口请求、权限、UI 视觉、主题配置、摊位可视化 Fabric 画布、打印导出、性能、安全、交互、小程序适配全维度约束；完全对齐《集团多业态一体化管控系统》整体业务、后端 API、权限清单、API \& 日志规范，单人独立开发统一编码风格，保证前后端字段对齐、页面复用高、权限管控统一、视觉风格标准化，降低联调、迭代、维护成本。
+本规范统一 PC 管理后台（Vue3\+Vite\+TS）、商户微信小程序全套前端开发标准，覆盖项目目录、命名、路由菜单、组件、表单表格、接口请求、权限、UI 视觉、主题配置、铺位可视化 Fabric 画布、打印导出、性能、安全、交互、小程序适配全维度约束；完全对齐《集团多业态一体化管控系统》整体业务、后端 API、权限清单、API \& 日志规范，单人独立开发统一编码风格，保证前后端字段对齐、页面复用高、权限管控统一、视觉风格标准化，降低联调、迭代、维护成本。
 
 ## 一、整体技术栈标准
 
@@ -20,7 +20,7 @@
 
 - 工具依赖：dayjs \(日期\)、lodash \(通用方法\)、xlsx \(Excel 导出\)、print\-js \(打印\)
 
-- 画布专属：Fabric\.js ^5\.3\.0（摊位平面图模块）
+- 画布专属：Fabric\.js ^5\.3\.0（铺位平面图模块）
 
 ### 1\.2 商户微信小程序
 
@@ -37,8 +37,8 @@ gbi_platform_admin
 │  ├─ api               # 接口层，按业务分文件，与后端Controller一一对应
 │  │  ├─ base.ts        # 登录、字典、上传、消息公共接口
 │  │  ├─ org.ts         # 组织/用户/权限
-│  │  ├─ stall.ts       # 摊位租赁基础接口
-│  │  ├─ marketMap.ts   # 摊位可视化画布专属接口
+│  │  ├─ stall.ts       # 铺位租赁基础接口
+│  │  ├─ marketMap.ts   # 铺位可视化画布专属接口
 │  │  ├─ waterElec.ts   # 水电收费
 │  │  ├─ material.ts    # 物资
 │  │  ├─ inspect.ts     # 安全巡检
@@ -49,7 +49,7 @@ gbi_platform_admin
 │  │  └─ images         # 系统固定logo、静态图片
 │  ├─ components        # 通用/业务/布局组件分层
 │  │  ├─ common         # 基础公共组件：搜索栏、分页、弹窗、Auth权限按钮、上传、导出打印
-│  │  ├─ business       # 业务通用：摊位选择器、商户选择器、流程卡片、MarketCanvas画布组件
+│  │  ├─ business       # 业务通用：铺位选择器、商户选择器、流程卡片、MarketCanvas画布组件
 │  │  └─ layout         # 侧边栏、顶部导航、页面卡片布局
 │  ├─ hooks             # TS组合复用逻辑
 │  │  ├─ useAuth.ts     # 权限判断
@@ -115,7 +115,7 @@ gbi_platform_admin
 
 ```ts
 meta: {
-  title: '摊位可视化地图',
+  title: '铺位可视化地图',
   icon: 'map',
   permission: 'stall:map:list',
   isCache: true
@@ -154,7 +154,7 @@ SearchBar、TablePage、AuthBtn、UploadFile、ExportBtn、PrintBtn、CommonDial
 
 ### 6\.2 业务通用组件 components/business
 
-摊位选择器、商户选择器、流程卡片、**MarketCanvas 画布组件**（编辑 / 只读双模式）。
+铺位选择器、商户选择器、流程卡片、**MarketCanvas 画布组件**（编辑 / 只读双模式）。
 
 ### 6\.3 组件强制约束
 
@@ -226,7 +226,7 @@ SearchBar、TablePage、AuthBtn、UploadFile、ExportBtn、PrintBtn、CommonDial
 
 4. 文件上传、导出接口单独处理二进制流。
 
-### 9\.3 摊位画布专属 7 个接口清单
+### 9\.3 铺位画布专属 7 个接口清单
 
 1. getMarketList：分页查询当前公司地图，自动过滤 company\_id
 
@@ -240,7 +240,7 @@ SearchBar、TablePage、AuthBtn、UploadFile、ExportBtn、PrintBtn、CommonDial
 
 6. getMarketDetail：获取底图 \+ 点位 JSON 用于画布还原
 
-7. getStallStatusByMarket：获取摊位状态，自动上色
+7. getStallStatusByMarket：获取铺位状态，自动上色
 
 ## 十、前端 RB 权限控制规范（与后端完全对齐）
 
@@ -248,7 +248,7 @@ SearchBar、TablePage、AuthBtn、UploadFile、ExportBtn、PrintBtn、CommonDial
 
 2. **按钮权限**统一`<AuthBtn permission="stall:map:edit">`，无权限自动隐藏；
 
-    - stall:list 摊位基础查看
+    - stall:list 铺位基础查看
 
     - stall:map:list 地图页面查看
 
@@ -268,11 +268,11 @@ SearchBar、TablePage、AuthBtn、UploadFile、ExportBtn、PrintBtn、CommonDial
 
 - \-\-color\-primary 集团主蓝（按钮 / 选中高亮）
 
-- \-\-color\-success\-light 空置摊位底色
+- \-\-color\-success\-light 空置铺位底色
 
-- \-\-color\-warning 即将到期摊位
+- \-\-color\-warning 即将到期铺位
 
-- \-\-color\-danger 欠费摊位
+- \-\-color\-danger 欠费铺位
 
 - 多级中性灰度区分背景、边框、文字
 
@@ -314,16 +314,16 @@ SearchBar、TablePage、AuthBtn、UploadFile、ExportBtn、PrintBtn、CommonDial
 
 2. 保存配置实时全局生效，无需刷新页面；
 
-3. 画布 MarketCanvas 自动读取主题变量更新摊位填充色；
+3. 画布 MarketCanvas 自动读取主题变量更新铺位填充色；
 
 4. 商户小程序同步对应子公司主色调。
 
-## 十三、摊位可视化 Fabric 画布模块专项规范（第十九章完整规范）
+## 十三、铺位可视化 Fabric 画布模块专项规范（第十九章完整规范）
 
 ### 13\.1 技术约束
 
 固定依赖 fabric:^5\.3\.0，**禁止接入高德 / 百度 GIS 地图**，仅静态图片画布方案。
-适用场景：园区手绘平面图、室内摊位不规则布局。
+适用场景：园区手绘平面图、室内铺位不规则布局。
 
 ### 13\.2 目录分层
 
@@ -341,7 +341,7 @@ src/api/marketMap\.ts、src/utils/fabricUtil\.ts、components/business/MarketCan
 
 2. 图形创建，每个图形挂载 stallId 自定义属性；
 
-3. 根据摊位 status 自动匹配主题变量上色；
+3. 根据铺位 status 自动匹配主题变量上色；
 
 4. 序列化 JSON 导出 / 反序列化还原画布；
 
@@ -353,11 +353,11 @@ src/api/marketMap\.ts、src/utils/fabricUtil\.ts、components/business/MarketCan
 
 ### 13\.5 stallMap 页面四区块布局
 
-顶部操作按钮（新增 / 保存 / 导出 AuthBtn 鉴权）、画布工具栏、中央画布、右侧摊位属性面板；点击摊位复用摊位详情弹窗，与摊位管理页面功能同源。
+顶部操作按钮（新增 / 保存 / 导出 AuthBtn 鉴权）、画布工具栏、中央画布、右侧铺位属性面板；点击铺位复用铺位详情弹窗，与铺位管理页面功能同源。
 
 ### 13\.6 交互、安全、性能规则
 
-1. 空白画布点击无响应，仅摊位图形触发弹窗；
+1. 空白画布点击无响应，仅铺位图形触发弹窗；
 
 2. 删除地图 / 批量点位修改弹出二次确认；
 
@@ -365,7 +365,7 @@ src/api/marketMap\.ts、src/utils/fabricUtil\.ts、components/business/MarketCan
 
 4. JSON 提交前端过滤\<、onload 等恶意脚本，防注入；
 
-5. 单市场摊位超 300 启用分层渲染；
+5. 单市场铺位超 300 启用分层渲染；
 
 6. 画布状态列表 5 分钟前端缓存，减少请求；
 
@@ -373,7 +373,7 @@ src/api/marketMap\.ts、src/utils/fabricUtil\.ts、components/business/MarketCan
 
 ### 13\.7 商户小程序画布约束
 
-小程序不引入 Fabric，仅展示静态底图图片，仅高亮商户自身摊位，无编辑导出功能。
+小程序不引入 Fabric，仅展示静态底图图片，仅高亮商户自身铺位，无编辑导出功能。
 
 ### 13\.8 画布开发红线
 
@@ -395,7 +395,7 @@ src/api/marketMap\.ts、src/utils/fabricUtil\.ts、components/business/MarketCan
 
 3. 导出文件名统一 `模块名称_年月日.xlsx`；
 
-4. 合同、摊位平面图、账单统一 A4 适配打印布局。
+4. 合同、铺位平面图、账单统一 A4 适配打印布局。
 
 ## 十五、数据格式化工具 utils/format\.ts
 
@@ -429,7 +429,7 @@ src/api/marketMap\.ts、src/utils/fabricUtil\.ts、components/business/MarketCan
 
 2. 页面销毁清除定时器、ECharts、Fabric 画布实例；
 
-3. 字典、摊位状态列表添加前端缓存；
+3. 字典、铺位状态列表添加前端缓存；
 
 4. 图片统一压缩懒加载；
 
@@ -449,7 +449,7 @@ src/api/marketMap\.ts、src/utils/fabricUtil\.ts、components/business/MarketCan
 
 ## 十九、商户微信小程序补充规范
 
-1. 仅保留账单查询、缴费、活动查看、个人摊位静态图，无后台管理功能；
+1. 仅保留账单查询、缴费、活动查看、个人铺位静态图，无后台管理功能；
 
 2. 无画布编辑逻辑，仅静态展示市场平面图；
 
