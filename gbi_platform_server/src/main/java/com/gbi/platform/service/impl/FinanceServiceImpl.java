@@ -1,8 +1,8 @@
 package com.gbi.platform.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gbi.platform.common.constant.CommonConst;
 import com.gbi.platform.common.exception.BizException;
@@ -10,25 +10,33 @@ import com.gbi.platform.common.security.LoginUser;
 import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.dto.FinanceFlowQueryDTO;
 import com.gbi.platform.dto.FinanceSummaryQueryDTO;
+import com.gbi.platform.dto.PayOrderQueryDTO;
+import com.gbi.platform.entity.BizFeeBill;
 import com.gbi.platform.entity.BizFinanceFlow;
+import com.gbi.platform.entity.BizPayOrder;
+import com.gbi.platform.entity.BizPayOrderItem;
+import com.gbi.platform.entity.PropertyFeeBill;
+import com.gbi.platform.entity.StallInfo;
+import com.gbi.platform.entity.StallTenant;
+import com.gbi.platform.entity.WaterElecBill;
+import com.gbi.platform.mapper.BizFeeBillMapper;
 import com.gbi.platform.mapper.BizFinanceFlowMapper;
+import com.gbi.platform.mapper.BizPayOrderItemMapper;
+import com.gbi.platform.mapper.BizPayOrderMapper;
+import com.gbi.platform.mapper.PropertyFeeBillMapper;
+import com.gbi.platform.mapper.StallInfoMapper;
+import com.gbi.platform.mapper.StallTenantMapper;
+import com.gbi.platform.mapper.WaterElecBillMapper;
 import com.gbi.platform.service.FinanceService;
 import com.gbi.platform.service.FlowEngineService;
+import com.gbi.platform.service.RecvPayPlanService;
 import com.gbi.platform.util.AuditLogUtil;
+import com.gbi.platform.util.FlowNoGenerator;
 import com.gbi.platform.vo.FinanceFlowVO;
 import com.gbi.platform.vo.FinanceSummaryVO;
 import com.gbi.platform.vo.PageVO;
-import com.gbi.platform.entity.BizPayOrder;
-import com.gbi.platform.entity.BizPayOrderItem;
-import com.gbi.platform.entity.StallInfo;
-import com.gbi.platform.entity.StallTenant;
-import com.gbi.platform.mapper.BizPayOrderMapper;
-import com.gbi.platform.mapper.BizPayOrderItemMapper;
-import com.gbi.platform.mapper.StallInfoMapper;
-import com.gbi.platform.mapper.StallTenantMapper;
 import com.gbi.platform.vo.PayOrderItemVO;
 import com.gbi.platform.vo.PayOrderPrintVO;
-import com.gbi.platform.dto.PayOrderQueryDTO;
 import com.gbi.platform.vo.PayOrderVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,10 +75,15 @@ public class FinanceServiceImpl implements FinanceService {
     private final BizFinanceFlowMapper financeFlowMapper;
     private final BizPayOrderMapper payOrderMapper;
     private final BizPayOrderItemMapper payOrderItemMapper;
+    private final BizFeeBillMapper bizFeeBillMapper;
+    private final PropertyFeeBillMapper propertyFeeBillMapper;
+    private final WaterElecBillMapper waterElecBillMapper;
     private final StallInfoMapper stallInfoMapper;
     private final StallTenantMapper stallTenantMapper;
     private final AuditLogUtil auditLogUtil;
     private final FlowEngineService flowEngineService;
+    private final FlowNoGenerator flowNoGenerator;
+    private final RecvPayPlanService recvPayPlanService;
 
     @Override
     public PageVO<FinanceFlowVO> page(FinanceFlowQueryDTO dto) {
@@ -616,8 +629,8 @@ public class FinanceServiceImpl implements FinanceService {
         if (payStatus == null) return null;
         return switch (payStatus) {
             case 0 -> "待缴";
-            case 1 -> "已缴";
-            case 2 -> "部分缴费";
+            case 1 -> "部分缴费";
+            case 2 -> "已缴";
             case 3 -> "已退费";
             case 4 -> "已冲红";
             case 5 -> "已作废";
@@ -684,34 +697,175 @@ public class FinanceServiceImpl implements FinanceService {
     @Transactional(rollbackFor = Exception.class)
     public void redFlushPayOrder(Long payOrderId, String reason) {
         LoginUser loginUser = UserContext.getLoginUser();
+        Long companyId = loginUser.getCompanyId();
+
+        // 1. 查询原缴费单
         BizPayOrder order = payOrderMapper.selectById(payOrderId);
         if (order == null) {
             throw new BizException("缴费单不存在");
         }
-        // 仅允许已缴/部分缴费状态冲红
         Integer status = order.getPayStatus();
-        if (status == null || (status != 1 && status != 2)) {
+        if (status == null || (status != CommonConst.FINANCE_PAY_ORDER_STATUS_DONE
+                && status != CommonConst.FINANCE_PAY_ORDER_STATUS_PART)) {
             throw new BizException("仅已缴或部分缴费状态的缴费单可冲红，当前状态：" + payStatusText(status));
         }
-        // 更新缴费单状态为已冲红（4）
+
+        // 2. 更新原缴费单状态为已冲红(4)，保留原单据
         BizPayOrder update = new BizPayOrder();
         update.setId(payOrderId);
-        update.setPayStatus(4);
+        update.setPayStatus(CommonConst.FINANCE_PAY_ORDER_STATUS_FLUSHED);
         update.setRemark((order.getRemark() == null ? "" : order.getRemark()) + "【已冲红：" + reason + "】");
+        update.setUpdateBy(loginUser.getUserId());
         payOrderMapper.updateById(update);
-        // 将关联的缴费单明细标记为已冲红（通过更新 paid_amount=unpaid_amount 表征）
-        LambdaQueryWrapper<BizPayOrderItem> itemWrapper = new LambdaQueryWrapper<BizPayOrderItem>()
-                .eq(BizPayOrderItem::getPayBillId, payOrderId);
-        List<BizPayOrderItem> items = payOrderItemMapper.selectList(itemWrapper);
+
+        // 3. 查询原缴费单明细
+        List<BizPayOrderItem> items = payOrderItemMapper.selectList(
+                new LambdaQueryWrapper<BizPayOrderItem>().eq(BizPayOrderItem::getPayBillId, payOrderId));
+
+        // 4. 生成新的冲红单（待缴状态，重新打开债务），单号 = 原单号 + _R
+        String reversePayBillNo = order.getPayBillNo() + "_R";
+        BizPayOrder reverseOrder = new BizPayOrder();
+        reverseOrder.setCompanyId(companyId);
+        reverseOrder.setPayBillNo(reversePayBillNo);
+        reverseOrder.setSourceType(order.getSourceType());
+        reverseOrder.setSourceId(order.getSourceId());
+        reverseOrder.setStallId(order.getStallId());
+        reverseOrder.setMerchantId(order.getMerchantId());
+        reverseOrder.setTotalAmount(order.getTotalAmount());
+        reverseOrder.setPaidAmount(BigDecimal.ZERO);
+        reverseOrder.setUnpaidAmount(order.getTotalAmount());
+        reverseOrder.setPayStatus(CommonConst.FINANCE_PAY_ORDER_STATUS_FLUSHED);
+        reverseOrder.setRemark("冲红单（原缴费单ID=" + payOrderId + "）");
+        reverseOrder.setCreateBy(loginUser.getUserId());
+        payOrderMapper.insert(reverseOrder);
+
+        Long reversePayOrderId = reverseOrder.getId();
+
+        // 5. 生成冲红单明细
         for (BizPayOrderItem item : items) {
-            BizPayOrderItem updateItem = new BizPayOrderItem();
-            updateItem.setId(item.getId());
-            updateItem.setPaidAmount(BigDecimal.ZERO);
-            updateItem.setUnpaidAmount(item.getAmount().subtract(item.getDiscountAmount()));
-            payOrderItemMapper.updateById(updateItem);
+            BigDecimal amount = item.getAmount();
+            BigDecimal discount = item.getDiscountAmount() != null ? item.getDiscountAmount() : BigDecimal.ZERO;
+
+            BizPayOrderItem reverseItem = new BizPayOrderItem();
+            reverseItem.setPayBillId(reversePayOrderId);
+            reverseItem.setBillId(item.getBillId());
+            reverseItem.setBizType(item.getBizType());
+            reverseItem.setRuleName(item.getRuleName());
+            reverseItem.setFeeItemType(item.getFeeItemType());
+            reverseItem.setBillMonth(item.getBillMonth());
+            reverseItem.setAmount(amount);
+            reverseItem.setDiscountAmount(discount);
+            reverseItem.setPaidAmount(BigDecimal.ZERO);
+            reverseItem.setUnpaidAmount(amount.subtract(discount));
+            reverseItem.setCreateBy(loginUser.getUserId());
+            payOrderItemMapper.insert(reverseItem);
         }
+
+        // 6. 更新源账单状态为待缴（0）
+        for (BizPayOrderItem item : items) {
+            updateSourceBillStatus(companyId, item.getBillId(), item.getBizType());
+        }
+
+        // 7. 创建反向财务流水 + 反向核销应收应付计划
+        for (BizPayOrderItem item : items) {
+            List<BizFinanceFlow> originalFlows = financeFlowMapper.selectList(
+                    new LambdaQueryWrapper<BizFinanceFlow>()
+                            .eq(BizFinanceFlow::getCompanyId, companyId)
+                            .eq(BizFinanceFlow::getBillId, String.valueOf(item.getBillId()))
+                            .eq(BizFinanceFlow::getFlowStatus, CommonConst.FINANCE_FLOW_STATUS_NORMAL));
+
+            for (BizFinanceFlow originalFlow : originalFlows) {
+                // 7a. 标记原流水为已冲红
+                BizFinanceFlow updateFlow = new BizFinanceFlow();
+                updateFlow.setId(originalFlow.getId());
+                updateFlow.setFlowStatus(CommonConst.FINANCE_FLOW_STATUS_FLUSHED);
+                updateFlow.setRedFlushFlowId(originalFlow.getRedFlushFlowId());
+                financeFlowMapper.updateById(updateFlow);
+
+                // 7b. 创建反向流水（支出方向）
+                BizFinanceFlow reverseFlow = new BizFinanceFlow();
+                reverseFlow.setCompanyId(companyId);
+                reverseFlow.setBusinessType(item.getBizType());
+                reverseFlow.setBillId(String.valueOf(item.getBillId()));
+                reverseFlow.setMerchantId(order.getMerchantId());
+                reverseFlow.setStallId(order.getStallId());
+                reverseFlow.setStallNumber(originalFlow.getStallNumber());
+                reverseFlow.setStallName(originalFlow.getStallName());
+                reverseFlow.setStallMarketName(originalFlow.getStallMarketName());
+                reverseFlow.setCategoryName(originalFlow.getCategoryName());
+                reverseFlow.setMerchantName(originalFlow.getMerchantName());
+                reverseFlow.setPayerName(originalFlow.getPayerName());
+                reverseFlow.setPayerPhone(originalFlow.getPayerPhone());
+                reverseFlow.setPayerCompanyName(originalFlow.getPayerCompanyName());
+                reverseFlow.setPayerType(originalFlow.getPayerType());
+                reverseFlow.setContractNo(originalFlow.getContractNo());
+                reverseFlow.setContractId(originalFlow.getContractId());
+                reverseFlow.setOriginalAmount(originalFlow.getOriginalAmount());
+                reverseFlow.setDiscountAmount(originalFlow.getDiscountAmount());
+                reverseFlow.setRealAmount(originalFlow.getRealAmount().negate());
+                reverseFlow.setPayType(originalFlow.getPayType());
+                reverseFlow.setFlowType(CommonConst.FLOW_TYPE_EXPENSE);
+                reverseFlow.setStatus(CommonConst.STATUS_ENABLED);
+                reverseFlow.setFlowStatus(CommonConst.FINANCE_FLOW_STATUS_NORMAL);
+                reverseFlow.setFlowNo(originalFlow.getFlowNo() + "_R");
+                reverseFlow.setRemark("冲红反向流水（原缴费单ID=" + payOrderId + "）");
+                reverseFlow.setCreateBy(loginUser.getUserId());
+                financeFlowMapper.insert(reverseFlow);
+
+                // 7c. 反向核销应收应付计划
+                if (originalFlow.getPlanId() != null) {
+                    recvPayPlanService.writeOff(
+                            originalFlow.getPlanId(),
+                            reverseFlow.getId(),
+                            originalFlow.getRealAmount().negate(),
+                            item.getBizType(),
+                            item.getBillId(),
+                            CommonConst.WRITEOFF_TYPE_RED_REVERSAL,
+                            "冲红核销（原缴费单ID=" + payOrderId + "）");
+                } else {
+                    recvPayPlanService.writeOffByBillId(companyId, item.getBillId(), reverseFlow,
+                            CommonConst.WRITEOFF_TYPE_RED_REVERSAL,
+                            "冲红核销（原缴费单ID=" + payOrderId + "）");
+                }
+            }
+        }
+
         auditLogUtil.record(CommonConst.MODULE_FINANCE, "冲红缴费单", String.valueOf(payOrderId), order, null);
-        log.info("缴费单已冲红, payOrderId={}, reason={}, operator={}", payOrderId, reason, loginUser.getUserId());
+        log.info("缴费单已冲红, payOrderId={}, reversePayOrderId={}, reason={}, operator={}",
+                payOrderId, reversePayOrderId, reason, loginUser.getUserId());
+    }
+
+    /**
+     * 更新源账单状态为待缴（冲红后恢复欠费状态）
+     */
+    private void updateSourceBillStatus(Long companyId, Long billId, String bizType) {
+        // 更新统一账单（biz_fee_bill）
+        BizFeeBill bizBill = bizFeeBillMapper.selectOne(
+                new LambdaQueryWrapper<BizFeeBill>()
+                        .eq(BizFeeBill::getSourceBillId, billId)
+                        .eq(BizFeeBill::getBizType, bizType)
+                        .eq(BizFeeBill::getCompanyId, companyId));
+        if (bizBill != null) {
+            bizBill.setPayStatus(CommonConst.BILL_PAY_STATUS_UNPAID);
+            bizFeeBillMapper.updateById(bizBill);
+        }
+
+        // 更新原始账单
+        if (CommonConst.BIZ_TYPE_PROPERTY_FEE.equals(bizType)) {
+            PropertyFeeBill propBill = propertyFeeBillMapper.selectById(billId);
+            if (propBill != null) {
+                propBill.setPayStatus(CommonConst.BILL_PAY_STATUS_UNPAID);
+                propBill.setPayTime(null);
+                propertyFeeBillMapper.updateById(propBill);
+            }
+        } else if (CommonConst.BIZ_TYPE_WATER_ELEC.equals(bizType)) {
+            WaterElecBill waterBill = waterElecBillMapper.selectById(billId);
+            if (waterBill != null) {
+                waterBill.setPayStatus(CommonConst.BILL_PAY_STATUS_UNPAID);
+                waterBill.setPayTime(null);
+                waterElecBillMapper.updateById(waterBill);
+            }
+        }
     }
 
     @Override

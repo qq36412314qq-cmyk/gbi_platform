@@ -60,7 +60,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="id" label="流水ID" width="90" align="center" />
-        <el-table-column prop="createTime" label="生成时间" min-width="120" align="center" />
+        <el-table-column prop="createTime" label="生成时间" min-width="140" align="center" />
         <el-table-column label="所属公司" width="90" align="center">
           <template #default="{ row }">
             <el-tag size="small" :type="row.companyId === 0 ? 'primary' : 'success'">
@@ -78,9 +78,18 @@
             <el-tag size="small" :type="row.flowType === 1 ? 'danger' : 'success'">{{ row.flowTypeText }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="originalAmount" label="应收原价" width="100" align="right" />
-        <el-table-column prop="discountAmount" label="优惠抵扣" width="100" align="right" />
-        <el-table-column prop="realAmount" label="实收金额" width="100" align="right">
+        <el-table-column prop="flowNo" label="流水单号" width="180" align="center" />
+        <el-table-column label="应收原价" width="100" align="right">
+          <template #default="{ row }">
+            <span>{{ Number(row.originalAmount).toFixed(2) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="优惠抵扣" width="100" align="right">
+          <template #default="{ row }">
+            <span>{{ Number(row.discountAmount).toFixed(2) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="实收金额" width="100" align="right">
           <template #default="{ row }">
             <span class="g-money">{{ Number(row.realAmount).toFixed(2) }}</span>
           </template>
@@ -90,7 +99,6 @@
             {{ row.payTypeText || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="flowNo" label="流水单号" width="180" align="center" />
         <el-table-column label="缴费人" min-width="120" align="center" v-if="showPayerColumn">
           <template #default="{ row }">
             <span>{{ row.payerName || row.merchantName || '-' }}</span>
@@ -99,7 +107,7 @@
         </el-table-column>
         <el-table-column label="合同编号" width="130" align="center" v-if="showContractColumn">
           <template #default="{ row }">
-            {{ row.contractNo || row.billId || '-' }}
+            {{ row.contractNo || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="绑定铺位" min-width="160" align="center" show-overflow-tooltip>
@@ -116,71 +124,22 @@
           </template>
         </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip />
-        <el-table-column label="操作" width="200" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handlePrint(row)">打印</el-button>
-            <el-button
-              v-if="canRedFlush(row)"
-              link type="warning" size="small"
-              @click="handleRedFlush(row)"
-            >冲红</el-button>
-            <el-button
-              v-if="canVoid(row)"
-              link type="danger" size="small"
-              @click="handleVoid(row)"
-            >作废</el-button>
-          </template>
-        </el-table-column>
       </el-table>
     </TablePage>
-
-    <!-- 冲红弹窗 -->
-    <el-dialog v-model="redFlushDialogVisible" title="申请冲红" width="480px" :close-on-click-modal="false">
-      <el-form label-width="80px">
-        <el-form-item label="流水单号">
-          <span>{{ redFlushTarget?.flowNo }}</span>
-        </el-form-item>
-        <el-form-item label="冲红原因">
-          <el-input v-model="redFlushReason" type="textarea" :rows="3" placeholder="请输入冲红原因" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="redFlushDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="redFlushLoading" @click="confirmRedFlush">提交审批</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 作废弹窗 -->
-    <el-dialog v-model="voidDialogVisible" title="作废流水" width="480px" :close-on-click-modal="false">
-      <el-form label-width="80px">
-        <el-form-item label="流水单号">
-          <span>{{ voidTarget?.flowNo }}</span>
-        </el-form-item>
-        <el-form-item label="作废原因">
-          <el-input v-model="voidReason" type="textarea" :rows="3" placeholder="请输入作废原因" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="voidDialogVisible = false">取消</el-button>
-        <el-button type="danger" :loading="voidLoading" @click="confirmVoid">确认作废</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 /**
- * 财务流水页：全域统一资金台账
- * 支持冲红（需审批）、作废（仅草稿/未记账）、打印收据
+ * 财务流水页：finance_pay_flow 全域统一资金台账（只读视图）
+ * 数据表：finance_pay_flow
+ * 功能：分页查询、条件筛选、导出、展开明细
  */
-import { ref, reactive, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import {
   getFinanceFlowPageApi,
   exportFinanceFlowApi,
-  redFlushFlowApi,
-  voidFlowApi,
-  getPrintHtmlApi,
   type FinanceFlowVO,
   type PayOrderItemVO,
   getFinanceFlowItemsApi
@@ -241,8 +200,7 @@ async function handleExport(): Promise<void> {
   }
 }
 
-/* ---------------- 打印 ---------------- */
-/** 展开行数据缓存 */
+/* ---------------- 展开明细 ---------------- */
 const expandedItems = ref<Record<number, PayOrderItemVO[]>>({})
 
 async function loadFlowItems(row: FinanceFlowVO): Promise<void> {
@@ -252,90 +210,6 @@ async function loadFlowItems(row: FinanceFlowVO): Promise<void> {
     } catch {
       expandedItems.value[row.id] = []
     }
-  }
-}
-
-async function handlePrint(row: FinanceFlowVO): Promise<void> {
-  try {
-    const html = await getPrintHtmlApi(row.id)
-    const printWindow = window.open('', '_blank')
-    if (printWindow) {
-      printWindow.document.write(html)
-      printWindow.document.close()
-      printWindow.focus()
-      printWindow.print()
-      printWindow.close()
-    }
-  } catch {
-    ElMessage.error('打印失败，请稍后重试')
-  }
-}
-
-/* ---------------- 冲红 ---------------- */
-const redFlushDialogVisible = ref(false)
-const redFlushLoading = ref(false)
-const redFlushTarget = ref<FinanceFlowVO | null>(null)
-const redFlushReason = ref('')
-
-function canRedFlush(row: FinanceFlowVO): boolean {
-  return row.flowStatus === 1 // 仅正常状态的流水可冲红
-}
-
-function handleRedFlush(row: FinanceFlowVO): void {
-  redFlushTarget.value = row
-  redFlushReason.value = ''
-  redFlushDialogVisible.value = true
-}
-
-async function confirmRedFlush(): Promise<void> {
-  if (!redFlushTarget.value || !redFlushReason.value.trim()) {
-    ElMessage.warning('请填写冲红原因')
-    return
-  }
-  redFlushLoading.value = true
-  try {
-    await redFlushFlowApi({ flowId: redFlushTarget.value.id, reason: redFlushReason.value.trim() })
-    ElMessage.success('冲红申请已提交，等待审批')
-    redFlushDialogVisible.value = false
-    loadData()
-  } catch (e: any) {
-    ElMessage.error(e?.msg || '冲红申请失败')
-  } finally {
-    redFlushLoading.value = false
-  }
-}
-
-/* ---------------- 作废 ---------------- */
-const voidDialogVisible = ref(false)
-const voidLoading = ref(false)
-const voidTarget = ref<FinanceFlowVO | null>(null)
-const voidReason = ref('')
-
-function canVoid(row: FinanceFlowVO): boolean {
-  return row.flowStatus === 1 // 仅正常状态且未关联计划的可作废（后端进一步校验）
-}
-
-function handleVoid(row: FinanceFlowVO): void {
-  voidTarget.value = row
-  voidReason.value = ''
-  voidDialogVisible.value = true
-}
-
-async function confirmVoid(): Promise<void> {
-  if (!voidTarget.value || !voidReason.value.trim()) {
-    ElMessage.warning('请填写作废原因')
-    return
-  }
-  voidLoading.value = true
-  try {
-    await voidFlowApi({ flowId: voidTarget.value.id, reason: voidReason.value.trim() })
-    ElMessage.success('流水已作废')
-    voidDialogVisible.value = false
-    loadData()
-  } catch (e: any) {
-    ElMessage.error(e?.msg || '作废失败')
-  } finally {
-    voidLoading.value = false
   }
 }
 

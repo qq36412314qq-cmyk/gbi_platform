@@ -92,6 +92,7 @@ public final class PermissionConst {
     public static final String PROPERTY_FEE_BILL_LIST = "property:feeBill:list";
     public static final String PROPERTY_FEE_BILL_GENERATE = "property:feeBill:generate";
     public static final String PROPERTY_FEE_BILL_GENERATE_SINGLE = "property:feeBill:generateSingle";
+    public static final String PROPERTY_FEE_BILL_AUTO_GENERATE = "property:feeBill:autoGenerate";
     public static final String PROPERTY_FEE_BILL_EXPORT = "property:feeBill:export";
 
     /* ------------------------------ 未支付订单聚合查询 ------------------------------ */

@@ -9,6 +9,10 @@ import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.dto.UnifiedPayDTO;
 import com.gbi.platform.entity.BizFinanceFlow;
 import com.gbi.platform.entity.BizFeeBill;
+import com.gbi.platform.entity.BizPayOrder;
+import com.gbi.platform.entity.BizPayOrderItem;
+import com.gbi.platform.entity.FeeItem;
+import com.gbi.platform.entity.FeeRule;
 import com.gbi.platform.entity.MarketInfo;
 import com.gbi.platform.entity.PropertyFeeBill;
 import com.gbi.platform.entity.StallCategory;
@@ -19,6 +23,10 @@ import com.gbi.platform.entity.WaterElecBill;
 import com.gbi.platform.entity.WaterElecPayRecord;
 import com.gbi.platform.mapper.BizFinanceFlowMapper;
 import com.gbi.platform.mapper.BizFeeBillMapper;
+import com.gbi.platform.mapper.BizPayOrderItemMapper;
+import com.gbi.platform.mapper.BizPayOrderMapper;
+import com.gbi.platform.mapper.FeeItemMapper;
+import com.gbi.platform.mapper.FeeRuleMapper;
 import com.gbi.platform.mapper.MarketInfoMapper;
 import com.gbi.platform.mapper.PropertyFeeBillMapper;
 import com.gbi.platform.mapper.StallCategoryMapper;
@@ -58,6 +66,10 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
     private final WaterElecBillMapper waterElecBillMapper;
     private final WaterElecPayRecordMapper payRecordMapper;
     private final BizFinanceFlowMapper financeFlowMapper;
+    private final BizPayOrderMapper payOrderMapper;
+    private final BizPayOrderItemMapper payOrderItemMapper;
+    private final FeeRuleMapper feeRuleMapper;
+    private final FeeItemMapper feeItemMapper;
     private final StallInfoMapper stallInfoMapper;
     private final StallTenantMapper stallTenantMapper;
     private final StallCategoryMapper categoryMapper;
@@ -273,6 +285,62 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
                 bizBill.getId(), sourceBillId, record.getId(), bill.getAmount());
         // 缴费成功后尝试激活签约中的合同
         activateContractIfSigned(bill.getStallId());
+
+        // 写入 finance_pay_order + finance_pay_order_item（单条缴费）
+        writePayOrder(companyId, bizBill, bill, dto, record.getPayType(), flow.getFlowNo());
+    }
+
+    /**
+     * 单条缴费后写入缴费单和明细
+     */
+    private void writePayOrder(Long companyId, BizFeeBill bizBill, PropertyFeeBill bill,
+                               UnifiedPayDTO dto, Integer payType, String flowNo) {
+        // 先检查是否已存在同一来源账单的缴费单
+        BizPayOrder existing = payOrderMapper.selectBySourceId(bill.getId());
+        if (existing != null) {
+            log.info("缴费单已存在，跳过创建：payOrderId={}, sourceBillId={}", existing.getId(), bill.getId());
+            // 更新缴费单状态
+            BizPayOrder update = new BizPayOrder();
+            update.setId(existing.getId());
+            update.setPayStatus(CommonConst.FINANCE_PAY_ORDER_STATUS_DONE);
+            update.setPaidAmount(bill.getAmount());
+            update.setUnpaidAmount(BigDecimal.ZERO);
+            update.setPayTime(LocalDateTime.now());
+            payOrderMapper.updateById(update);
+            return;
+        }
+
+        // 创建缴费单
+        BizPayOrder payOrder = new BizPayOrder();
+        payOrder.setCompanyId(companyId);
+        payOrder.setPayBillNo(flowNo);
+        payOrder.setSourceType("fee_bill");
+        payOrder.setSourceId(bill.getId());
+        payOrder.setStallId(bill.getStallId());
+        payOrder.setMerchantId(bill.getMerchantId());
+        payOrder.setTotalAmount(bill.getAmount());
+        payOrder.setPaidAmount(bill.getAmount());
+        payOrder.setUnpaidAmount(BigDecimal.ZERO);
+        payOrder.setPayStatus(CommonConst.FINANCE_PAY_ORDER_STATUS_DONE);
+        payOrder.setPayTime(LocalDateTime.now());
+        payOrder.setRemark(dto.getRemark());
+        payOrderMapper.insert(payOrder);
+
+        // 创建缴费单明细
+        BizPayOrderItem item = new BizPayOrderItem();
+        item.setPayBillId(payOrder.getId());
+        item.setBillId(bill.getId());
+        item.setBizType(CommonConst.BIZ_TYPE_PROPERTY_FEE);
+        item.setRuleName(lookupRuleName(bill.getRuleId(), CommonConst.BIZ_TYPE_PROPERTY_FEE));
+        item.setFeeItemType(lookupFeeItemName(bill.getRuleId(), CommonConst.BIZ_TYPE_PROPERTY_FEE));
+        item.setBillMonth(bill.getBillMonth());
+        item.setAmount(bill.getAmount());
+        item.setDiscountAmount(BigDecimal.ZERO);
+        item.setPaidAmount(bill.getAmount());
+        item.setUnpaidAmount(BigDecimal.ZERO);
+        payOrderItemMapper.insert(item);
+
+        log.info("单条缴费写入缴费单成功：payOrderId={}, amount={}", payOrder.getId(), bill.getAmount());
     }
 
     // -------------------------------------------------------------------------
@@ -336,6 +404,58 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
                 bizBill.getId(), sourceBillId, record.getId(), bill.getTotalAmount());
         // 缴费成功后尝试激活签约中的合同
         activateContractIfSigned(bill.getStallId());
+
+        // 写入 finance_pay_order + finance_pay_order_item（单条水电费缴费）
+        writeWaterElecPayOrder(companyId, bizBill, bill, dto, record.getPayType(), flow.getFlowNo());
+    }
+
+    /**
+     * 单条水电费缴费后写入缴费单和明细
+     */
+    private void writeWaterElecPayOrder(Long companyId, BizFeeBill bizBill, WaterElecBill bill,
+                                        UnifiedPayDTO dto, Integer payType, String flowNo) {
+        BizPayOrder existing = payOrderMapper.selectBySourceId(bill.getId());
+        if (existing != null) {
+            log.info("缴费单已存在，跳过创建：payOrderId={}, sourceBillId={}", existing.getId(), bill.getId());
+            BizPayOrder update = new BizPayOrder();
+            update.setId(existing.getId());
+            update.setPayStatus(CommonConst.BILL_PAY_STATUS_PAID);
+            update.setPaidAmount(bill.getTotalAmount());
+            update.setUnpaidAmount(BigDecimal.ZERO);
+            update.setPayTime(LocalDateTime.now());
+            payOrderMapper.updateById(update);
+            return;
+        }
+
+        BizPayOrder payOrder = new BizPayOrder();
+        payOrder.setCompanyId(companyId);
+        payOrder.setPayBillNo(flowNo);
+        payOrder.setSourceType("fee_bill");
+        payOrder.setSourceId(bill.getId());
+        payOrder.setStallId(bill.getStallId());
+        payOrder.setMerchantId(bill.getMerchantId());
+        payOrder.setTotalAmount(bill.getTotalAmount());
+        payOrder.setPaidAmount(bill.getTotalAmount());
+        payOrder.setUnpaidAmount(BigDecimal.ZERO);
+        payOrder.setPayStatus(CommonConst.BILL_PAY_STATUS_PAID);
+        payOrder.setPayTime(LocalDateTime.now());
+        payOrder.setRemark(dto.getRemark());
+        payOrderMapper.insert(payOrder);
+
+        BizPayOrderItem item = new BizPayOrderItem();
+        item.setPayBillId(payOrder.getId());
+        item.setBillId(bill.getId());
+        item.setBizType(CommonConst.BIZ_TYPE_WATER_ELEC);
+        item.setRuleName(lookupRuleName(null, CommonConst.BIZ_TYPE_WATER_ELEC));
+        item.setFeeItemType(lookupFeeItemName(null, CommonConst.BIZ_TYPE_WATER_ELEC));
+        item.setBillMonth(bill.getBillMonth());
+        item.setAmount(bill.getTotalAmount());
+        item.setDiscountAmount(BigDecimal.ZERO);
+        item.setPaidAmount(bill.getTotalAmount());
+        item.setUnpaidAmount(BigDecimal.ZERO);
+        payOrderItemMapper.insert(item);
+
+        log.info("单条水电费缴费写入缴费单成功：payOrderId={}, amount={}", payOrder.getId(), bill.getTotalAmount());
     }
 
     // -------------------------------------------------------------------------
@@ -436,7 +556,7 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
         flow.setPayType(record.getPayType());
         flow.setFlowType(CommonConst.FLOW_TYPE_INCOME);
         flow.setStatus(1);
-        flow.setFlowStatus(CommonConst.FLOW_STATUS_NORMAL);
+        flow.setFlowStatus(CommonConst.FINANCE_FLOW_STATUS_NORMAL);
         flow.setRemark("统一缴费");
         flow.setCreateBy(UserContext.getUserIdOrZero());
         financeFlowMapper.insert(flow);
@@ -466,5 +586,34 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
             leaseContractService.activateContract(signedContract.getId());
             log.info("合同激活成功：stallId={}, contractId={}", stallId, signedContract.getId());
         }
+    }
+
+    /**
+     * 查询规则名称
+     */
+    private String lookupRuleName(Long ruleId, String bizType) {
+        if (ruleId != null) {
+            FeeRule rule = feeRuleMapper.selectById(ruleId);
+            if (rule != null && rule.getRuleName() != null) {
+                return rule.getRuleName();
+            }
+        }
+        return CommonConst.BIZ_TYPE_PROPERTY_FEE.equals(bizType) ? "物业费" : "水电费";
+    }
+
+    /**
+     * 查询收费项名称
+     */
+    private String lookupFeeItemName(Long ruleId, String bizType) {
+        if (ruleId != null) {
+            FeeRule rule = feeRuleMapper.selectById(ruleId);
+            if (rule != null && rule.getFeeItemId() != null) {
+                FeeItem item = feeItemMapper.selectById(rule.getFeeItemId());
+                if (item != null && item.getFeeItemName() != null) {
+                    return item.getFeeItemName();
+                }
+            }
+        }
+        return CommonConst.BIZ_TYPE_PROPERTY_FEE.equals(bizType) ? "物业费" : "水电费";
     }
 }

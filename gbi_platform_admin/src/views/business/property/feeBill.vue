@@ -92,6 +92,36 @@
       </el-table>
     </TablePage>
 
+    <!-- 自动生成弹窗 -->
+    <el-dialog v-model="autoDialogVisible" title="自动生成物业费记录" width="420px" :close-on-click-modal="false">
+      <el-form :model="autoForm" label-width="80px">
+        <el-form-item label="目标月份">
+          <el-date-picker
+            v-model="autoForm.targetMonth"
+            type="month"
+            value-format="YYYY-MM"
+            placeholder="选择目标月份（不选则当月）"
+            clearable
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="市场筛选">
+          <el-select v-model="autoForm.marketId" placeholder="全部市场" clearable style="width: 100%">
+            <el-option v-for="m in marketOptions" :key="m.id" :label="m.marketName" :value="m.id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <el-alert
+        type="info"
+        :closable="false"
+        description="将从合约开始日期起，自动生成所有待补录月份的账单（已存在月份自动跳过）"
+      />
+      <template #footer>
+        <el-button @click="autoDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="autoLoading" @click="confirmAutoGenerate">确认生成</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 单条生成弹窗 -->
     <el-dialog v-model="singleDialogVisible" title="单条生成物业费账单" width="480px" :close-on-click-modal="false">
       <el-form :model="singleForm" label-width="100px">
@@ -139,6 +169,7 @@ import {
   getPropertyFeeBillDetailApi,
   syncPropertyFeeBillApi,
   batchSyncPropertyFeeBillApi,
+  autoGeneratePropertyFeeBillApi,
   type PropertyFeeBillVO
 } from '@/api/propertyFee'
 import { getMarketListApi, type MarketVO } from '@/api/market'
@@ -291,6 +322,45 @@ const handleSingleGenerate = async () => {
     ElMessage.error(e?.msg || '生成失败')
   } finally {
     singleLoading.value = false
+  }
+}
+
+// 自动生成相关
+const autoDialogVisible = ref(false)
+const autoLoading = ref(false)
+const autoForm = reactive({ targetMonth: '', marketId: null as number | null })
+
+// 打开自动生成弹窗（加载市场选项）
+const handleAutoGenerate = async () => {
+  if (marketOptions.value.length === 0) {
+    try {
+      marketOptions.value = await getMarketListApi()
+    } catch { /* 静默失败 */ }
+  }
+  autoForm.targetMonth = ''
+  autoForm.marketId = null
+  autoDialogVisible.value = true
+}
+
+// 确认自动生成
+const confirmAutoGenerate = async () => {
+  autoLoading.value = true
+  try {
+    const count = await autoGeneratePropertyFeeBillApi({
+      targetMonth: autoForm.targetMonth || undefined,
+      marketId: autoForm.marketId
+    })
+    if (count === 0) {
+      ElMessage.info('所有月份账单已存在，无需重复生成')
+    } else {
+      ElMessage.success('自动生成成功，共生成 ' + count + ' 条记录')
+    }
+    autoDialogVisible.value = false
+    loadData()
+  } catch (e: any) {
+    ElMessage.error(e?.msg || '生成失败')
+  } finally {
+    autoLoading.value = false
   }
 }
 

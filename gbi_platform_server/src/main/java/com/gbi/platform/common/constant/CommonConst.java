@@ -242,16 +242,29 @@ public final class CommonConst {
     public static final int FLOW_STATUS_NORMAL = 6;
     public static final int FLOW_STATUS_FLUSHING = 7;
     public static final int FLOW_STATUS_FLUSHED = 8;
-    /* ------------------------------ 财务流水状态（biz_finance_flow.flow_status）------------------------------ */
+    /* ------------------------------ 财务流水状态（finance_pay_flow.flow_status）------------------------------ */
     /** 正常 */
     public static final int FINANCE_FLOW_STATUS_NORMAL = 1;
+
     /** 冲红中 */
     public static final int FINANCE_FLOW_STATUS_FLUSHING = 2;
     /** 已冲红 */
     public static final int FINANCE_FLOW_STATUS_FLUSHED = 3;
     /** 已作废 */
     public static final int FINANCE_FLOW_STATUS_VOIDED = 4;
-
+    /* ------------------------------ 缴费单状态（finance_pay_order.pay_status）缴费状态 0待缴 1部分缴费 2已缴 3已退费 4已冲红 5已作废------------------------------ */
+    /** 待缴 */
+    public static final int FINANCE_PAY_ORDER_STATUS_PENDING = 0;
+    /** 部分缴费 */
+    public static final int FINANCE_PAY_ORDER_STATUS_PART = 1;
+    /** 已缴 */
+    public static final int FINANCE_PAY_ORDER_STATUS_DONE = 2;
+    /** 已退费 */
+    public static final int FINANCE_PAY_ORDER_STATUS_REFUND = 3;
+    /** 已冲红 */
+    public static final int FINANCE_PAY_ORDER_STATUS_FLUSHED = 4;
+    /** 已作废 */
+    public static final int FINANCE_PAY_ORDER_STATUS_VOIDED = 5;
     /* ------------------------------ 流程类型 ------------------------------ */
     public static final int FLOW_TYPE_INCOME = 1;
     public static final int FLOW_TYPE_EXPENSE = 2;
