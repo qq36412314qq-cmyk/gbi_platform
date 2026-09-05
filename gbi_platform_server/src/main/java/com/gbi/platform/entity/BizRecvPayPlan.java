@@ -41,7 +41,7 @@ public class BizRecvPayPlan extends BaseEntity {
     /** 市场ID */
     private Long marketId;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
     /** 租户ID */

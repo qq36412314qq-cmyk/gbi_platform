@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 租赁合同返回（含租户名称、摊位编号、分类名称、所属市场、收费规则周期）
+ * 租赁合同返回（含租户名称、铺位编号、分类名称、所属市场、收费规则周期）
  *
  * @author gbi
  */
@@ -33,13 +33,13 @@ public class ContractVO implements Serializable {
     @Schema(description = "租户名称")
     private String tenantName;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
-    @Schema(description = "摊位编号")
+    @Schema(description = "铺位编号")
     private String stallNumber;
 
-    @Schema(description = "摊位名称")
+    @Schema(description = "铺位名称")
     private String stallName;
 
     @Schema(description = "租赁分类名称")

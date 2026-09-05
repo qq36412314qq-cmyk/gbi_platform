@@ -29,7 +29,7 @@ public class BizFeeBill extends BaseEntity {
     /** 业务类型：property_fee=物业费 water_elec=水电费 rent=租赁费 kindergarten=幼儿园费 */
     private String bizType;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
     /** 商户ID */
@@ -59,7 +59,7 @@ public class BizFeeBill extends BaseEntity {
     /** 实际应收 = 原价 - 优惠 + 调账 */
     private BigDecimal realAmount;
 
-    /** 缴费状态 0待缴 1已缴 2部分缴费 */
+    /** 缴费状态 0待缴 1部分缴费 2已缴 3已退费 4已冲红 5已作废 */
     private Integer payStatus;
 
     /** 缴费完成时间 */

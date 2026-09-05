@@ -35,7 +35,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 租赁摊位服务实现：租赁标的（商铺/仓库/车位等，分类可自定义）
+ * 租赁铺位服务实现：租赁标的（商铺/仓库/车位等，分类可自定义）
  * 编号同公司唯一；新增初始状态空置；删除前置校验：存在合同禁止删除；
  * 新增/编辑/删除强制审计（oper_module=stall_lease）
  *
@@ -55,7 +55,7 @@ public class LeaseStallServiceImpl implements LeaseStallService {
 
     private final LeaseContractService leaseContractService;
 
-    /** 跨模块调用收费规则绑定 Service 接口：摊位收费规则全量替换绑定（同收费类型限选一条） */
+    /** 跨模块调用收费规则绑定 Service 接口：铺位收费规则全量替换绑定（同收费类型限选一条） */
     private final FeeRuleStallRelService feeRuleStallRelService;
 
     private final AuditLogUtil auditLogUtil;
@@ -129,7 +129,7 @@ public class LeaseStallServiceImpl implements LeaseStallService {
         stall.setRemark(dto.getRemark());
         stallMapper.insert(stall);
 
-        // 摊位+收费规则绑定同事务，任一失败整体回滚
+        // 铺位+收费规则绑定同事务，任一失败整体回滚
         feeRuleStallRelService.saveBindings(stall.getId(), dto.getRuleIds());
 
         auditLogUtil.record(CommonConst.MODULE_LEASE_STALL, CommonConst.OPER_TYPE_ADD,
@@ -155,7 +155,7 @@ public class LeaseStallServiceImpl implements LeaseStallService {
         stall.setRemark(dto.getRemark());
         stallMapper.updateById(stall);
 
-        // 摊位+收费规则绑定同事务，任一失败整体回滚
+        // 铺位+收费规则绑定同事务，任一失败整体回滚
         feeRuleStallRelService.saveBindings(dto.getId(), dto.getRuleIds());
 
         auditLogUtil.record(CommonConst.MODULE_LEASE_STALL, CommonConst.OPER_TYPE_UPDATE,
@@ -167,7 +167,7 @@ public class LeaseStallServiceImpl implements LeaseStallService {
         StallInfo stall = getExists(id);
         // 存在合同禁止删除（跨模块调用合同 Service 接口校验）
         if (leaseContractService.hasAnyContractByStall(id)) {
-            throw new BizException("该摊位存在租赁合同，禁止删除");
+            throw new BizException("该铺位存在租赁合同，禁止删除");
         }
         stallMapper.deleteById(id);
 
@@ -206,7 +206,7 @@ public class LeaseStallServiceImpl implements LeaseStallService {
         if (stallIds == null || stallIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        // selectBatchIds 查询同样受 company_id 拦截器约束，跨公司摊位查询不到
+        // selectBatchIds 查询同样受 company_id 拦截器约束，跨公司铺位查询不到
         List<StallInfo> stalls = stallMapper.selectBatchIds(stallIds);
         return assembleOptions(stalls).stream()
                 .collect(Collectors.toMap(StallOptionVO::getId, o -> o));
@@ -220,7 +220,7 @@ public class LeaseStallServiceImpl implements LeaseStallService {
     }
 
     /**
-     * 摊位选项组装（批量补充分类名称与市场名称）
+     * 铺位选项组装（批量补充分类名称与市场名称）
      */
     private List<StallOptionVO> assembleOptions(List<StallInfo> stalls) {
         if (stalls.isEmpty()) {
@@ -254,7 +254,7 @@ public class LeaseStallServiceImpl implements LeaseStallService {
     }
 
     /**
-     * 市场存在性校验（跨模块调用市场 Service 接口，防止摊位挂靠不存在的市场）
+     * 市场存在性校验（跨模块调用市场 Service 接口，防止铺位挂靠不存在的市场）
      */
     private void checkMarket(Long marketId) {
         if (marketId == null) {
@@ -266,14 +266,14 @@ public class LeaseStallServiceImpl implements LeaseStallService {
     }
 
     /**
-     * 摊位编号同公司唯一校验
+     * 铺位编号同公司唯一校验
      */
     private void checkNumberUnique(Long excludeId, String stallNumber) {
         Long count = stallMapper.selectCount(new LambdaQueryWrapper<StallInfo>()
                 .eq(StallInfo::getStallNumber, stallNumber)
                 .ne(excludeId != null, StallInfo::getId, excludeId));
         if (count != null && count > 0) {
-            throw new BizException("摊位编号已存在");
+            throw new BizException("铺位编号已存在");
         }
     }
 
@@ -292,7 +292,7 @@ public class LeaseStallServiceImpl implements LeaseStallService {
     private StallInfo getExists(Long id) {
         StallInfo stall = stallMapper.selectById(id);
         if (stall == null) {
-            throw new BizException("摊位不存在或已删除");
+            throw new BizException("铺位不存在或已删除");
         }
         return stall;
     }

@@ -13,19 +13,19 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 编辑租赁摊位入参
+ * 编辑租赁铺位入参
  *
  * @author gbi
  */
 @Data
-@Schema(description = "编辑租赁摊位入参")
+@Schema(description = "编辑租赁铺位入参")
 public class StallUpdateDTO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "摊位ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "摊位ID不能为空")
+    @Schema(description = "铺位ID", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "铺位ID不能为空")
     private Long id;
 
     @Schema(description = "关联市场ID")
@@ -34,24 +34,24 @@ public class StallUpdateDTO implements Serializable {
     @Schema(description = "租赁分类ID（关联 stall_category，可自定义）")
     private Long stallCategoryId;
 
-    @Schema(description = "摊位编号", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "摊位编号不能为空")
-    @Size(max = 64, message = "摊位编号不能超过64字符")
+    @Schema(description = "铺位编号", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "铺位编号不能为空")
+    @Size(max = 64, message = "铺位编号不能超过64字符")
     private String stallNumber;
 
-    @Schema(description = "摊位名称")
-    @Size(max = 128, message = "摊位名称不能超过128字符")
+    @Schema(description = "铺位名称")
+    @Size(max = 128, message = "铺位名称不能超过128字符")
     private String stallName;
 
-    @Schema(description = "摊位面积(平方米)")
+    @Schema(description = "铺位面积(平方米)")
     @Digits(integer = 8, fraction = 2, message = "面积最多两位小数")
     private BigDecimal stallArea;
 
-    @Schema(description = "摊位状态 0空置 1已租 2欠费 3即将到期")
+    @Schema(description = "铺位状态 0空置 1已租 2欠费 3即将到期")
     private Integer status;
 
-    @Schema(description = "摊位备注")
-    @Size(max = 500, message = "摊位备注不能超过500字符")
+    @Schema(description = "铺位备注")
+    @Size(max = 500, message = "铺位备注不能超过500字符")
     private String remark;
 
     @Schema(description = "绑定收费规则ID集合（全量替换：传空数组=清空绑定；传null=保持不变）")

@@ -40,7 +40,7 @@ public class BizDiscountApply extends BaseEntity {
     /** 合同编号（冗余便于列表展示） */
     private String contractNo;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
     /** 租户ID */

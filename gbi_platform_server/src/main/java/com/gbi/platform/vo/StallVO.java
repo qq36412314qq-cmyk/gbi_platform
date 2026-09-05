@@ -10,18 +10,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 租赁摊位返回（含分类/市场名称与已绑定收费规则）
+ * 租赁铺位返回（含分类/市场名称与已绑定收费规则）
  *
  * @author gbi
  */
 @Data
-@Schema(description = "租赁摊位返回")
+@Schema(description = "租赁铺位返回")
 public class StallVO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long id;
 
     @Schema(description = "所属子公司ID")
@@ -39,22 +39,22 @@ public class StallVO implements Serializable {
     @Schema(description = "租赁分类名称")
     private String categoryName;
 
-    @Schema(description = "摊位编号")
+    @Schema(description = "铺位编号")
     private String stallNumber;
 
-    @Schema(description = "摊位名称")
+    @Schema(description = "铺位名称")
     private String stallName;
 
-    @Schema(description = "摊位面积(平方米)")
+    @Schema(description = "铺位面积(平方米)")
     private BigDecimal stallArea;
 
-    @Schema(description = "摊位状态 0空置 1已租 2欠费 3即将到期")
+    @Schema(description = "铺位状态 0空置 1已租 2欠费 3即将到期")
     private Integer status;
 
-    @Schema(description = "摊位状态文本")
+    @Schema(description = "铺位状态文本")
     private String statusText;
 
-    @Schema(description = "摊位备注")
+    @Schema(description = "铺位备注")
     private String remark;
 
     @Schema(description = "创建时间")

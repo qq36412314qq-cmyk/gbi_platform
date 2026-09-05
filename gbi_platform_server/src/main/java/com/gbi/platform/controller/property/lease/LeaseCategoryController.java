@@ -64,7 +64,7 @@ public class LeaseCategoryController {
         return Result.success();
     }
 
-    @Operation(summary = "删除分类（被摊位引用禁止删除，逻辑删除）")
+    @Operation(summary = "删除分类（被铺位引用禁止删除，逻辑删除）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).LEASE_CATEGORY_DELETE,'')")
     @PostMapping("/delete")
     public Result<Void> delete(@RequestParam Long id) {

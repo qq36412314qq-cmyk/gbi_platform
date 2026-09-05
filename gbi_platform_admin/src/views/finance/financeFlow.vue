@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="g-page-wrap finance-flow-wrap">
     <!-- 顶部操作区 -->
     <div class="g-page-header">
@@ -102,10 +102,10 @@
             {{ row.contractNo || row.billId || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="绑定摊位" min-width="160" align="center" show-overflow-tooltip>
+        <el-table-column label="绑定铺位" min-width="160" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.stallName">{{ row.stallMarketName || '未知市场' }} / {{ row.categoryName || '未分类' }} / {{ row.stallName }}（{{ row.stallNumber }}）</span>
-            <span v-else>摊位#{{ row.stallId }}</span>
+            <span v-else>铺位#{{ row.stallId }}</span>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="90" align="center">

@@ -9,7 +9,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * 租赁合同退租入参（高危操作：摊位置空、押金退费流水、强制审计）
+ * 租赁合同退租入参（高危操作：铺位置空、押金退费流水、强制审计）
  *
  * @author gbi
  */

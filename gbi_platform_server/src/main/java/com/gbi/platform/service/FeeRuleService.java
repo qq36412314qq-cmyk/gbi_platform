@@ -31,7 +31,7 @@ public interface FeeRuleService {
     long countByFeeItemId(Long feeItemId);
 
     /**
-     * 启用中的收费规则选项（供摊位绑定下拉选择，company_id 自动隔离）
+     * 启用中的收费规则选项（供铺位绑定下拉选择，company_id 自动隔离）
      *
      * @return 仅 status=1 的规则选项
      */

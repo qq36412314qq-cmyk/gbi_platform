@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * 新增租赁合同入参（租户 + 摊位绑定，生效后摊位置为已租）
+ * 新增租赁合同入参（租户 + 铺位绑定，生效后铺位置为已租）
  *
  * @author gbi
  */
@@ -28,8 +28,8 @@ public class ContractAddDTO implements Serializable {
     @NotNull(message = "租户不能为空")
     private Long tenantId;
 
-    @Schema(description = "摊位ID（关联 stall_info，须为空置摊位）", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "摊位不能为空")
+    @Schema(description = "铺位ID（关联 stall_info，须为空置铺位）", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "铺位不能为空")
     private Long stallId;
 
     @Schema(description = "月租金金额")

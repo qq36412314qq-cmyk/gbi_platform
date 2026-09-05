@@ -38,14 +38,14 @@ public class FinanceFlowVO implements Serializable {
     @Schema(description = "商户ID")
     private Long merchantId;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
     // === 物业快照 ===
-    @Schema(description = "摊位编号快照")
+    @Schema(description = "铺位编号快照")
     private String stallNumber;
 
-    @Schema(description = "摊位名称快照")
+    @Schema(description = "铺位名称快照")
     private String stallName;
 
     @Schema(description = "所属市场名称快照")

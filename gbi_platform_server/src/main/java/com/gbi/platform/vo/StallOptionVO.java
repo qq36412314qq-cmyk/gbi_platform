@@ -7,25 +7,25 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * 摊位下拉选项（供水电表绑定、合同选择等跨模块联动下拉使用）
- * 包含摊位编号/名称/所属市场/租赁分类，company_id 由多租户拦截器自动隔离
+ * 铺位下拉选项（供水电表绑定、合同选择等跨模块联动下拉使用）
+ * 包含铺位编号/名称/所属市场/租赁分类，company_id 由多租户拦截器自动隔离
  *
  * @author gbi
  */
 @Data
-@Schema(description = "摊位下拉选项")
+@Schema(description = "铺位下拉选项")
 public class StallOptionVO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long id;
 
-    @Schema(description = "摊位编号")
+    @Schema(description = "铺位编号")
     private String stallNumber;
 
-    @Schema(description = "摊位名称")
+    @Schema(description = "铺位名称")
     private String stallName;
 
     @Schema(description = "所属市场ID")
@@ -40,6 +40,6 @@ public class StallOptionVO implements Serializable {
     @Schema(description = "租赁分类名称")
     private String categoryName;
 
-    @Schema(description = "摊位面积(平方米，按面积收费规则计算用)")
+    @Schema(description = "铺位面积(平方米，按面积收费规则计算用)")
     private java.math.BigDecimal stallArea;
 }

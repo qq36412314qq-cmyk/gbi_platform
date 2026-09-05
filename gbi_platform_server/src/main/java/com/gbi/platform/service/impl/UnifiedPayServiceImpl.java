@@ -354,7 +354,7 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
     }
 
     /**
-     * 构建缴费记录（含摊位快照）
+     * 构建缴费记录（含铺位快照）
      * 物业费快照从 PropertyFeeBill 取，水电费快照从 WaterElecBill 取
      */
     private WaterElecPayRecord buildPayRecord(Long companyId, Object bill, UnifiedPayDTO dto,
@@ -386,7 +386,7 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
         return record;
     }
 
-    /** 查询并写入摊位/市场/分类/商户快照字段 */
+    /** 查询并写入铺位/市场/分类/商户快照字段 */
     private void fillStallSnapshots(WaterElecPayRecord record, Long stallId, Long merchantId) {
         if (stallId != null) {
             StallInfo stall = stallInfoMapper.selectById(stallId);

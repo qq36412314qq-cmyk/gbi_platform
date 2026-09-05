@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 /**
  * 租赁合同实体：stall_contract
- * 租户与摊位租赁合同，生效后摊位置为已租，退租审计留痕
+ * 租户与铺位租赁合同，生效后铺位置为已租，退租审计留痕
  *
  * @author gbi
  */
@@ -30,7 +30,7 @@ public class StallContract extends BaseEntity {
     /** 租户ID（关联 stall_tenant） */
     private Long tenantId;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
     /** 月租金金额 */

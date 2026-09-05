@@ -29,8 +29,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 收费规则-摊位绑定服务实现
- * 同一收费类型限选一条（按 fee_item_id 去重校验）；绑定前校验摊位与规则归属公司（自动隔离）；
+ * 收费规则-铺位绑定服务实现
+ * 同一收费类型限选一条（按 fee_item_id 去重校验）；绑定前校验铺位与规则归属公司（自动隔离）；
  * 全量替换绑定（先逻辑删旧再插入新）；变更强制审计（oper_module=fee_rule，类型=绑定）
  *
  * @author gbi
@@ -44,7 +44,7 @@ public class FeeRuleStallRelServiceImpl implements FeeRuleStallRelService {
     /** 跨模块调用收费规则 Service 接口：选项查询与绑定校验 */
     private final FeeRuleService feeRuleService;
 
-    /** 跨模块调用租赁摊位 Service 接口：校验摊位存在（company 自动隔离）；
+    /** 跨模块调用租赁铺位 Service 接口：校验铺位存在（company 自动隔离）；
      *  @Lazy 打在构造器参数上，打破 LeaseStallServiceImpl ↔ FeeRuleStallRelServiceImpl 循环依赖 */
     private final LeaseStallService leaseStallService;
 
@@ -86,7 +86,7 @@ public class FeeRuleStallRelServiceImpl implements FeeRuleStallRelService {
         List<Long> ruleIds = rels.stream().map(FeeRuleStallRel::getRuleId).distinct().toList();
         Map<Long, FeeRuleOptionVO> optionMap = feeRuleService.listOptionsByIds(ruleIds).stream()
                 .collect(Collectors.toMap(FeeRuleOptionVO::getId, o -> o));
-        // 按摊位分组并组装规则信息（顺序按 rel.id 升序，与绑定顺序一致）
+        // 按铺位分组并组装规则信息（顺序按 rel.id 升序，与绑定顺序一致）
         Map<Long, List<StallRuleRelVO>> result = new HashMap<>();
         for (FeeRuleStallRel rel : rels) {
             FeeRuleOptionVO opt = optionMap.get(rel.getRuleId());
@@ -114,16 +114,16 @@ public class FeeRuleStallRelServiceImpl implements FeeRuleStallRelService {
     @Transactional(rollbackFor = Exception.class)
     public void saveBindings(Long stallId, List<Long> ruleIds) {
         if (stallId == null) {
-            throw new BizException("摊位ID不能为空");
+            throw new BizException("铺位ID不能为空");
         }
         if (ruleIds == null) {
             // 未传规则集合：保持现状（兼容旧调用）
             return;
         }
-        // 摊位必须存在（getOptionsByIds 受 company_id 拦截器约束，跨公司摊位查不到）
+        // 铺位必须存在（getOptionsByIds 受 company_id 拦截器约束，跨公司铺位查不到）
         Map<Long, StallOptionVO> stallMap = leaseStallService.getOptionsByIds(Collections.singletonList(stallId));
         if (stallMap.isEmpty()) {
-            throw new BizException("摊位不存在或已删除");
+            throw new BizException("铺位不存在或已删除");
         }
 
         LoginUser loginUser = UserContext.getLoginUser();

@@ -22,7 +22,7 @@ public class WaterElecBill extends BaseEntity {
     /** 所属子公司ID */
     private Long companyId;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
     /** 商户ID */

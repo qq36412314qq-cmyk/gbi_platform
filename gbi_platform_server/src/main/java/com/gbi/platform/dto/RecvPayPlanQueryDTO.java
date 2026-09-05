@@ -44,7 +44,7 @@ public class RecvPayPlanQueryDTO implements Serializable {
     @Schema(description = "红冲标记 0正常 1反向冲销")
     private Integer redFlag;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
     @Schema(description = "期次标识 yyyy-MM/once")

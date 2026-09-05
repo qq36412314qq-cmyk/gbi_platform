@@ -58,7 +58,7 @@ public class PropertyFeeBillController {
         return Result.success("生成成功", count);
     }
 
-    @Operation(summary = "单条生成物业费账单（指定摊位）")
+    @Operation(summary = "单条生成物业费账单（指定铺位）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).PROPERTY_FEE_BILL_GENERATE_SINGLE,'')")
     @PostMapping("/generateSingle")
     public Result<Long> generateSingle(@Valid @RequestBody PropertyFeeBillGenerateDTO dto) {

@@ -12,8 +12,11 @@
         <el-button type="success" @click="handleBatchGenerate" :disabled="selectedRows.length === 0">
           <el-icon><Plus /></el-icon>批量生成账单（{{ selectedRows.length }}）
         </el-button>
+        <el-button type="primary" @click="handleAutoGenerate">
+          <el-icon><DocumentAdd /></el-icon>自动生成记录
+        </el-button>
         <el-button type="primary" @click="showSingleGenerateDialog">
-          <el-icon><DocumentAdd /></el-icon>单条生成
+          <el-icon><DocumentAdd /></el-icon>单条生成记录
         </el-button>
       </div>
     </div>

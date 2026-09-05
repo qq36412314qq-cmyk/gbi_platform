@@ -22,7 +22,7 @@ public interface WaterElecBillService {
 
     /**
      * 生成月度账单：用量 = 本次读数 - 上期账单读数；金额按集团配置单价计算
-     * 幂等：同公司同摊位同月份已存在则跳过
+     * 幂等：同公司同铺位同月份已存在则跳过
      * @return 本次生成账单数量
      */
     int generate(WaterElecBillGenerateDTO dto);

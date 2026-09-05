@@ -22,7 +22,7 @@ import java.math.BigDecimal;
  */
 public interface RecvPayPlanService {
 
-    /** 计划分页（按方向/类型/状态/摊位/期次/红冲筛选） */
+    /** 计划分页（按方向/类型/状态/铺位/期次/红冲筛选） */
     PageVO<RecvPayPlanVO> page(RecvPayPlanQueryDTO dto);
 
     /** 计划详情（含关联账单 bill_plan_rel、核销分摊） */

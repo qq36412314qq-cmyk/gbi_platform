@@ -8,12 +8,12 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * 摊位已绑定收费规则返回（回显用，含规则名称与收费类型名称）
+ * 铺位已绑定收费规则返回（回显用，含规则名称与收费类型名称）
  *
  * @author gbi
  */
 @Data
-@Schema(description = "摊位已绑定收费规则返回")
+@Schema(description = "铺位已绑定收费规则返回")
 public class StallRuleRelVO implements Serializable {
 
     @Serial

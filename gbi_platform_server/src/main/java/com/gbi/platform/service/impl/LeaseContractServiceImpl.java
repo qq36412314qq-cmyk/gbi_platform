@@ -63,9 +63,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 租赁合同服务实现：租户+摊位租赁合同
- * 新增：校验摊位空置 -> 合同生效 -> 摊位置为已租 -> 押金写收入流水 -> 同步写入 biz_fee_bill（统一账单表），供未支付订单页面聚合展示；
- * 退租（高危）：合同终止 -> 摊位置空 -> 押金退费支出流水 -> 强制审计；
+ * 租赁合同服务实现：租户+铺位租赁合同
+ * 新增：校验铺位空置 -> 合同生效 -> 铺位置为已租 -> 押金写收入流水 -> 同步写入 biz_fee_bill（统一账单表），供未支付订单页面聚合展示；
+ * 退租（高危）：合同终止 -> 铺位置空 -> 押金退费支出流水 -> 强制审计；
  * 数据一致性：押金收支统一写入 biz_finance_flow（业务类型 deposit）
  *
  * @author gbi
@@ -146,7 +146,7 @@ public class LeaseContractServiceImpl implements LeaseContractService {
                 .orderByDesc(StallContract::getCreateTime);
         Page<StallContract> result = contractMapper.selectPage(page, wrapper);
 
-        // 批量查摊位信息
+        // 批量查铺位信息
         List<Long> stallIds = result.getRecords().stream()
                 .map(StallContract::getStallId).distinct().toList();
         Map<Long, StallInfo> stallMap = stallMapper.selectBatchIds(stallIds).stream()
@@ -258,10 +258,10 @@ public class LeaseContractServiceImpl implements LeaseContractService {
 
         StallInfo stall = stallMapper.selectById(dto.getStallId());
         if (stall == null) {
-            throw new BizException("摊位不存在或已删除");
+            throw new BizException("铺位不存在或已删除");
         }
         if (!Objects.equals(stall.getStatus(), CommonConst.STALL_STATUS_EMPTY)) {
-            throw new BizException("摊位当前非空置状态，无法签订租赁合同");
+            throw new BizException("铺位当前非空置状态，无法签订租赁合同");
         }
 
         if (dto.getEndTime() != null && dto.getStartTime() != null
@@ -275,10 +275,10 @@ public class LeaseContractServiceImpl implements LeaseContractService {
         boolean discountEditable = !"0".equals(configValues.get("contract.discount_editable"));
         if (!rentEditable) {
             if (dto.getRentAmount() == null) {
-                throw new BizException("合同租金不能为空（请先为摊位绑定租金收费规则，系统自动带出）");
+                throw new BizException("合同租金不能为空（请先为铺位绑定租金收费规则，系统自动带出）");
             }
             if (dto.getDepositAmount() == null) {
-                throw new BizException("合同押金不能为空（请先为摊位绑定押金收费规则，系统自动带出）");
+                throw new BizException("合同押金不能为空（请先为铺位绑定押金收费规则，系统自动带出）");
             }
         }
         if (!discountEditable) {
@@ -301,7 +301,7 @@ public class LeaseContractServiceImpl implements LeaseContractService {
         contract.setAttachmentUrl(dto.getAttachmentUrl());
         contract.setRemark(dto.getRemark());
         contractMapper.insert(contract);
-        // 更新摊位状态为已租赁
+        // 更新铺位状态为已租赁
         StallInfo stallUpdate = new StallInfo();
         stallUpdate.setId(stall.getId());
         stallUpdate.setStatus(CommonConst.STALL_STATUS_RENTED);
@@ -582,10 +582,10 @@ public class LeaseContractServiceImpl implements LeaseContractService {
             return;
         }
 
-        // 根据摊位绑定的收费规则和 bizType 查询对应的 rule_id
+        // 根据铺位绑定的收费规则和 bizType 查询对应的 rule_id
         Long ruleId = resolveRuleId(companyId, stallId, bizType);
         if (ruleId == null) {
-            log.error("未找到摊位绑定的收费规则：companyId={}, stallId={}, bizType={}", companyId, stallId, bizType);
+            log.error("未找到铺位绑定的收费规则：companyId={}, stallId={}, bizType={}", companyId, stallId, bizType);
             return;
         }
 
@@ -644,8 +644,8 @@ public class LeaseContractServiceImpl implements LeaseContractService {
     }
 
     /**
-     * 根据摊位绑定的收费规则和 bizType 解析对应的 rule_id
-     * <p>通过 biz_fee_rule_stall_rel 查询摊位绑定的规则，
+     * 根据铺位绑定的收费规则和 bizType 解析对应的 rule_id
+     * <p>通过 biz_fee_rule_stall_rel 查询铺位绑定的规则，
      * 关联 biz_fee_rule 筛选匹配的 feeItemId，返回正确的 rule_id
      */
     private Long resolveRuleId(Long companyId, Long stallId, String bizType) {
@@ -659,7 +659,7 @@ public class LeaseContractServiceImpl implements LeaseContractService {
             log.warn("不支持的 bizType：{}", bizType);
             return null;
         }
-        // 查询摊位绑定的规则 ID 列表
+        // 查询铺位绑定的规则 ID 列表
         List<Long> ruleIds = feeRuleStallRelMapper.selectList(new LambdaQueryWrapper<FeeRuleStallRel>()
                 .select(FeeRuleStallRel::getRuleId)
                 .eq(FeeRuleStallRel::getCompanyId, companyId)
@@ -667,7 +667,7 @@ public class LeaseContractServiceImpl implements LeaseContractService {
                 .eq(FeeRuleStallRel::getIsDelete, 0))
                 .stream().map(FeeRuleStallRel::getRuleId).collect(Collectors.toList());
         if (ruleIds == null || ruleIds.isEmpty()) {
-            log.warn("摊位未绑定收费规则：companyId={}, stallId={}", companyId, stallId);
+            log.warn("铺位未绑定收费规则：companyId={}, stallId={}", companyId, stallId);
             return null;
         }
         // 关联 biz_fee_rule 筛选匹配的 feeItemId
@@ -682,7 +682,7 @@ public class LeaseContractServiceImpl implements LeaseContractService {
     }
 
     /**
-     * 查询摊位绑定的收费规则信息（ruleId + periodType）
+     * 查询铺位绑定的收费规则信息（ruleId + periodType）
      * <p>用于根据收费周期决定账单生成策略
      */
     private FeeRule resolveFeeRule(Long companyId, Long stallId, String bizType) {

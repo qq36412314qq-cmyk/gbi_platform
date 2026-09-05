@@ -27,15 +27,15 @@ ALTER TABLE property_fee_bill COMMENT = '物业费月度账单表';
 
 -- 3. stall_category → property_stall_category
 ALTER TABLE stall_category RENAME TO property_stall_category;
-ALTER TABLE property_stall_category COMMENT = '摊位分类表';
+ALTER TABLE property_stall_category COMMENT = '铺位分类表';
 
 -- 4. stall_contract → property_stall_contract
 ALTER TABLE stall_contract RENAME TO property_stall_contract;
-ALTER TABLE property_stall_contract COMMENT = '摊位合同表';
+ALTER TABLE property_stall_contract COMMENT = '铺位合同表';
 
 -- 5. stall_info → property_stall_info
 ALTER TABLE stall_info RENAME TO property_stall_info;
-ALTER TABLE property_stall_info COMMENT = '摊位信息表';
+ALTER TABLE property_stall_info COMMENT = '铺位信息表';
 
 -- 6. stall_tenant → property_stall_tenant
 ALTER TABLE stall_tenant RENAME TO property_stall_tenant;
@@ -71,7 +71,7 @@ ALTER TABLE finance_fee_rule COMMENT = '收费规则表';
 
 -- 4. biz_fee_rule_stall_rel → finance_fee_rule_stall_rel
 ALTER TABLE biz_fee_rule_stall_rel RENAME TO finance_fee_rule_stall_rel;
-ALTER TABLE finance_fee_rule_stall_rel COMMENT = '收费规则-摊位关联表';
+ALTER TABLE finance_fee_rule_stall_rel COMMENT = '收费规则-铺位关联表';
 
 -- 5. biz_finance_flow → finance_pay_flow（财务流水）
 ALTER TABLE biz_finance_flow RENAME TO finance_pay_flow;

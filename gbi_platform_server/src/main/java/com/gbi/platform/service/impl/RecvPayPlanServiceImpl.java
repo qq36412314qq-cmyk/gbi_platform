@@ -352,7 +352,7 @@ public class RecvPayPlanServiceImpl implements RecvPayPlanService {
                 .last("LIMIT 50000");
         List<BizRecvPayPlan> list = planMapper.selectList(wrapper);
         StringBuilder sb = new StringBuilder("\uFEFF");
-        sb.append("计划ID,计划编号,方向,业务类型,来源单据,摊位ID,期次,应收日期,原价,优惠,调账,计划应收,已收,未收,状态,红冲标记,溯源计划ID,逾期天数,备注,创建时间");
+        sb.append("计划ID,计划编号,方向,业务类型,来源单据,铺位ID,期次,应收日期,原价,优惠,调账,计划应收,已收,未收,状态,红冲标记,溯源计划ID,逾期天数,备注,创建时间");
         for (BizRecvPayPlan p : list) {
             sb.append(p.getId()).append(',').append(escapeCsv(p.getPlanNo())).append(',')
                     .append(p.getDirection() == CommonConst.PLAN_DIRECTION_RECEIVE ? "应收" : "应付").append(',')

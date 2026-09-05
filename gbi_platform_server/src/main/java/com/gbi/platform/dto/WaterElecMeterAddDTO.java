@@ -22,8 +22,8 @@ public class WaterElecMeterAddDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "绑定摊位ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "绑定摊位不能为空")
+    @Schema(description = "绑定铺位ID", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "绑定铺位不能为空")
     private Long stallId;
 
     @Schema(description = "智能表设备编号", requiredMode = Schema.RequiredMode.REQUIRED)

@@ -25,7 +25,7 @@ import java.util.Objects;
 
 /**
  * 租赁分类服务实现：商铺/仓库/车位等分类，子公司可自定义增删
- * 同公司同名唯一；删除前置校验：被摊位引用禁止删除；
+ * 同公司同名唯一；删除前置校验：被铺位引用禁止删除；
  * 新增/编辑/删除强制审计（oper_module=stall_category）
  *
  * @author gbi
@@ -104,9 +104,9 @@ public class LeaseCategoryServiceImpl implements LeaseCategoryService {
     @Override
     public void delete(Long id) {
         StallCategory category = getExists(id);
-        // 被摊位引用禁止删除（跨模块调用摊位 Service 接口统计）
+        // 被铺位引用禁止删除（跨模块调用铺位 Service 接口统计）
         if (leaseStallService.countByCategoryId(id) > 0) {
-            throw new BizException("该分类下存在摊位，禁止删除");
+            throw new BizException("该分类下存在铺位，禁止删除");
         }
         categoryMapper.deleteById(id);
 

@@ -37,7 +37,7 @@ public class BizDiscountPolicy extends BaseEntity {
     /** 减免金额（type=3/4） */
     private BigDecimal deductAmount;
 
-    /** 适用范围 1按合同 2按摊位 */
+    /** 适用范围 1按合同 2按铺位 */
     private Integer scopeType;
 
     /** 策略生效时间 */

@@ -26,25 +26,25 @@ public class WaterElecMeterVO implements Serializable {
     @Schema(description = "所属子公司ID")
     private Long companyId;
 
-    @Schema(description = "绑定摊位ID")
+    @Schema(description = "绑定铺位ID")
     private Long stallId;
 
-    @Schema(description = "绑定摊位编号")
+    @Schema(description = "绑定铺位编号")
     private String stallNumber;
 
-    @Schema(description = "绑定摊位名称")
+    @Schema(description = "绑定铺位名称")
     private String stallName;
 
-    @Schema(description = "绑定摊位所属市场ID（编辑回显联动用）")
+    @Schema(description = "绑定铺位所属市场ID（编辑回显联动用）")
     private Long stallMarketId;
 
-    @Schema(description = "绑定摊位所属市场名称")
+    @Schema(description = "绑定铺位所属市场名称")
     private String stallMarketName;
 
-    @Schema(description = "绑定摊位租赁分类ID（编辑回显联动用）")
+    @Schema(description = "绑定铺位租赁分类ID（编辑回显联动用）")
     private Long stallCategoryId;
 
-    @Schema(description = "绑定摊位租赁分类名称")
+    @Schema(description = "绑定铺位租赁分类名称")
     private String categoryName;
 
     @Schema(description = "智能表设备编号")

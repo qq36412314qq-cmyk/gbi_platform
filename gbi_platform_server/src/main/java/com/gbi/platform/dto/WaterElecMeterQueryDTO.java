@@ -41,6 +41,6 @@ public class WaterElecMeterQueryDTO implements Serializable {
     @Schema(description = "设备状态 0断电 1通电")
     private Integer status;
 
-    @Schema(description = "所属市场ID（按绑定摊位所属市场过滤）")
+    @Schema(description = "所属市场ID（按绑定铺位所属市场过滤）")
     private Long marketId;
 }

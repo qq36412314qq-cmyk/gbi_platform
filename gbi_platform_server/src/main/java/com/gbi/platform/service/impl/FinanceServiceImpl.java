@@ -20,9 +20,14 @@ import com.gbi.platform.vo.FinanceSummaryVO;
 import com.gbi.platform.vo.PageVO;
 import com.gbi.platform.entity.BizPayOrder;
 import com.gbi.platform.entity.BizPayOrderItem;
+import com.gbi.platform.entity.StallInfo;
+import com.gbi.platform.entity.StallTenant;
 import com.gbi.platform.mapper.BizPayOrderMapper;
 import com.gbi.platform.mapper.BizPayOrderItemMapper;
+import com.gbi.platform.mapper.StallInfoMapper;
+import com.gbi.platform.mapper.StallTenantMapper;
 import com.gbi.platform.vo.PayOrderItemVO;
+import com.gbi.platform.vo.PayOrderPrintVO;
 import com.gbi.platform.dto.PayOrderQueryDTO;
 import com.gbi.platform.vo.PayOrderVO;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +46,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 财务流水服务实现：全域统一资金台账（biz_finance_flow）
@@ -59,6 +67,8 @@ public class FinanceServiceImpl implements FinanceService {
     private final BizFinanceFlowMapper financeFlowMapper;
     private final BizPayOrderMapper payOrderMapper;
     private final BizPayOrderItemMapper payOrderItemMapper;
+    private final StallInfoMapper stallInfoMapper;
+    private final StallTenantMapper stallTenantMapper;
     private final AuditLogUtil auditLogUtil;
     private final FlowEngineService flowEngineService;
 
@@ -114,7 +124,7 @@ public class FinanceServiceImpl implements FinanceService {
         List<BizFinanceFlow> list = financeFlowMapper.selectList(wrapper);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("流水ID,所属公司ID,业务类型,关联单据ID,商户ID,摊位ID,摊位编号,摊位名称,所属市场,分类,商户名称,")
+        sb.append("流水ID,所属公司ID,业务类型,关联单据ID,商户ID,铺位ID,铺位编号,铺位名称,所属市场,分类,商户名称,")
           .append("缴费人姓名,缴费人手机号,缴费人公司,缴费人类型,合同编号,合同ID,")
           .append("应收原价,优惠抵扣,实收金额,支付渠道,流水类型,交易号,流水单号,冲红状态,作废原因,备注,操作人ID,生成时间\n");
         for (BizFinanceFlow f : list) {
@@ -312,7 +322,7 @@ public class FinanceServiceImpl implements FinanceService {
             .append("<tr><th>业务类型</th><td>").append(escapeHtml(vo.getBusinessTypeText() == null ? "" : vo.getBusinessTypeText()))
             .append("</td><th>收支方向</th><td>").append(escapeHtml(vo.getFlowTypeText() == null ? "" : vo.getFlowTypeText()))
             .append("</td></tr>")
-            .append("<tr><th>摊位</th><td>").append(escapeHtml(buildStallLabel(vo)))
+            .append("<tr><th>铺位</th><td>").append(escapeHtml(buildStallLabel(vo)))
             .append("</td><th>缴费人</th><td>").append(escapeHtml(vo.getPayerName() == null ? (vo.getMerchantName() == null ? "-" : vo.getMerchantName()) : vo.getPayerName()))
             .append("</td></tr>")
             .append("<tr><th>应收原价</th><td class=\"money\">").append(vo.getOriginalAmount() == null ? "0.00" : vo.getOriginalAmount().toPlainString())
@@ -403,7 +413,7 @@ public class FinanceServiceImpl implements FinanceService {
                     + " / " + (vo.getCategoryName() == null ? "" : vo.getCategoryName())
                     + " / " + vo.getStallName() + "（" + (vo.getStallNumber() == null ? "" : vo.getStallNumber()) + "）";
         }
-        return vo.getStallId() == null ? "-" : "摊位#" + vo.getStallId();
+        return vo.getStallId() == null ? "-" : "铺位#" + vo.getStallId();
     }
 
     private String businessTypeText(String businessType) {
@@ -512,7 +522,11 @@ public class FinanceServiceImpl implements FinanceService {
             return vo;
         }).toList();
     }
-
+    /**
+     * 分页查询缴费单
+     * @param dto 查询参数
+     * @return 分页结果
+     */
 
     @Override
     public PageVO<PayOrderVO> pagePayOrders(PayOrderQueryDTO dto) {
@@ -534,10 +548,59 @@ public class FinanceServiceImpl implements FinanceService {
             vo.setPayStatus(order.getPayStatus());
             vo.setPayStatusText(payStatusText(order.getPayStatus()));
             vo.setPayTime(order.getPayTime());
+            vo.setRemark(order.getRemark());
             vo.setCreateTime(order.getCreateTime());
             return vo;
         }).toList();
+
+        // 批量查询铺位名称和商户名称
+        fillStallAndMerchantNames(records);
+
         return new PageVO<>(records, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
+    }
+
+    /**
+     * 批量填充铺位编号/名称、商户名称
+     */
+    private void fillStallAndMerchantNames(List<PayOrderVO> records) {
+        // 收集所有 stallId 和 merchantId
+        List<Long> stallIds = records.stream()
+                .map(PayOrderVO::getStallId)
+                .filter(java.util.Objects::nonNull)
+                .distinct().toList();
+        List<Long> merchantIds = records.stream()
+                .map(PayOrderVO::getMerchantId)
+                .filter(java.util.Objects::nonNull)
+                .distinct().toList();
+
+        // 批量查询铺位
+        Map<Long, StallInfo> stallMap = new HashMap<>();
+        if (!stallIds.isEmpty()) {
+            stallMap = stallInfoMapper.selectList(
+                    new LambdaQueryWrapper<StallInfo>().in(StallInfo::getId, stallIds)
+            ).stream().collect(Collectors.toMap(StallInfo::getId, s -> s));
+        }
+
+        // 批量查询商户
+        Map<Long, StallTenant> tenantMap = new HashMap<>();
+        if (!merchantIds.isEmpty()) {
+            tenantMap = stallTenantMapper.selectList(
+                    new LambdaQueryWrapper<StallTenant>().in(StallTenant::getId, merchantIds)
+            ).stream().collect(Collectors.toMap(StallTenant::getId, t -> t));
+        }
+
+        // 填充名称
+        for (PayOrderVO vo : records) {
+            StallInfo stall = stallMap.get(vo.getStallId());
+            if (stall != null) {
+                vo.setStallNumber(stall.getStallNumber());
+                vo.setStallName(stall.getStallName());
+            }
+            StallTenant tenant = tenantMap.get(vo.getMerchantId());
+            if (tenant != null) {
+                vo.setMerchantName(tenant.getTenantName());
+            }
+        }
     }
 
     private String sourceTypeText(String sourceType) {
@@ -555,6 +618,9 @@ public class FinanceServiceImpl implements FinanceService {
             case 0 -> "待缴";
             case 1 -> "已缴";
             case 2 -> "部分缴费";
+            case 3 -> "已退费";
+            case 4 -> "已冲红";
+            case 5 -> "已作废";
             default -> String.valueOf(payStatus);
         };
     }
@@ -566,6 +632,13 @@ public class FinanceServiceImpl implements FinanceService {
                 .eq(BizPayOrderItem::getPayBillId, payOrderId)
                 .orderByAsc(BizPayOrderItem::getCreateTime);
         List<BizPayOrderItem> items = payOrderItemMapper.selectList(wrapper);
+        log.debug("getPayOrderItemsById 查询 payOrderId={}, 查询到 {} 条明细", payOrderId, items.size());
+        if (items.isEmpty()) {
+            // 打印所有 pay_bill_id 值，排查 ID 对应关系
+            List<BizPayOrderItem> allItems = payOrderItemMapper.selectList(null);
+            log.debug("finance_pay_order_item 表总共 {} 条记录, pay_bill_id 列表: {}",
+                    allItems.size(), allItems.stream().map(BizPayOrderItem::getPayBillId).toList());
+        }
         return items.stream().map(item -> {
             PayOrderItemVO vo = new PayOrderItemVO();
             vo.setId(item.getId());
@@ -583,6 +656,97 @@ public class FinanceServiceImpl implements FinanceService {
             vo.setCreateTime(item.getCreateTime());
             return vo;
         }).toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void voidPayOrder(Long payOrderId, String reason) {
+        LoginUser loginUser = UserContext.getLoginUser();
+        BizPayOrder order = payOrderMapper.selectById(payOrderId);
+        if (order == null) {
+            throw new BizException("缴费单不存在");
+        }
+        // 仅允许待缴状态作废
+        if (order.getPayStatus() != null && order.getPayStatus() != 0) {
+            throw new BizException("仅待缴状态的缴费单可作废，当前状态：" + payStatusText(order.getPayStatus()));
+        }
+        // 更新缴费单状态为已作废（5）
+        BizPayOrder update = new BizPayOrder();
+        update.setId(payOrderId);
+        update.setPayStatus(5);
+        update.setRemark((order.getRemark() == null ? "" : order.getRemark()) + "【已作废：" + reason + "】");
+        payOrderMapper.updateById(update);
+        auditLogUtil.record(CommonConst.MODULE_FINANCE, "作废缴费单", String.valueOf(payOrderId), order, null);
+        log.info("缴费单已作废, payOrderId={}, reason={}, operator={}", payOrderId, reason, loginUser.getUserId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void redFlushPayOrder(Long payOrderId, String reason) {
+        LoginUser loginUser = UserContext.getLoginUser();
+        BizPayOrder order = payOrderMapper.selectById(payOrderId);
+        if (order == null) {
+            throw new BizException("缴费单不存在");
+        }
+        // 仅允许已缴/部分缴费状态冲红
+        Integer status = order.getPayStatus();
+        if (status == null || (status != 1 && status != 2)) {
+            throw new BizException("仅已缴或部分缴费状态的缴费单可冲红，当前状态：" + payStatusText(status));
+        }
+        // 更新缴费单状态为已冲红（4）
+        BizPayOrder update = new BizPayOrder();
+        update.setId(payOrderId);
+        update.setPayStatus(4);
+        update.setRemark((order.getRemark() == null ? "" : order.getRemark()) + "【已冲红：" + reason + "】");
+        payOrderMapper.updateById(update);
+        // 将关联的缴费单明细标记为已冲红（通过更新 paid_amount=unpaid_amount 表征）
+        LambdaQueryWrapper<BizPayOrderItem> itemWrapper = new LambdaQueryWrapper<BizPayOrderItem>()
+                .eq(BizPayOrderItem::getPayBillId, payOrderId);
+        List<BizPayOrderItem> items = payOrderItemMapper.selectList(itemWrapper);
+        for (BizPayOrderItem item : items) {
+            BizPayOrderItem updateItem = new BizPayOrderItem();
+            updateItem.setId(item.getId());
+            updateItem.setPaidAmount(BigDecimal.ZERO);
+            updateItem.setUnpaidAmount(item.getAmount().subtract(item.getDiscountAmount()));
+            payOrderItemMapper.updateById(updateItem);
+        }
+        auditLogUtil.record(CommonConst.MODULE_FINANCE, "冲红缴费单", String.valueOf(payOrderId), order, null);
+        log.info("缴费单已冲红, payOrderId={}, reason={}, operator={}", payOrderId, reason, loginUser.getUserId());
+    }
+
+    @Override
+    public PayOrderPrintVO getPayOrderPrintData(Long payOrderId) {
+        BizPayOrder order = payOrderMapper.selectById(payOrderId);
+        if (order == null) {
+            throw new BizException("缴费单不存在");
+        }
+        PayOrderVO vo = new PayOrderVO();
+        vo.setId(order.getId());
+        vo.setPayBillNo(order.getPayBillNo());
+        vo.setCompanyId(order.getCompanyId());
+        vo.setSourceType(order.getSourceType());
+        vo.setSourceTypeText(sourceTypeText(order.getSourceType()));
+        vo.setStallId(order.getStallId());
+        vo.setMerchantId(order.getMerchantId());
+        vo.setTotalAmount(order.getTotalAmount());
+        vo.setPaidAmount(order.getPaidAmount());
+        vo.setUnpaidAmount(order.getUnpaidAmount());
+        vo.setPayStatus(order.getPayStatus());
+        vo.setPayStatusText(payStatusText(order.getPayStatus()));
+        vo.setPayTime(order.getPayTime());
+        vo.setRemark(order.getRemark());
+        vo.setCreateTime(order.getCreateTime());
+        // 填充铺位/商户名称
+        List<PayOrderVO> list = new ArrayList<>();
+        list.add(vo);
+        fillStallAndMerchantNames(list);
+        // 查询明细
+        List<PayOrderItemVO> items = getPayOrderItemsById(payOrderId);
+
+        PayOrderPrintVO printVO = new PayOrderPrintVO();
+        printVO.setPayOrder(vo);
+        printVO.setItems(items);
+        return printVO;
     }
 
     private String bizTypeText(String bizType) {

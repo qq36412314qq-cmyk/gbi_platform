@@ -22,7 +22,7 @@ public class PayOrderQueryDTO {
     /** 来源类型 fee_bill/water_elec */
     private String sourceType;
 
-    /** 缴费状态 0待缴 1已缴 2部分缴费 */
+    /** 缴费状态 0待缴 1部分缴费 2已缴 3已退费 4已冲红 5已作废 */
     private Integer payStatus;
 
     /** 所属子公司ID（0=集团全量） */

@@ -99,7 +99,7 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
         Long companyId = loginUser.getCompanyId();
         List<Long> stallIds = leaseStallService.listStallIdsByMarket(dto.getMarketId());
         if (stallIds.isEmpty()) {
-            throw new BizException("该市场下无可用摊位");
+            throw new BizException("该市场下无可用铺位");
         }
         Map<Long, List<StallRuleRelVO>> ruleRelMap = feeRuleStallRelService.listByStallIds(stallIds);
         List<StallOptionVO> stallOptions = leaseStallService.getOptionsByIds(stallIds).values().stream().toList();
@@ -114,7 +114,7 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
                     .filter(r -> r.getCategoryType() != null && r.getCategoryType() == CommonConst.FEE_CATEGORY_PROPERTY)
                     .findFirst().orElse(null);
             if (propertyRule == null) {
-                log.info("[DEBUG] generateBatch 摊位{}无物业费规则，跳过", stallId);
+                log.info("[DEBUG] generateBatch 铺位{}无物业费规则，跳过", stallId);
                 continue;
             }
             PropertyFeeBill existingBill = billMapper.selectOne(new LambdaQueryWrapper<PropertyFeeBill>()
@@ -122,7 +122,7 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
                     .eq(PropertyFeeBill::getStallId, stallId)
                     .eq(PropertyFeeBill::getBillMonth, dto.getBillMonth()));
             if (existingBill != null) {
-                log.info("[DEBUG] generateBatch 摊位{}月份{}已有账单，跳过", stallId, dto.getBillMonth());
+                log.info("[DEBUG] generateBatch 铺位{}月份{}已有账单，跳过", stallId, dto.getBillMonth());
                 continue;
             }
             PropertyFeeBill bill = new PropertyFeeBill();
@@ -175,18 +175,18 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
         LoginUser loginUser = UserContext.getLoginUser();
         Long companyId = loginUser.getCompanyId();
         if (dto.getStallId() == null) {
-            throw new BizException("请选择摊位");
+            throw new BizException("请选择铺位");
         }
         StallOptionVO stall = leaseStallService.getOptionsByIds(List.of(dto.getStallId())).get(dto.getStallId());
         if (stall == null) {
-            throw new BizException("摊位不存在");
+            throw new BizException("铺位不存在");
         }
         List<StallRuleRelVO> rels = feeRuleStallRelService.listByStallId(dto.getStallId());
         StallRuleRelVO propertyRule = rels.stream()
                 .filter(r -> r.getCategoryType() != null && r.getCategoryType() == CommonConst.FEE_CATEGORY_PROPERTY)
                 .findFirst().orElse(null);
         if (propertyRule == null) {
-            throw new BizException("该摊位未绑定物业费收费规则，请先在摊位管理页面绑定");
+            throw new BizException("该铺位未绑定物业费收费规则，请先在铺位管理页面绑定");
         }
         PropertyFeeBill existingBill = billMapper.selectOne(new LambdaQueryWrapper<PropertyFeeBill>()
                 .eq(PropertyFeeBill::getCompanyId, companyId)
@@ -242,11 +242,11 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
     @Override
     public PropertyFeeBillPreviewVO preview(PropertyFeeBillGenerateDTO dto) {
         if (dto.getStallId() == null) {
-            throw new BizException("请选择摊位");
+            throw new BizException("请选择铺位");
         }
         StallOptionVO stall = leaseStallService.getOptionsByIds(List.of(dto.getStallId())).get(dto.getStallId());
         if (stall == null) {
-            throw new BizException("摊位不存在");
+            throw new BizException("铺位不存在");
         }
         List<StallRuleRelVO> rels = feeRuleStallRelService.listByStallId(dto.getStallId());
         StallRuleRelVO propertyRule = rels.stream()
@@ -352,7 +352,7 @@ public class PropertyFeeBillServiceImpl implements PropertyFeeBillService {
     }
 
     /**
-     * 批量加载摊位关联的租户名称（通过 stall_contract 表关联查询）
+     * 批量加载铺位关联的租户名称（通过 stall_contract 表关联查询）
      */
     private Map<Long, String> loadTenantNameMap(List<PropertyFeeBill> bills) {
         List<Long> stallIds = bills.stream()

@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 /**
  * 智能水电表设备实体：water_elec_meter
- * 设备绑定摊位，支持远程抄表、合闸/断电费控
+ * 设备绑定铺位，支持远程抄表、合闸/断电费控
  *
  * @author gbi
  */
@@ -20,7 +20,7 @@ public class WaterElecMeter extends BaseEntity {
     /** 所属子公司ID */
     private Long companyId;
 
-    /** 绑定摊位ID */
+    /** 绑定铺位ID */
     private Long stallId;
 
     /** 智能表设备编号 */

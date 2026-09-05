@@ -14,7 +14,7 @@ import java.util.List;
  */
 public interface LeaseCategoryService {
 
-    /** 全量列表（启用状态优先，供摊位/合同下拉选择） */
+    /** 全量列表（启用状态优先，供铺位/合同下拉选择） */
     List<CategoryVO> list(CategoryQueryDTO dto);
 
     /** 分类分页 */
@@ -26,6 +26,6 @@ public interface LeaseCategoryService {
     /** 编辑分类 */
     void update(CategoryDTO dto);
 
-    /** 删除分类（被摊位引用禁止删除，逻辑删除） */
+    /** 删除分类（被铺位引用禁止删除，逻辑删除） */
     void delete(Long id);
 }

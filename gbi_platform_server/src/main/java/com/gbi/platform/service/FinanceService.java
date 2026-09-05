@@ -7,6 +7,7 @@ import com.gbi.platform.vo.FinanceSummaryVO;
 import com.gbi.platform.vo.PageVO;
 import com.gbi.platform.vo.FinanceFlowVO;
 import com.gbi.platform.vo.PayOrderItemVO;
+import com.gbi.platform.vo.PayOrderPrintVO;
 import com.gbi.platform.vo.PayOrderVO;
 
 import java.util.List;
@@ -95,4 +96,28 @@ public interface FinanceService {
      * 按缴费单ID查询明细列表
      */
     List<PayOrderItemVO> getPayOrderItemsById(Long payOrderId);
+
+    /**
+     * 作废缴费单（仅允许待缴状态的缴费单）
+     *
+     * @param payOrderId 缴费单ID
+     * @param reason     作废原因
+     */
+    void voidPayOrder(Long payOrderId, String reason);
+
+    /**
+     * 冲红缴费单（仅允许已缴/部分缴费状态的缴费单）
+     *
+     * @param payOrderId 缴费单ID
+     * @param reason     冲红原因
+     */
+    void redFlushPayOrder(Long payOrderId, String reason);
+
+    /**
+     * 获取缴费单打印数据（含主表 + 明细）
+     *
+     * @param payOrderId 缴费单ID
+     * @return 打印数据
+     */
+    PayOrderPrintVO getPayOrderPrintData(Long payOrderId);
 }

@@ -22,7 +22,7 @@ public class PropertyFeeBill extends BaseEntity {
     /** 所属子公司ID */
     private Long companyId;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
     /** 商户ID */
@@ -43,7 +43,7 @@ public class PropertyFeeBill extends BaseEntity {
     /** 收费周期 0不使用 1按年 2按月 3按日 */
     private Integer periodType;
 
-    /** 用量：定额=0，按面积=摊位面积（快照） */
+    /** 用量：定额=0，按面积=铺位面积（快照） */
     @TableField("`usage`")
     private BigDecimal usage;
 

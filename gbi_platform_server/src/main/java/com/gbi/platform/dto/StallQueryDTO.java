@@ -10,12 +10,12 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * 租赁摊位分页查询入参
+ * 租赁铺位分页查询入参
  *
  * @author gbi
  */
 @Data
-@Schema(description = "租赁摊位分页查询入参")
+@Schema(description = "租赁铺位分页查询入参")
 public class StallQueryDTO implements Serializable {
 
     @Serial
@@ -32,13 +32,13 @@ public class StallQueryDTO implements Serializable {
     @Max(value = 100, message = "每页条数最大为100")
     private Integer pageSize;
 
-    @Schema(description = "摊位编号（模糊）")
+    @Schema(description = "铺位编号（模糊）")
     private String stallNumber;
 
     @Schema(description = "租赁分类ID")
     private Long stallCategoryId;
 
-    @Schema(description = "摊位状态 0空置 1已租 2欠费 3即将到期")
+    @Schema(description = "铺位状态 0空置 1已租 2欠费 3即将到期")
     private Integer status;
 
     @Schema(description = "关联市场ID")

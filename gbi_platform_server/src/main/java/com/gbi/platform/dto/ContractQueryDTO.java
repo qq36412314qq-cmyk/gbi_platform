@@ -38,7 +38,7 @@ public class ContractQueryDTO implements Serializable {
     @Schema(description = "租户ID")
     private Long tenantId;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
     @Schema(description = "合同状态 1生效中 2已退租 3已到期")

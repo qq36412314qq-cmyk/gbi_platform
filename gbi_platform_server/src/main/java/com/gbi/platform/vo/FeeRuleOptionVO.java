@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * 收费规则下拉选项（摊位绑定选择，仅返回启用规则；company_id 自动隔离）
+ * 收费规则下拉选项（铺位绑定选择，仅返回启用规则；company_id 自动隔离）
  *
  * @author gbi
  */

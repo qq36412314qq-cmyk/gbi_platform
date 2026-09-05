@@ -37,7 +37,7 @@ public class WaterElecBillQueryDTO implements Serializable {
     @Pattern(regexp = "^\\d{4}-(0[1-9]|1[0-2])$", message = "账单月份格式须为 yyyy-MM")
     private String billMonth;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
     @Schema(description = "缴费状态 0待缴 1已缴")

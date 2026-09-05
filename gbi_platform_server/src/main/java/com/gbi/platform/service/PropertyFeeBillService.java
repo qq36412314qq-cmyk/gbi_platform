@@ -22,15 +22,15 @@ public interface PropertyFeeBillService {
     PropertyFeeBillVO detail(Long id);
 
     /**
-     * 批量生成月度物业费账单：按市场筛选已绑定物业费规则的摊位，按月生成
-     * 幂等：同公司同摊位同月份已存在则跳过
+     * 批量生成月度物业费账单：按市场筛选已绑定物业费规则的铺位，按月生成
+     * 幂等：同公司同铺位同月份已存在则跳过
      * @return 本次生成账单数量
      */
     int generateBatch(PropertyFeeBillGenerateDTO dto);
 
     /**
-     * 单条生成月度物业费账单：指定摊位生成单条
-     * 幂等：同公司同摊位同月份已存在则跳过
+     * 单条生成月度物业费账单：指定铺位生成单条
+     * 幂等：同公司同铺位同月份已存在则跳过
      * @return 生成账单ID，已存在则返回已有ID
      */
     Long generateSingle(PropertyFeeBillGenerateDTO dto);

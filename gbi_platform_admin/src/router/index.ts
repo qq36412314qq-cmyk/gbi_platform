@@ -147,7 +147,7 @@ export const constantRoutes: RouteRecordRaw[] = [
             path: 'stall',
             name: 'PropertyLeaseStall',
             component: () => import('@/views/business/property/leaseStall.vue'),
-            meta: { title: '摊位管理', icon: 'OfficeBuilding', permission: 'lease:stall:list', isCache: true }
+            meta: { title: '铺位管理', icon: 'OfficeBuilding', permission: 'lease:stall:list', isCache: true }
           },
           {
             path: 'category',
@@ -165,7 +165,7 @@ export const constantRoutes: RouteRecordRaw[] = [
             path: 'canvas',
             name: 'PropertyLeaseCanvas',
             component: () => import('@/views/business/property/stallCanvas.vue'),
-            meta: { title: '摊位画布', icon: 'Coordinate', permission: 'lease:stall:list', isCache: true }
+            meta: { title: '铺位画布', icon: 'Coordinate', permission: 'lease:stall:list', isCache: true }
           }
         ]
       }
@@ -328,6 +328,12 @@ export const constantRoutes: RouteRecordRaw[] = [
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),
     meta: { title: '404' }
+  },
+  {
+    path: '/finance/payOrderPrint/:id',
+    name: 'FinancePayOrderPrint',
+    component: () => import('@/views/finance/financePayPrint.vue'),
+    meta: { title: '缴费单打印' }
   }
 ]
 
@@ -338,7 +344,7 @@ const router = createRouter({
 })
 
 // 白名单：无需登录
-const WHITE_LIST = ['/login', '/403']
+const WHITE_LIST = ['/login', '/403', '/finance/payOrderPrint']
 
 /** 全局前置守卫：无 token 跳登录 / 无权限跳 403 */
 router.beforeEach(async (to, _from, next) => {
@@ -348,7 +354,7 @@ router.beforeEach(async (to, _from, next) => {
 
   const hasToken = !!userStore.token
   if (!hasToken) {
-    if (WHITE_LIST.includes(to.path)) {
+    if (WHITE_LIST.some(p => to.path.startsWith(p))) {
       next()
     } else {
       next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)

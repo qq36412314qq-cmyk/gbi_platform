@@ -49,7 +49,7 @@ public class WaterElecBillController {
         return Result.success(waterElecBillService.detail(id));
     }
 
-    @Operation(summary = "生成月度账单（幂等：同摊位同月份不重复生成）")
+    @Operation(summary = "生成月度账单（幂等：同铺位同月份不重复生成）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).WATER_ELEC_BILL_GENERATE,'')")
     @PostMapping("/generate")
     public Result<Integer> generate(@Valid @RequestBody WaterElecBillGenerateDTO dto) {

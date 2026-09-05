@@ -200,7 +200,7 @@ public final class CommonConst {
     public static final int TENANT_TYPE_COMPANY = 2;
     public static final int TENANT_TYPE_INDIVIDUAL = 3;
 
-    /* ------------------------------ 摊位状态 ------------------------------ */
+    /* ------------------------------ 铺位状态 ------------------------------ */
     public static final int STALL_STATUS_EMPTY = 0;
     public static final int STALL_STATUS_RENTED = 1;
     public static final int STALL_STATUS_OVERDUE = 2;

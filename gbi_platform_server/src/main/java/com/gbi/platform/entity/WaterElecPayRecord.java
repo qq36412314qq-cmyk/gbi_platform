@@ -24,16 +24,16 @@ public class WaterElecPayRecord extends BaseEntity {
     /** 关联账单ID */
     private Long billId;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
     /** 商户ID */
     private Long merchantId;
 
-    /** 摊位编号快照 */
+    /** 铺位编号快照 */
     private String stallNumber;
 
-    /** 摊位名称快照 */
+    /** 铺位名称快照 */
     private String stallName;
 
     /** 所属市场名称快照 */

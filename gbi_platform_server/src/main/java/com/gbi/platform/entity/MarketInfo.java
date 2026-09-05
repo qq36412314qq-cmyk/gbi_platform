@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 
 /**
  * 市场档案实体：market_info
- * 园区/商圈维度，摊位（stall_info.market_id）与市场地图（market_map.market_id）统一关联本表
+ * 园区/商圈维度，铺位（stall_info.market_id）与市场地图（market_map.market_id）统一关联本表
  *
  * @author gbi
  */

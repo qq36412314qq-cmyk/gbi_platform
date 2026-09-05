@@ -5,7 +5,7 @@ import com.gbi.platform.entity.StallInfo;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 租赁摊位 Mapper
+ * 租赁铺位 Mapper
  *
  * @author gbi
  */

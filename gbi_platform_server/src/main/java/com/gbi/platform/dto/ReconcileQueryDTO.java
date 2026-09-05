@@ -32,7 +32,7 @@ public class ReconcileQueryDTO implements Serializable {
     @Max(value = 100, message = "每页条数最大为100")
     private Integer pageSize;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
     @Schema(description = "期次标识 yyyy-MM")

@@ -19,13 +19,13 @@ public class PropertyFeeBillPreviewVO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
-    @Schema(description = "摊位编号")
+    @Schema(description = "铺位编号")
     private String stallNumber;
 
-    @Schema(description = "摊位名称")
+    @Schema(description = "铺位名称")
     private String stallName;
 
     @Schema(description = "所属市场名称")

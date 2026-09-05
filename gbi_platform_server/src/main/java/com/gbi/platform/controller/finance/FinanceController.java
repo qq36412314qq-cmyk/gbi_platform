@@ -10,6 +10,7 @@ import com.gbi.platform.vo.FinanceFlowVO;
 import com.gbi.platform.vo.FinanceSummaryVO;
 import com.gbi.platform.vo.PageVO;
 import com.gbi.platform.vo.PayOrderItemVO;
+import com.gbi.platform.vo.PayOrderPrintVO;
 import com.gbi.platform.vo.PayOrderVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -108,6 +109,29 @@ public class FinanceController {
         return Result.success(financeService.getPayOrderItemsById(payOrderId));
     }
 
+    @Operation(summary = "作废缴费单（仅待缴状态）")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).FINANCE_PAY_ORDER_VOID,'')")
+    @PostMapping("/payOrder/void")
+    public Result<Void> voidPayOrder(@RequestBody @Valid VoidPayOrderDTO dto) {
+        financeService.voidPayOrder(dto.getPayOrderId(), dto.getReason());
+        return Result.success();
+    }
+
+    @Operation(summary = "冲红缴费单（仅已缴/部分缴费状态）")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).FINANCE_PAY_ORDER_VOID,'')")
+    @PostMapping("/payOrder/redFlush")
+    public Result<Void> redFlushPayOrder(@RequestBody @Valid RedFlushPayOrderDTO dto) {
+        financeService.redFlushPayOrder(dto.getPayOrderId(), dto.getReason());
+        return Result.success();
+    }
+
+    @Operation(summary = "缴费单打印数据（含主表 + 明细）")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).FINANCE_PAY_ORDER_LIST,'')")
+    @GetMapping("/payOrder/{payOrderId}/printData")
+    public Result<PayOrderPrintVO> getPayOrderPrintData(@PathVariable Long payOrderId) {
+        return Result.success(financeService.getPayOrderPrintData(payOrderId));
+    }
+
     // ---- DTOs ----
     public static class RedFlushDTO {
         private Long flowId;
@@ -132,6 +156,24 @@ public class FinanceController {
         private String reason;
         public Long getFlowId() { return flowId; }
         public void setFlowId(Long flowId) { this.flowId = flowId; }
+        public String getReason() { return reason; }
+        public void setReason(String reason) { this.reason = reason; }
+    }
+
+    public static class VoidPayOrderDTO {
+        private Long payOrderId;
+        private String reason;
+        public Long getPayOrderId() { return payOrderId; }
+        public void setPayOrderId(Long payOrderId) { this.payOrderId = payOrderId; }
+        public String getReason() { return reason; }
+        public void setReason(String reason) { this.reason = reason; }
+    }
+
+    public static class RedFlushPayOrderDTO {
+        private Long payOrderId;
+        private String reason;
+        public Long getPayOrderId() { return payOrderId; }
+        public void setPayOrderId(Long payOrderId) { this.payOrderId = payOrderId; }
         public String getReason() { return reason; }
         public void setReason(String reason) { this.reason = reason; }
     }

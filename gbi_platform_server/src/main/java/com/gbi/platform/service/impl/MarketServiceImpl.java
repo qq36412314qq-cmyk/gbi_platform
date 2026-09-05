@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * 市场档案服务实现：园区/商圈维度维护
- * 同公司市场名称唯一；删除前置校验：市场下存在摊位禁止删除（跨模块调用 LeaseStallService）；
+ * 同公司市场名称唯一；删除前置校验：市场下存在铺位禁止删除（跨模块调用 LeaseStallService）；
  * 新增/编辑/删除强制审计（oper_module=market_info）
  *
  * @author gbi
@@ -44,7 +44,7 @@ public class MarketServiceImpl implements MarketService {
 
     /**
      * @Lazy 标注在构造器参数上，打破与 LeaseStallServiceImpl 的业务互查循环依赖
-     * （市场删除校验摊位 / 摊位新增编辑校验市场存在）
+     * （市场删除校验铺位 / 铺位新增编辑校验市场存在）
      * 注意：Lombok @RequiredArgsConstructor 不会把字段上的 @Lazy 传播到构造器参数，必须手写构造器
      */
     public MarketServiceImpl(MarketInfoMapper marketInfoMapper,
@@ -120,9 +120,9 @@ public class MarketServiceImpl implements MarketService {
     @Override
     public void delete(Long id) {
         MarketInfo market = getExists(id);
-        // 市场下存在摊位禁止删除（跨模块调用摊位 Service 接口统计）
+        // 市场下存在铺位禁止删除（跨模块调用铺位 Service 接口统计）
         if (leaseStallService.countByMarketId(id) > 0) {
-            throw new BizException("该市场下存在摊位，禁止删除");
+            throw new BizException("该市场下存在铺位，禁止删除");
         }
         marketInfoMapper.deleteById(id);
 

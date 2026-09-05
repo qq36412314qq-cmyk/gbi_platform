@@ -34,7 +34,7 @@ public class BizPayOrder extends BaseEntity {
     /** 源账单ID（关联 biz_fee_bill.id 等） */
     private Long sourceId;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
     /** 商户ID */
@@ -49,9 +49,12 @@ public class BizPayOrder extends BaseEntity {
     /** 未缴金额 */
     private BigDecimal unpaidAmount;
 
-    /** 缴费状态 0待缴 1已缴 2部分缴费 */
+    /** 缴费状态 0待缴 1部分缴费 2已缴 3已退费 4已冲红 5已作废 */
     private Integer payStatus;
 
     /** 缴费完成时间 */
     private LocalDateTime payTime;
+
+    /** 备注 */
+    private String remark;
 }

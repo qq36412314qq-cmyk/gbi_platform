@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 市场管理接口（物业管理模块，摊位/市场地图统一关联，前端 api/market.ts）
+ * 市场管理接口（物业管理模块，铺位/市场地图统一关联，前端 api/market.ts）
  *
  * @author gbi
  */
@@ -64,7 +64,7 @@ public class MarketController {
         return Result.success();
     }
 
-    @Operation(summary = "删除市场（市场下有摊位禁止删除，逻辑删除）")
+    @Operation(summary = "删除市场（市场下有铺位禁止删除，逻辑删除）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).MARKET_DELETE,'')")
     @PostMapping("/delete")
     public Result<Void> delete(@RequestParam Long id) {

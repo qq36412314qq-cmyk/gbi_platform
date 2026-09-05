@@ -7,10 +7,12 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serial;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 缴费单明细实体：finance_pay_order_item
  * 快照固化字段，记录缴费单各收费项明细
+ * 注意：该表只有 create_by/create_time，无 update_by/update_time/is_delete 列
  *
  * @author gbi
  */
@@ -21,6 +23,18 @@ public class BizPayOrderItem extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    /** 更新人（该表无此列，跳过 MyBatis-Plus 自动映射） */
+    @TableField(exist = false)
+    private Long updateBy;
+
+    /** 更新时间（该表无此列，跳过 MyBatis-Plus 自动映射） */
+    @TableField(exist = false)
+    private LocalDateTime updateTime;
+
+    /** 逻辑删除（该表无此列，跳过 MyBatis-Plus 自动映射） */
+    @TableField(exist = false)
+    private Integer isDelete;
 
     /** 缴费单ID（finance_pay_order.id） */
     private Long payBillId;

@@ -83,18 +83,52 @@ export interface FinanceSummaryVO {
 
 export interface PayOrderItemVO {
   id: number
-  payOrderId: number
+  payBillId: number
+  billId: number
+  bizType: string
+  bizTypeText?: string
+  ruleName: string
+  feeItemType: string
+  billMonth: string
+  amount: number
+  discountAmount: number
+  paidAmount: number
+  unpaidAmount: number
+  createTime?: string
+}
+
+export interface PayOrderVO {
+  id: number
   payBillNo: string
   companyId: number
   sourceType: string
   sourceTypeText?: string
   sourceId?: number
   stallId?: number
+  stallNumber?: string
+  stallName?: string
   merchantId?: number
-  amount: number
+  merchantName?: string
+  totalAmount: number
+  paidAmount: number
+  unpaidAmount: number
+  payStatus?: number
+  payStatusText?: string
+  remark?: string
+  payTime?: string
   createTime?: string
 }
 
+export interface PayOrderQueryDTO {
+  pageNum: number
+  pageSize: number
+  payBillNo?: string
+  sourceType?: string
+  payStatus?: number
+  companyId?: number
+  startTime?: string
+  endTime?: string
+}
 /** 财务流水分页 */
 export function getFinanceFlowPageApi(params: FinanceFlowQueryDTO): Promise<PageResult<FinanceFlowVO>> {
   return get<PageResult<FinanceFlowVO>>('/finance/flow/page', params)
@@ -139,36 +173,32 @@ export function getFinancePayOrderItemsApi(payOrderId: number): Promise<PayOrder
   return get<PayOrderItemVO[]>(`/finance/payOrder/${payOrderId}/items`)
 }
 
-export interface PayOrderVO {
-  id: number
-  payBillNo: string
-  companyId: number
-  sourceType: string
-  sourceTypeText?: string
-  sourceId?: number
-  stallId?: number
-  merchantId?: number
-  totalAmount: number
-  paidAmount: number
-  unpaidAmount: number
-  payStatus?: number
-  payStatusText?: string
-  payTime?: string
-  createTime?: string
-}
-
-export interface PayOrderQueryDTO {
-  pageNum: number
-  pageSize: number
-  payBillNo?: string
-  sourceType?: string
-  payStatus?: number
-  companyId?: number
-  startTime?: string
-  endTime?: string
-}
-
 /** 缴费单分页 */
 export function getFinancePayOrderPageApi(params: PayOrderQueryDTO): Promise<PageResult<PayOrderVO>> {
   return get<PageResult<PayOrderVO>>("/finance/payOrder/page", params)
+}
+
+/** 作废缴费单 */
+export function voidPayOrderApi(data: { payOrderId: number; reason: string }): Promise<void> {
+  return post<void>('/finance/payOrder/void', data)
+}
+
+/** 冲红缴费单 */
+export function redFlushPayOrderApi(data: { payOrderId: number; reason: string }): Promise<void> {
+  return post<void>('/finance/payOrder/redFlush', data)
+}
+
+/** 缴费单打印收据 HTML */
+export function getPayOrderPrintHtmlApi(payOrderId: number): Promise<string> {
+  return get<string>(`/finance/payOrder/${payOrderId}/print`)
+}
+
+/** 缴费单打印数据 */
+export interface PayOrderPrintVO {
+  payOrder: PayOrderVO
+  items: PayOrderItemVO[]
+}
+
+export function getPayOrderPrintDataApi(payOrderId: number): Promise<PayOrderPrintVO> {
+  return get<PayOrderPrintVO>(`/finance/payOrder/${payOrderId}/printData`)
 }

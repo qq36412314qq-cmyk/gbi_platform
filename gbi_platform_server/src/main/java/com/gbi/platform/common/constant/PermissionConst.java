@@ -111,6 +111,7 @@ public final class PermissionConst {
 
     /* ------------------------------ 缴费单 ------------------------------ */
     public static final String FINANCE_PAY_ORDER_LIST = "finance:payOrder:list";
+    public static final String FINANCE_PAY_ORDER_VOID = "finance:payOrder:void";
 
     /* ------------------------------ 优惠申请 ------------------------------ */
     public static final String DISCOUNT_APPLY_LIST = "discount:apply:list";
@@ -184,7 +185,7 @@ public final class PermissionConst {
     public static final String TENANT_EDIT = "tenant:edit";
     public static final String TENANT_DELETE = "tenant:delete";
 
-    /* ------------------------------ 租赁摊位 ------------------------------ */
+    /* ------------------------------ 租赁铺位 ------------------------------ */
     public static final String LEASE_STALL_LIST = "lease:stall:list";
     public static final String LEASE_STALL_ADD = "lease:stall:add";
     public static final String LEASE_STALL_EDIT = "lease:stall:edit";

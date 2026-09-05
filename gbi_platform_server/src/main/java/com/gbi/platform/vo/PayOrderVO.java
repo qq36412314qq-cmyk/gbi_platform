@@ -38,11 +38,14 @@ public class PayOrderVO implements Serializable {
     @Schema(description = "源账单ID")
     private Long sourceId;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
-    @Schema(description = "摊位编号")
+    @Schema(description = "铺位编号")
     private String stallNumber;
+
+    @Schema(description = "铺位名称")
+    private String stallName;
 
     @Schema(description = "商户ID")
     private Long merchantId;
@@ -59,7 +62,7 @@ public class PayOrderVO implements Serializable {
     @Schema(description = "未缴金额")
     private BigDecimal unpaidAmount;
 
-    @Schema(description = "缴费状态 0待缴 1已缴 2部分缴费")
+    @Schema(description = "缴费状态 0待缴 1部分缴费 2已缴 3已退费 4已冲红 5已作废")
     private Integer payStatus;
 
     @Schema(description = "缴费状态文本")
@@ -67,6 +70,9 @@ public class PayOrderVO implements Serializable {
 
     @Schema(description = "缴费完成时间")
     private LocalDateTime payTime;
+
+    @Schema(description = "备注")
+    private String remark;
 
     @Schema(description = "创建时间")
     private LocalDateTime createTime;

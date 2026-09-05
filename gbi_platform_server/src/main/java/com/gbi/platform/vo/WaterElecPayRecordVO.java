@@ -29,14 +29,14 @@ public class WaterElecPayRecordVO implements Serializable {
     @Schema(description = "关联账单ID")
     private Long billId;
 
-    @Schema(description = "摊位ID")
+    @Schema(description = "铺位ID")
     private Long stallId;
 
     // === 快照字段 ===
-    @Schema(description = "摊位编号快照")
+    @Schema(description = "铺位编号快照")
     private String stallNumber;
 
-    @Schema(description = "摊位名称快照")
+    @Schema(description = "铺位名称快照")
     private String stallName;
 
     @Schema(description = "所属市场名称快照")

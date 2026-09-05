@@ -47,7 +47,7 @@ public class WaterElecMeterServiceImpl implements WaterElecMeterService {
 
     private final AuditLogUtil auditLogUtil;
 
-    /** 跨模块调用租赁摊位 Service 接口：校验绑定摊位归属 + 组装摊位名称 */
+    /** 跨模块调用租赁铺位 Service 接口：校验绑定铺位归属 + 组装铺位名称 */
     private final LeaseStallService leaseStallService;
 
     @Override
@@ -57,11 +57,11 @@ public class WaterElecMeterServiceImpl implements WaterElecMeterService {
                 .like(StringUtils.hasText(dto.getMeterNo()), WaterElecMeter::getMeterNo, dto.getMeterNo())
                 .eq(dto.getMeterType() != null, WaterElecMeter::getMeterType, dto.getMeterType())
                 .eq(dto.getStatus() != null, WaterElecMeter::getStatus, dto.getStatus());
-        // 按绑定摊位所属市场过滤（跨模块调用租赁摊位 Service 接口，company 自动隔离）
+        // 按绑定铺位所属市场过滤（跨模块调用租赁铺位 Service 接口，company 自动隔离）
         if (dto.getMarketId() != null) {
             List<Long> marketStallIds = leaseStallService.listStallIdsByMarket(dto.getMarketId());
             if (marketStallIds.isEmpty()) {
-                // 该市场下无摊位，直接返回空页
+                // 该市场下无铺位，直接返回空页
                 return new PageVO<WaterElecMeterVO>(List.of(), 0L,
                         dto.getPageNum().longValue(), dto.getPageSize().longValue(), 0L);
             }
@@ -70,7 +70,7 @@ public class WaterElecMeterServiceImpl implements WaterElecMeterService {
         wrapper.orderByDesc(WaterElecMeter::getId);
         Page<WaterElecMeter> result = meterMapper.selectPage(page, wrapper);
 
-        // 批量组装绑定摊位信息（跨模块调用租赁摊位 Service 接口，company 自动隔离）
+        // 批量组装绑定铺位信息（跨模块调用租赁铺位 Service 接口，company 自动隔离）
         List<Long> stallIds = result.getRecords().stream()
                 .map(WaterElecMeter::getStallId).filter(Objects::nonNull).distinct().toList();
         Map<Long, StallOptionVO> stallMap = leaseStallService.getOptionsByIds(stallIds);
@@ -165,14 +165,14 @@ public class WaterElecMeterServiceImpl implements WaterElecMeterService {
     }
 
     /**
-     * 绑定摊位归属校验（跨模块调用租赁摊位 Service 接口）
-     * 防止手输/篡改摊位ID绑定他公司摊位，查询结果受 company_id 拦截器约束
+     * 绑定铺位归属校验（跨模块调用租赁铺位 Service 接口）
+     * 防止手输/篡改铺位ID绑定他公司铺位，查询结果受 company_id 拦截器约束
      */
     private void checkStallBindable(Long stallId) {
         Map<Long, StallOptionVO> map = leaseStallService.getOptionsByIds(
                 Collections.singletonList(stallId));
         if (map.isEmpty()) {
-            throw new BizException("绑定摊位不存在或已删除");
+            throw new BizException("绑定铺位不存在或已删除");
         }
     }
 
@@ -213,7 +213,7 @@ public class WaterElecMeterServiceImpl implements WaterElecMeterService {
     }
 
     /**
-     * 组装 VO（状态文本 + 绑定摊位信息）
+     * 组装 VO（状态文本 + 绑定铺位信息）
      */
     private WaterElecMeterVO toVO(WaterElecMeter meter, Map<Long, StallOptionVO> stallMap) {
         WaterElecMeterVO vo = new WaterElecMeterVO();

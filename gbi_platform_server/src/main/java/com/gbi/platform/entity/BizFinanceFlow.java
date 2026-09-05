@@ -43,13 +43,13 @@ public class BizFinanceFlow implements Serializable {
     /** 商户ID */
     private Long merchantId;
 
-    /** 摊位ID */
+    /** 铺位ID */
     private Long stallId;
 
-    /** 摊位编号快照（写入时固化，禁止修改） */
+    /** 铺位编号快照（写入时固化，禁止修改） */
     private String stallNumber;
 
-    /** 摊位名称快照（写入时固化，禁止修改） */
+    /** 铺位名称快照（写入时固化，禁止修改） */
     private String stallName;
 
     /** 所属市场名称快照（写入时固化，禁止修改） */

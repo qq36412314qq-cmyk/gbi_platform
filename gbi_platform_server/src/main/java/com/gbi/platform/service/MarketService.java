@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 市场档案服务：园区/商圈维度维护，摊位与市场地图统一关联
+ * 市场档案服务：园区/商圈维度维护，铺位与市场地图统一关联
  *
  * @author gbi
  */
@@ -45,14 +45,14 @@ public interface MarketService {
     void update(MarketDTO dto);
 
     /**
-     * 删除市场（逻辑删除，市场下有摊位禁止删除）
+     * 删除市场（逻辑删除，市场下有铺位禁止删除）
      *
      * @param id 市场ID
      */
     void delete(Long id);
 
     /**
-     * 市场存在性校验（跨模块供摊位/合同调用）
+     * 市场存在性校验（跨模块供铺位/合同调用）
      *
      * @param id 市场ID
      * @return true存在 false不存在

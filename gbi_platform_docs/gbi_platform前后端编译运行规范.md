@@ -16,43 +16,85 @@
 | 中间产物（勿用） | `target\gbi_platform_server.jar`（仅 918KB，spring-boot-maven-plugin 替换后的占位文件） |
 | Maven 命令 | `mvn clean package -DskipTests -s "C:\Users\Admin\.m2\settings.xml" "-Dmaven.repo.local=D:\Office\Project\Java\gbi_platform\m2_repo_tmp"` |
 | JDK | `C:\Users\Admin\jdk-21.0.12+8\bin\java.exe` |
-| 日志输出 | `gbi_platform_server\server_run.log` / `server_err.log` |
+| 应用日志（logback） | `logs\gbi_platform_server.log`（按天滚动，保留 30 天） |
+| 控制台 stdout | `server_run.log` |
+| 控制台 stderr | `server_err.log` |
 | 配置文件 | `src\main\resources\application-dev.yml` |
 
-> **关键**：pom.xml 中 `spring-boot-maven-plugin` 的 `outputDirectory` 配置为 `target/out/`，fat JAR 输出在 `target/out/gbi_platform_server.jar`，**务必从此路径启动**。
+> **关键**：pom.xml 中 `spring-boot-maven-plugin` 的 `outputDirectory` 配置为 `target/out/`，fat JAR 输出在 `target/out/gbi_platform_server.jar`，**务必从此路径启动**。`target/gbi_platform_server.jar` 仅为 918KB 占位文件，启动后进程立即退出。
 
-### 1.2 完整执行流程（固定顺序）
+### 1.2 停止旧进程
+
+**推荐方式**：按端口查找进程，避免误杀其他 Java 进程。
 
 ```powershell
-# 1. 停止旧 Java 进程（释放 8080 端口）
-Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force
+# 按 8080 端口查找 Java 进程并停止
+$pid = (netstat -ano | Select-String ":8080 " | Select-String "LISTENING" | ForEach-Object { $_ -split '\s+' | Select-Object -Last 1 } | Select-Object -First 1)
+if ($pid) { Stop-Process -Id $pid -Force; Write-Host "端口 8080 进程已停止" } else { Write-Host "端口 8080 未被占用" }
+```
 
-# 2. Maven 打包（跳过测试，使用独立仓库绕过 .m2 文件锁定）
+### 1.3 编译打包
+
+```powershell
 Set-Location "D:\Office\Project\Java\gbi_platform\gbi_platform_server"
 mvn clean package -DskipTests -s "C:\Users\Admin\.m2\settings.xml" "-Dmaven.repo.local=D:\Office\Project\Java\gbi_platform\m2_repo_tmp" 2>&1 | Select-Object -Last 10
+```
 
-# 3. 启动后端（前台运行，可实时看到启动日志）
+> 使用 `-Dmaven.repo.local` 独立仓库路径，避免 IDEA 或杀毒软件锁定 `%USERPROFILE%\.m2` 导致 `AccessDeniedException`。
+
+### 1.4 启动方式
+
+#### 方式一：前台启动（推荐，实时查看启动日志）
+
+```powershell
 java -jar target\out\gbi_platform_server.jar --spring.profiles.active=dev
+```
 
-# 4. 等待启动并验证（看到 Started 后）
+#### 方式二：后台启动（日志写入文件，适合脱离终端运行）
+
+后台启动将 stdout 写入 `server_run.log`，stderr 写入 `server_err.log`，同时 logback 自动将应用日志写入 `logs\gbi_platform_server.log`。
+
+```powershell
+Start-Process -FilePath "C:\Users\Admin\jdk-21.0.12+8\bin\java.exe" `
+  -ArgumentList "-jar","target\out\gbi_platform_server.jar","--spring.profiles.active=dev" `
+  -NoNewWindow `
+  -RedirectStandardOutput "server_run.log" `
+  -RedirectStandardError "server_err.log"
+Write-Host "后端服务已后台启动，日志文件："
+Write-Host "  应用日志: logs\gbi_platform_server.log"
+Write-Host "  标准输出: server_run.log"
+Write-Host "  错误输出: server_err.log"
+```
+
+### 1.5 验证启动
+
+```powershell
+# 等待启动完成（约 10-15 秒）
 Start-Sleep -Seconds 15
-(Invoke-WebRequest -Uri "http://localhost:8080/base/login" -Method POST -ContentType "application/json" -Body '{"username":"admin","password":"123456"}' -UseBasicParsing -TimeoutSec 5).StatusCode
+
+# 查看启动日志，确认是否出现 "Started GbiPlatformApplication"
+Get-Content "logs\gbi_platform_server.log" -Tail 5
+
+# 调用登录接口验证
+$login = Invoke-RestMethod -Uri "http://localhost:8080/base/login" -Method POST `
+  -ContentType "application/json" -Body '{"username":"admin","password":"123456"}' -TimeoutSec 5
+Write-Host "登录响应: code=$($login.code)"
 # 返回 200 表示启动成功
 ```
 
-> **后台启动（不推荐）**：`Start-Process java -ArgumentList ...` 在部分环境下会导致进程立即退出且无日志，优先使用前台运行。
+### 1.6 故障排查
 
-### 1.3 故障判断
-
-| 现象 | 原因 | 排查 |
+| 现象 | 原因 | 排查方式 |
 |---|---|---|
 | `BUILD FAILURE` | 编译错误（Java 源码） | 查看 `mvn` 输出中的 `[ERROR]` 行 |
-| `端口 8080 被占用` | 旧进程未释放 | 先执行 `Get-Process java \| Stop-Process -Force` |
-| `端口未就绪` | Spring 启动失败 | 查看启动日志末尾 30 行 |
+| 端口 8080 被占用 | 旧进程未释放 | 执行按端口停止命令（见 1.2） |
+| 端口未就绪 / 请求超时 | Spring 启动失败 | 查看 `logs\gbi_platform_server.log` 末尾 30 行 |
 | `SQLSyntaxErrorException: ... usage ...` | MySQL 保留字未加反引号 | 实体类 `@TableField` 加反引号，见 §5 |
-| `AccessDeniedException: spring-jcl-6.2.8.jar` | Maven 本地仓库文件被锁定 | 使用 `-Dmaven.repo.local=D:\...\m2_repo_tmp` 独立仓库 |
-| `系统繁忙，请稍后重试` | 业务异常被兜底捕获 | 查看启动日志中的 `ERROR` 或 `WARN` 行 |
+| `AccessDeniedException: spring-jcl-6.2.8.jar` | Maven 本地仓库文件被锁定 | 使用 `-Dmaven.repo.local` 独立仓库 |
+| `系统繁忙，请稍后重试` | 业务异常被兜底捕获 | 查看 `logs\gbi_platform_server.log` 中的 `ERROR` 或 `WARN` 行 |
 | 启动后 JAR 立即退出 | 使用了 918KB 占位 jar | 改用 `target/out/gbi_platform_server.jar`（53MB） |
+| 编译失败，报错乱码（无法关闭注释处理程序源） | Lombok 与 Java 21 注解处理器冲突 | 确保 Lombok 版本 1.18.38，实体类无 UTF-8 BOM |
+| 后台启动后进程消失 | `Start-Process` 参数不当 | 确认使用 `-NoNewWindow` 和日志重定向参数 |
 
 ---
 
@@ -79,15 +121,15 @@ npm run dev
 npx vite --host 0.0.0.0 --port 5173
 ```
 
-> **重要**：前端 Vite 服务**必须在前台运行**，使用 `Start-Process -WindowStyle Hidden` 或后台模式会导致进程立即退出。推荐在独立终端窗口中运行 `npm run dev`。
+> **重要**：前端 Vite 服务**必须在前台运行**。Node.js 在无 TTY 环境下部分 npm 脚本行为异常，使用 `Start-Process -WindowStyle Hidden` 或后台模式会导致进程立即退出。推荐在独立终端窗口中运行 `npm run dev`。
 
-### 2.3 故障判断
+### 2.3 故障排查
 
-| 现象 | 原因 | 排查 |
+| 现象 | 原因 | 排查方式 |
 |---|---|---|
-| `端口 5173 被占用` | 旧 Vite 进程残留 | `netstat -ano \| Select-String ":5173"` 找 PID 后 `Stop-Process -Force` |
+| 端口 5173 被占用 | 旧 Vite 进程残留 | `netstat -ano \| Select-String ":5173"` 找 PID 后 `Stop-Process -Force` |
 | `VITE build failed` | TypeScript/Vue 语法错误 | 终端报错信息定位到具体文件 |
-| `请求失败 / 系统繁忙` | 后端未启动或接口异常 | 检查 8080 端口是否监听 |
+| 请求失败 / 系统繁忙 | 后端未启动或接口异常 | 检查 8080 端口是否监听 |
 | 前端进程启动后立刻退出 | 后台启动方式不当 | 改用前台运行 `npm run dev` |
 
 ---
@@ -130,23 +172,39 @@ fix_v1.x ~ v2.2                         → 修复类补丁（按文件名顺序
 
 ## 4、一键启停脚本
 
-### 4.1 完整重启（后端+前端）
+### 4.1 完整重启（后端：停止 + 编译 + 后台启动）
 
 ```powershell
-# ========= 后端：停止+编译+启动 =========
-Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force
+# ========= 1. 停止旧进程 =========
+$pid = (netstat -ano | Select-String ":8080 " | Select-String "LISTENING" | ForEach-Object { $_ -split '\s+' | Select-Object -Last 1 } | Select-Object -First 1)
+if ($pid) { Stop-Process -Id $pid -Force; Write-Host "端口 8080 已释放" } else { Write-Host "端口 8080 未被占用" }
+
+# ========= 2. Maven 编译 =========
 Set-Location "D:\Office\Project\Java\gbi_platform\gbi_platform_server"
 mvn clean package -DskipTests -s "C:\Users\Admin\.m2\settings.xml" "-Dmaven.repo.local=D:\Office\Project\Java\gbi_platform\m2_repo_tmp" 2>&1 | Select-Object -Last 5
 if ($LASTEXITCODE -ne 0) { Write-Host "编译失败，请检查错误"; exit 1 }
+
+# ========= 3. 后台启动 =========
 Write-Host "后端启动中..."
-java -jar target\out\gbi_platform_server.jar --spring.profiles.active=dev
+Start-Process -FilePath "C:\Users\Admin\jdk-21.0.12+8\bin\java.exe" `
+  -ArgumentList "-jar","target\out\gbi_platform_server.jar","--spring.profiles.active=dev" `
+  -NoNewWindow `
+  -RedirectStandardOutput "server_run.log" `
+  -RedirectStandardError "server_err.log"
+
+# ========= 4. 等待并验证 =========
+Start-Sleep -Seconds 15
+$login = Invoke-RestMethod -Uri "http://localhost:8080/base/login" -Method POST `
+  -ContentType "application/json" -Body '{"username":"admin","password":"123456"}' -TimeoutSec 5
+Write-Host "后端登录验证: code=$($login.code)"
 ```
 
 ### 4.2 验证所有服务
 
 ```powershell
 # 后端验证
-$login = Invoke-RestMethod -Uri "http://localhost:8080/base/login" -Method POST -ContentType "application/json" -Body '{"username":"admin","password":"123456"}'
+$login = Invoke-RestMethod -Uri "http://localhost:8080/base/login" -Method POST `
+  -ContentType "application/json" -Body '{"username":"admin","password":"123456"}' -TimeoutSec 5
 Write-Host "后端登录: code=$($login.code)"
 
 # 前端验证
@@ -217,47 +275,3 @@ merchant_name varchar(128) COMMENT '商户名称快照'
 - [ ] 实体类字段与数据库列名通过驼峰映射对齐
 - [ ] 实体类涉及 MySQL 保留字的字段已加反引号 `@TableField("\`列名\`")`
 - [ ] VO/DTO 类包含前端需要的所有字段
-
----
-
-## v2.7 更新内容（2026-08-27 补充）
-
-### H. Fat JAR 输出路径（关键！）
-
-**现象**：启动 `target/gbi_platform_server.jar`（918KB）后进程立即退出，或启动后接口全部返回 500。
-**原因**：`spring-boot-maven-plugin` 的 `outputDirectory` 配置为 `target/out/`，fat JAR 输出在 `target/out/gbi_platform_server.jar`（53MB），`target/` 下的 jar 是 repackage 后留下的占位文件。
-**解决方案**：启动时务必使用 `target/out/gbi_platform_server.jar`。
-
-### I. Maven 本地仓库文件锁定
-
-**现象**：`AccessDeniedException: spring-jcl-6.2.8.jar`，编译失败。
-**原因**：其他进程（IDEA/Code/杀毒软件）锁定了 `.m2` 仓库中的 jar 文件。
-**解决方案**：Maven 命令追加 `-Dmaven.repo.local=D:\Office\Project\Java\gbi_platform\m2_repo_tmp`，使用独立临时仓库编译。
-
-### J. Vite 前端后台启动失败
-
-**现象**：使用 `Start-Process -WindowStyle Hidden` 启动 Vite 后进程立即退出，端口 5173 无监听。
-**原因**：Node.js 在无 TTY 环境下部分 npm 脚本行为异常，后台模式不可靠。
-**解决方案**：前端 Vite 必须在前台终端运行（`npm run dev`），不可使用后台启动方式。
-
-### K. 水电账单 SQL 语法错误
-
-**现象**：查询 `water_elec_bill` 表返回 `SQLSyntaxErrorException: ... usage ...`。
-**原因**：`usage`、`unit_price` 是 MySQL 保留字/易冲突标识符，实体类 `@TableField` 缺少反引号。
-**解决方案**：见 §5 保留字注解规范，已在 `WaterElecBill.java` 和 `PropertyFeeBill.java` 中修复。
----
-
-## L. 编译失败排查：Lombok + Java 21 注解处理器循环
-
-**现象**：mvn clean compile 失败，报错 Compilation failure，具体错误信息乱码（实际为「无法关闭注释处理程序源」）。
-
-**原因**：Java 21 的 javac 对注解处理器循环检测更严格，Lombok 与 MyBatis-Plus 的注解处理器可能发生冲突。
-
-**解决方案**：
-1. 项目已提供预编译 JAR：gbi_platform_server_new.jar（53MB，含全部依赖），可直接运行
-2. 若需重新编译，尝试以下方法：
-   - 确保 Lombok 版本为 1.18.38（已在 pom.xml 中指定）
-   - 确保 BizFeeBill.java 等实体类**无 UTF-8 BOM**（BOM 会导致编译失败）
-   - 若仍失败，检查是否有其他注解处理器冲突
-
-**当前状态**：后端使用预编译 JAR 运行于 8080 端口，前端 Vite 运行于 5174 端口。

@@ -28,6 +28,6 @@ public class PropertyFeeBillGenerateDTO implements Serializable {
     @Schema(description = "市场ID（批量生成时按市场筛选，null=全部）")
     private Long marketId;
 
-    @Schema(description = "指定摊位ID（单条生成时使用，批量时忽略）")
+    @Schema(description = "指定铺位ID（单条生成时使用，批量时忽略）")
     private Long stallId;
 }
