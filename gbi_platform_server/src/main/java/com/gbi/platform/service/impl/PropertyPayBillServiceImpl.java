@@ -17,7 +17,9 @@ import com.gbi.platform.entity.MarketInfo;
 import com.gbi.platform.entity.PropertyFeeBill;
 import com.gbi.platform.entity.StallCategory;
 import com.gbi.platform.entity.StallInfo;
+import com.gbi.platform.entity.StallContract;
 import com.gbi.platform.entity.StallTenant;
+import com.gbi.platform.mapper.StallContractMapper;
 import com.gbi.platform.entity.WaterElecBill;
 import com.gbi.platform.mapper.BizFeeBillMapper;
 import com.gbi.platform.mapper.BizFinanceFlowMapper;
@@ -73,6 +75,7 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
     private final AuditLogUtil auditLogUtil;
     private final FeeRuleMapper feeRuleMapper;
     private final FeeItemMapper feeItemMapper;
+    private final StallContractMapper contractMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -97,14 +100,17 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
         // 2. 取第一个账单的铺位信息（合并缴费假设同铺位或同商户）
         BizFeeBill first = unpaidBills.get(0);
 
-        // 3. 创建缴费单
+        // 3. 确定商户ID（源账单为空时从合约兜底查询）
+        Long merchantId = resolveMerchantId(first.getStallId(), first.getMerchantId());
+
+        // 4. 创建缴费单
         BizPayOrder payOrder = new BizPayOrder();
         payOrder.setCompanyId(companyId);
         payOrder.setPayBillNo(flowNoGenerator.generate(companyId));
         payOrder.setSourceType("fee_bill");
         payOrder.setSourceId(first.getSourceBillId());
         payOrder.setStallId(first.getStallId());
-        payOrder.setMerchantId(first.getMerchantId());
+        payOrder.setMerchantId(merchantId);
         // 计算总额
         BigDecimal totalAmount = unpaidBills.stream()
                 .map(b -> b.getRealAmount() != null ? b.getRealAmount() : BigDecimal.ZERO)
@@ -267,6 +273,27 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
         flow.setRemark(dto.getRemark() != null ? dto.getRemark() : "合并缴费");
         flow.setCreateBy(loginUser.getUserId());
         return flow;
+    }
+
+    /**
+     * 确定商户ID：源账单有值直接返回，否则从合约查询租户ID作为兜底
+     */
+    private Long resolveMerchantId(Long stallId, Long merchantId) {
+        if (merchantId != null) {
+            return merchantId;
+        }
+        if (stallId == null) {
+            return null;
+        }
+        StallContract activeContract = contractMapper.selectOne(
+                new LambdaQueryWrapper<StallContract>()
+                        .eq(StallContract::getStallId, stallId)
+                        .eq(StallContract::getContractStatus, CommonConst.CONTRACT_STATUS_EFFECTIVE)
+                        .last("LIMIT 1"));
+        if (activeContract != null && activeContract.getTenantId() != null) {
+            return activeContract.getTenantId();
+        }
+        return null;
     }
 
     private String getMarketNameById(Long marketId) {

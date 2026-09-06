@@ -47,6 +47,12 @@ public class PayOrderVO implements Serializable {
     @Schema(description = "铺位名称")
     private String stallName;
 
+    @Schema(description = "市场名称")
+    private String stallMarketName;
+
+    @Schema(description = "分类名称")
+    private String categoryName;
+
     @Schema(description = "商户ID")
     private Long merchantId;
 

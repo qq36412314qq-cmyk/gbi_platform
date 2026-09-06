@@ -5,7 +5,6 @@
 -->
 <template>
   <div class="g-page-wrap water-elec-pay-wrap">
-    <!-- 数据表: water_elec_pay_record -->
     <!-- 顶部操作区 -->
     <div class="g-page-header">
       <span class="g-page-title">缴费管理</span>
@@ -33,13 +32,27 @@
 
     <!-- 表格展示区 -->
     <TablePage v-model:page-num="query.pageNum" v-model:page-size="query.pageSize" :total="total" @refresh="loadData">
-      <el-table v-loading="loading" :data="records" border stripe>
-                <el-table-column prop="id" label="流水ID" width="90" align="center" />
+      <el-table v-loading="loading" :data="records" border stripe @expand-change="loadFlowItems">
+        <el-table-column type="expand" width="50">
+          <template #default="{ row }">
+            <el-descriptions :column="2" border size="small" style="margin: 0 20px">
+              <el-descriptions-item label="账单ID">{{ row.billId }}</el-descriptions-item>
+              <el-descriptions-item label="流水单号">{{ row.flowNo }}</el-descriptions-item>
+              <el-descriptions-item label="缴费金额">
+                <span class="g-money">{{ formatMoney(row.payAmount) }}</span>
+              </el-descriptions-item>
+              <el-descriptions-item label="支付渠道">{{ row.payTypeText }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间">{{ row.createTime }}</el-descriptions-item>
+              <el-descriptions-item label="备注">{{ row.remark || '-' }}</el-descriptions-item>
+            </el-descriptions>
+          </template>
+        </el-table-column>
+        <el-table-column prop="id" label="流水ID" width="90" align="center" />
         <el-table-column prop="createTime" label="生成时间" min-width="120" align="center" />
         <el-table-column label="所属公司" width="90" align="center">
           <template #default="{ row }">
             <el-tag size="small" :type="row.companyId === 0 ? 'primary' : 'success'">
-              {{ row.companyId === 0 ? '集团' : `公司${row.companyId}` }}
+              {{ row.companyId === 0 ? '集团' : '公司' + row.companyId }}
             </el-tag>
           </template>
         </el-table-column>
@@ -55,7 +68,7 @@
         </el-table-column>
         <el-table-column prop="payAmount" label="缴费金额" width="110" align="right">
           <template #default="{ row }">
-            <span :class="row.recordType === 1 ? 'g-money' : 'g-money-out'">{{ Number(row.payAmount).toFixed(2) }}</span>
+            <span :class="row.recordType === 1 ? 'g-money' : 'g-money-out'">{{ formatMoney(row.payAmount) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="支付渠道" width="100" align="center">
@@ -88,38 +101,27 @@
         <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip />
         <el-table-column label="操作" width="150" align="center" fixed="right">
           <template #default="{ row }">
-            <AuthBtn
+            <el-button
               v-if="row.recordType === 1 && row.refundStatus === 0"
-              permission="waterElec:pay:refund"
-              size="small"
-              type="danger"
-              link
+              link type="danger" size="small"
               @click="handleRefund(row)"
-            >
-              退费
-            </AuthBtn>
+            >退费</el-button>
           </template>
         </el-table-column>
       </el-table>
     </TablePage>
 
     <!-- 线下缴费弹窗 -->
-    <CommonDialog
-      v-model="payDialogVisible"
-      title="线下缴费"
-      width="520px"
-      :loading="payLoading"
-      @confirm="handlePay"
-    >
+    <el-dialog v-model="payDialogVisible" title="线下缴费" width="520px" :close-on-click-modal="false">
       <el-form ref="payFormRef" :model="payForm" :rules="payRules" label-width="100px">
         <el-form-item label="账单ID" prop="billId">
           <el-input-number v-model="payForm.billId" :min="1" :precision="0" style="width: 100%" @change="loadBillDetail" />
         </el-form-item>
         <el-form-item label="账单信息" v-if="billDetail">
           <div class="b-bill-info">
-            <div>月份：{{ billDetail.billMonth }}　铺位：{{ billDetail.stallName ? `${billDetail.stallMarketName || '未知市场'} / ${billDetail.categoryName || '未分类'} / ${billDetail.stallName}（${billDetail.stallNumber}）` : `铺位#${billDetail.stallId}` }}　状态：{{ billDetail.payStatusText }}</div>
+            <div>月份：{{ billDetail.billMonth }}　铺位：{{ billDetail.stallName ? (billDetail.stallMarketName || '未知市场') + ' / ' + (billDetail.categoryName || '未分类') + ' / ' + billDetail.stallName + '（' + billDetail.stallNumber + '）' : ('铺位#' + billDetail.stallId) }}　状态：{{ billDetail.payStatusText }}</div>
             <div>
-              应收合计：<span class="g-money">{{ Number(billDetail.amount || billDetail.totalAmount || 0).toFixed(2) }} 元</span>
+              应收合计：<span class="g-money">{{ formatMoney(billDetail.amount || billDetail.totalAmount || 0) }} 元</span>
               <el-tag v-if="billDetail.payStatus === 1" size="small" type="warning" style="margin-left: 8px">已缴清，不可重复缴费</el-tag>
             </div>
           </div>
@@ -139,7 +141,11 @@
           <el-input v-model="payForm.remark" type="textarea" :rows="2" placeholder="缴费备注（可空）" maxlength="500" />
         </el-form-item>
       </el-form>
-    </CommonDialog>
+      <template #footer>
+        <el-button @click="payDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="payLoading" @click="handlePay">确认缴费</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -168,7 +174,7 @@ const route = useRoute()
 
 /** 生成幂等请求ID（满足后端 8-64 位字母/数字/横线规则） */
 function buildRequestId(): string {
-  return `PAY${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  return 'PAY' + Date.now() + '-' + Math.random().toString(36).slice(2, 10)
 }
 
 /* ---------------- 分页查询 ---------------- */
@@ -181,6 +187,13 @@ const { query, records, total, loading, loadData, resetQuery } = useTable<WaterE
 function handleReset(): void {
   resetQuery()
   loadData()
+}
+
+/* ---------------- 展开明细 ---------------- */
+const expandedItems = ref<Record<number, unknown[]>>({})
+
+async function loadFlowItems(_row: WaterElecPayRecordVO): Promise<void> {
+  // 水电缴费流水暂无子明细，保留接口结构供后续扩展
 }
 
 /* ---------------- 线下缴费 ---------------- */
@@ -277,7 +290,7 @@ async function handlePay(): Promise<void> {
 /* ---------------- 退费 ---------------- */
 async function handleRefund(row: WaterElecPayRecordVO): Promise<void> {
   await ElMessageBox.confirm(
-    `确定对缴费记录（账单 ${row.billId}，金额 ${Number(row.payAmount).toFixed(2)} 元）发起退费吗？退费将同步生成支出流水。`,
+    '确定对缴费记录（账单 ' + row.billId + '，金额 ' + formatMoney(row.payAmount) + ' 元）发起退费吗？退费将同步生成支出流水。',
     '退费确认',
     { type: 'warning' }
   )
@@ -298,13 +311,18 @@ watch(
         // 打开缴费弹窗并预填账单
         openPayDialog()
         payForm.billId = id
-        
         loadBillDetail()
       }
     }
   },
   { immediate: true }
 )
+
+/* ---------------- 工具函数 ---------------- */
+function formatMoney(val: number | string | null | undefined): string {
+  if (val == null) return '0.00'
+  return Number(val).toFixed(2)
+}
 </script>
 
 <style scoped>
@@ -322,13 +340,11 @@ watch(
   line-height: 1.5;
 }
 .g-money {
-  color: var(--el-color-danger);
   font-weight: 600;
+  color: var(--el-color-danger);
 }
 .g-money-out {
-  color: var(--el-color-success);
   font-weight: 600;
+  color: var(--el-color-success);
 }
 </style>
-
-

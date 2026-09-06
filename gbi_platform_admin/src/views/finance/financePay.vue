@@ -88,7 +88,7 @@
         </el-table-column>
         <el-table-column label="绑定铺位" min-width="160" align="center" show-overflow-tooltip>
           <template #default="{ row }">
-            <span v-if="row.stallName">{{ row.stallName }}（{{ row.stallNumber }}）</span>
+            <span v-if="row.stallName">{{ row.stallMarketName || '未知市场' }} / {{ row.categoryName || '未分类' }} / {{ row.stallName }}（{{ row.stallNumber }}）</span>
             <span v-else>铺位#{{ row.stallId }}</span>
           </template>
         </el-table-column>
@@ -321,3 +321,4 @@ function formatMoney(val: number | string | null | undefined): string {
   color: #f56c6c;
 }
 </style>
+

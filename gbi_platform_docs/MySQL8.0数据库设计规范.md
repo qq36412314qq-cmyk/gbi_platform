@@ -46,8 +46,8 @@
 铺位、商户、合同、市场地图、水电账单、物资出入库、OA 公文、营销线索；
 所有数据绑定所属分公司，MyBatis-Plus 拦截器自动过滤。
 
-3. **全域财务流水表（biz\_finance\_flow）**
-带 company\_id，一套表承载全集团收支，双视图隔离（集团汇总 / 子公司对账），**禁止物理删除**。
+3. **全域财务流水表（finance_pay_flow）**
+  带 company_id，一套表承载全集团收支，双视图隔离（集团汇总 / 子公司对账），**禁止物理删除**。
 
 4. **地图专属数据表（market\_map /map\_stall\_point）**
 双隔离维度：company\_id \+ market\_id，画布点位 JSON 专用字段规范。
@@ -59,33 +59,33 @@
 1. 库名：小写下划线，统一`group_rent_db`；
 
 2. 表名：全小写，下划线分隔，禁止驼峰、中文；
-示例：stall\_info、market\_map、biz\_finance\_flow；
+示例：stall_info、market_map、finance_pay_flow、finance_recv_pay_plan；
 
-3. 模块表前缀区分：
+3. 模块表前缀区分（严格遵循，禁止随意混合）：
 
-    - 中台 sys\_：sys\_user、sys\_role、sys\_dict、sys\_audit\_log
+    - 中台 sys_：sys_user、sys_role、sys_dict、sys_audit_log、sys_config、sys_menu、sys_org、sys_permission_audit、sys_ui_theme、sys_ding_sync_record
 
-    - 租赁 stall\_：stall\_info、stall\_contract
+    - 租赁 stall_（映射到 property_stall_*）：property_stall_info（stall_info）、property_stall_contract（stall_contract）、stall_merchant
 
-    - 地图 market\_：market\_map、map\_stall\_point
+    - 地图 market_（映射到 property_market）：property_market（market_map）、map_stall_point
 
-    - 水电 water\_elec\_bill
+    - 物业 property_：property_fee_bill、property_water_elec_bill、property_water_elec_meter、property_water_elec_pay_record、property_stall_info、property_stall_contract、property_stall_tenant、property_stall_category
 
-    - 物资 material\_
+    - 财务 biz_（辅助/快照/预留表）：biz_fee_bill_detail（账单明细快照）、biz_flow_seq（流水单号计数器）、biz_kingdee_push（金蝶推送预留）
 
-    - OA oa\_
+    - 财务 finance_（核心业务表）：finance_fee_pay_bill（统一账单聚合表）、finance_pay_flow（全域资金流水）、finance_recv_pay_plan（应收应付计划）、finance_writeoff（核销分摊明细）、finance_pay_order（缴费单）、finance_pay_order_item（缴费单明细）、finance_pay_plan_rel（账单-计划关联）、finance_fee_item（收费项）、finance_fee_rule（收费规则）、finance_fee_rule_stall_rel（规则铺位绑定）、finance_discount_policy（优惠策略）、finance_discount_apply（优惠申请）
 
-    - 营销 marketing\_
+    - 流程 flow_：flow_definition（流程定义）、flow_instance（流程实例）、flow_task（审批任务）、flow_record（流程记录）
 
-    - 财务 biz\\*finance\\*
+    - OA oa_：oa_announcement、oa_announcement_read、oa_clock_record、oa_leave_apply、oa_meeting_booking、oa_meeting_room、oa_work_report
 
-4. 中间关联表：主表 1\_主表 2\_rel，如 stall\_merchant\_rel。
+    - 物资 material_：material_category、material_goods、material_warehouse
 
-## 2\.2 字段命名
+    - HR hr_：hr_employee、hr_attendance_record、hr_post、hr_entry_apply、hr_leave_record、hr_resign_apply、hr_regular_apply、hr_salary_archive、hr_salary_month、hr_social_security、hr_transfer_apply
 
-1. 全小写下划线，语义完整，禁止简写模糊命名；
-错误：num /msg；正确：stall\_number /remark\_content
+    - 营销 marketing_：（预留）
 
+4. 中间关联表：主表 1_主表 2_rel，如 stall_merchant_rel、finance_pay_plan_rel；
 2. 状态统一前缀：status\_xxx；
 
 3. 主键外键统一后缀`_id`：stall\_id、market\_id、company\_id、user\_id；
@@ -332,7 +332,7 @@ CREATE TABLE `market_map` (
 
 ```sql
 -- 收费项表：子公司可配置自己的收费项目
-CREATE TABLE `biz_fee_item` (
+CREATE TABLE `finance_fee_item` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `fee_item_name` varchar(128) NOT NULL COMMENT '收费项目名称（租金/物业费/水费/电费/公摊费/押金/违约金等）',
@@ -349,7 +349,7 @@ CREATE TABLE `biz_fee_item` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='自定义收费项表';
 
 -- 收费规则表：计费模式 + 周期 + 生效规则 + 减免 + 违约金配置
-CREATE TABLE `biz_fee_rule` (
+CREATE TABLE `finance_fee_rule` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `rule_name` varchar(128) NOT NULL COMMENT '规则名称',
@@ -376,7 +376,7 @@ CREATE TABLE `biz_fee_rule` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='自定义收费规则表';
 
 -- 规则铺位绑定表：一套规则绑定多个铺位，支持单铺位特殊规则覆盖
-CREATE TABLE `biz_fee_rule_stall_rel` (
+CREATE TABLE `finance_fee_rule_stall_rel` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `rule_id` bigint NOT NULL COMMENT '收费规则ID',
@@ -396,7 +396,7 @@ CREATE TABLE `biz_fee_rule_stall_rel` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='收费规则铺位绑定表';
 
 -- 周期收费账单表：历史账单锁定，规则修改不回溯旧账单
-CREATE TABLE `biz_fee_bill` (
+CREATE TABLE `finance_fee_bill` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `stall_id` bigint NOT NULL COMMENT '铺位ID',
@@ -425,7 +425,7 @@ CREATE TABLE `biz_fee_bill` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='自定义收费周期账单表';
 
 -- 账单明细表：收费项快照固化，对账追溯依据
-CREATE TABLE `biz_fee_bill_detail` (
+CREATE TABLE `finance_fee_bill_detail` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `bill_id` bigint NOT NULL COMMENT '关联账单ID',

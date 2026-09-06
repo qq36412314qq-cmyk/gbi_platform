@@ -34,7 +34,6 @@
 gbi_platform_admin
 ├─ public               # 静态图标、无需编译静态资源
 ├─ src
-│  ├─ api               # 接口层，按业务分文件，与后端Controller一一对应
 │  │  ├─ base.ts        # 登录、字典、上传、消息公共接口
 │  │  ├─ org.ts         # 组织/用户/权限
 │  │  ├─ stall.ts       # 铺位租赁基础接口
@@ -43,10 +42,11 @@ gbi_platform_admin
 │  │  ├─ material.ts    # 物资
 │  │  ├─ inspect.ts     # 安全巡检
 │  │  ├─ oa.ts          # 公文/考勤/审批
-│  │  └─ finance.ts     # 财务台账、数据大屏
-│  ├─ assets
-│  │  ├─ style          # 全局CSS变量、重置样式、主题样式
-│  │  └─ images         # 系统固定logo、静态图片
+│  │  ├─ finance.ts     # 财务台账、数据大屏
+│  │  ├─ plan.ts        # 应收应付计划接口
+│  │  ├─ discount.ts    # 优惠策略/优惠申请接口
+│  │  ├─ propertyFee.ts # 物业费账单接口
+│  │  └─ hr.ts          # HR人事接口（员工/考勤/薪资/社保/调动）
 │  ├─ components        # 通用/业务/布局组件分层
 │  │  ├─ common         # 基础公共组件：搜索栏、分页、弹窗、Auth权限按钮、上传、导出打印
 │  │  ├─ business       # 业务通用：铺位选择器、商户选择器、流程卡片、MarketCanvas画布组件
@@ -64,13 +64,18 @@ gbi_platform_admin
 │  │  ├─ platform       # 中台配置页（组织、流程、参数、字典）
 │  │  ├─ business       # 业务运营：租赁/水电/物资/巡检/stall-map画布页面
 │  │  ├─ oa             # OA办公页面
-│  │  └─ finance        # 财务、数据大屏页面
-│  ├─ utils             # 全局工具函数
-│  │  ├─ request.ts     # axios统一请求拦截器
-│  │  ├─ dict.ts        # 字典转换工具
-│  │  ├─ format.ts      # 金额、日期、手机号脱敏
-│  │  ├─ storage.ts     # 本地存储封装
-│  │  └─ fabricUtil.ts  # Fabric画布底层工具类
+│  │  ├─ hr             # HR人事页面
+│  │  │  ├─ attendance    # 考勤管理
+│  │  │  ├─ employee      # 员工管理
+│  │  │  ├─ salary        # 薪资管理
+│  │  │  ├─ social        # 社保管理
+│  │  │  └─ transfer      # 调动管理
+│  │  ├─ finance        # 财务、数据大屏页面
+│  │  │  ├─ discountPolicy  # 优惠策略管理
+│  │  │  ├─ discountApply   # 优惠申请管理
+│  │  │  ├─ recvPayPlan     # 应收应付计划
+│  │  │  ├─ feeItem         # 收费项管理
+│  │  │  └─ feeRule         # 收费规则管理
 │  ├─ App.vue           # 根组件
 │  └─ main.ts           # 项目入口文件
 ```

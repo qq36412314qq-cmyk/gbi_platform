@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 财务管理模块接口（对应后端 finance 控制器）
  * 财务流水（双视图）+ 营收汇总 + 冲红/作废/打印
  */
@@ -107,6 +107,8 @@ export interface PayOrderVO {
   stallId?: number
   stallNumber?: string
   stallName?: string
+  stallMarketName?: string
+  categoryName?: string
   merchantId?: number
   merchantName?: string
   totalAmount: number
@@ -202,3 +204,5 @@ export interface PayOrderPrintVO {
 export function getPayOrderPrintDataApi(payOrderId: number): Promise<PayOrderPrintVO> {
   return get<PayOrderPrintVO>(`/finance/payOrder/${payOrderId}/printData`)
 }
+
+

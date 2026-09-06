@@ -18,6 +18,8 @@ import com.gbi.platform.entity.BizPayOrderItem;
 import com.gbi.platform.entity.PropertyFeeBill;
 import com.gbi.platform.entity.StallInfo;
 import com.gbi.platform.entity.StallTenant;
+import com.gbi.platform.entity.MarketInfo;
+import com.gbi.platform.entity.StallCategory;
 import com.gbi.platform.entity.WaterElecBill;
 import com.gbi.platform.mapper.BizFeeBillMapper;
 import com.gbi.platform.mapper.BizFinanceFlowMapper;
@@ -26,6 +28,8 @@ import com.gbi.platform.mapper.BizPayOrderMapper;
 import com.gbi.platform.mapper.PropertyFeeBillMapper;
 import com.gbi.platform.mapper.StallInfoMapper;
 import com.gbi.platform.mapper.StallTenantMapper;
+import com.gbi.platform.mapper.MarketInfoMapper;
+import com.gbi.platform.mapper.StallCategoryMapper;
 import com.gbi.platform.mapper.WaterElecBillMapper;
 import com.gbi.platform.service.FinanceService;
 import com.gbi.platform.service.FlowEngineService;
@@ -80,6 +84,8 @@ public class FinanceServiceImpl implements FinanceService {
     private final WaterElecBillMapper waterElecBillMapper;
     private final StallInfoMapper stallInfoMapper;
     private final StallTenantMapper stallTenantMapper;
+    private final MarketInfoMapper marketInfoMapper;
+    private final StallCategoryMapper stallCategoryMapper;
     private final AuditLogUtil auditLogUtil;
     private final FlowEngineService flowEngineService;
     private final FlowNoGenerator flowNoGenerator;
@@ -608,6 +614,18 @@ public class FinanceServiceImpl implements FinanceService {
             if (stall != null) {
                 vo.setStallNumber(stall.getStallNumber());
                 vo.setStallName(stall.getStallName());
+                if (stall.getMarketId() != null) {
+                    MarketInfo market = marketInfoMapper.selectById(stall.getMarketId());
+                    if (market != null) {
+                        vo.setStallMarketName(market.getMarketName());
+                    }
+                }
+                if (stall.getStallCategoryId() != null) {
+                    StallCategory category = stallCategoryMapper.selectById(stall.getStallCategoryId());
+                    if (category != null) {
+                        vo.setCategoryName(category.getCategoryName());
+                    }
+                }
             }
             StallTenant tenant = tenantMap.get(vo.getMerchantId());
             if (tenant != null) {
@@ -912,3 +930,5 @@ public class FinanceServiceImpl implements FinanceService {
         };
     }
 }
+
+

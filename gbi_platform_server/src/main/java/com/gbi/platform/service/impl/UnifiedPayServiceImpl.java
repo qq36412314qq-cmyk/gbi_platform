@@ -310,6 +310,9 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
             return;
         }
 
+        // 确定商户ID（源账单为空时从合约兜底查询）
+        Long merchantId = resolveMerchantId(bill.getStallId(), bill.getMerchantId());
+
         // 创建缴费单
         BizPayOrder payOrder = new BizPayOrder();
         payOrder.setCompanyId(companyId);
@@ -317,7 +320,7 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
         payOrder.setSourceType("fee_bill");
         payOrder.setSourceId(bill.getId());
         payOrder.setStallId(bill.getStallId());
-        payOrder.setMerchantId(bill.getMerchantId());
+        payOrder.setMerchantId(merchantId);
         payOrder.setTotalAmount(bill.getAmount());
         payOrder.setPaidAmount(bill.getAmount());
         payOrder.setUnpaidAmount(BigDecimal.ZERO);
@@ -340,7 +343,8 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
         item.setUnpaidAmount(BigDecimal.ZERO);
         payOrderItemMapper.insert(item);
 
-        log.info("单条缴费写入缴费单成功：payOrderId={}, amount={}", payOrder.getId(), bill.getAmount());
+        log.info("单条缴费写入缴费单成功：payOrderId={}, amount={}, merchantId={}",
+                payOrder.getId(), bill.getAmount(), merchantId);
     }
 
     // -------------------------------------------------------------------------
@@ -419,7 +423,7 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
             log.info("缴费单已存在，跳过创建：payOrderId={}, sourceBillId={}", existing.getId(), bill.getId());
             BizPayOrder update = new BizPayOrder();
             update.setId(existing.getId());
-            update.setPayStatus(CommonConst.BILL_PAY_STATUS_PAID);
+            update.setPayStatus(CommonConst.FINANCE_PAY_ORDER_STATUS_DONE);
             update.setPaidAmount(bill.getTotalAmount());
             update.setUnpaidAmount(BigDecimal.ZERO);
             update.setPayTime(LocalDateTime.now());
@@ -427,17 +431,20 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
             return;
         }
 
+        // 确定商户ID（源账单为空时从合约兜底查询）
+        Long merchantId = resolveMerchantId(bill.getStallId(), bill.getMerchantId());
+
         BizPayOrder payOrder = new BizPayOrder();
         payOrder.setCompanyId(companyId);
         payOrder.setPayBillNo(flowNo);
         payOrder.setSourceType("fee_bill");
         payOrder.setSourceId(bill.getId());
         payOrder.setStallId(bill.getStallId());
-        payOrder.setMerchantId(bill.getMerchantId());
+        payOrder.setMerchantId(merchantId);
         payOrder.setTotalAmount(bill.getTotalAmount());
         payOrder.setPaidAmount(bill.getTotalAmount());
         payOrder.setUnpaidAmount(BigDecimal.ZERO);
-        payOrder.setPayStatus(CommonConst.BILL_PAY_STATUS_PAID);
+        payOrder.setPayStatus(CommonConst.FINANCE_PAY_ORDER_STATUS_DONE);
         payOrder.setPayTime(LocalDateTime.now());
         payOrder.setRemark(dto.getRemark());
         payOrderMapper.insert(payOrder);
@@ -446,8 +453,8 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
         item.setPayBillId(payOrder.getId());
         item.setBillId(bill.getId());
         item.setBizType(CommonConst.BIZ_TYPE_WATER_ELEC);
-        item.setRuleName(lookupRuleName(null, CommonConst.BIZ_TYPE_WATER_ELEC));
-        item.setFeeItemType(lookupFeeItemName(null, CommonConst.BIZ_TYPE_WATER_ELEC));
+        item.setRuleName(lookupRuleName(bill.getRuleId(), CommonConst.BIZ_TYPE_PROPERTY_FEE));
+        item.setFeeItemType(lookupFeeItemName(bill.getRuleId(), CommonConst.BIZ_TYPE_PROPERTY_FEE));
         item.setBillMonth(bill.getBillMonth());
         item.setAmount(bill.getTotalAmount());
         item.setDiscountAmount(BigDecimal.ZERO);
@@ -455,7 +462,8 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
         item.setUnpaidAmount(BigDecimal.ZERO);
         payOrderItemMapper.insert(item);
 
-        log.info("单条水电费缴费写入缴费单成功：payOrderId={}, amount={}", payOrder.getId(), bill.getTotalAmount());
+        log.info("单条水电费缴费写入缴费单成功：payOrderId={}, amount={}, merchantId={}",
+                payOrder.getId(), bill.getTotalAmount(), merchantId);
     }
 
     // -------------------------------------------------------------------------
@@ -615,5 +623,27 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
             }
         }
         return CommonConst.BIZ_TYPE_PROPERTY_FEE.equals(bizType) ? "物业费" : "水电费";
+    }
+
+    /**
+     * 确定商户ID：源账单有值直接返回，否则从合约查询租户ID作为兜底
+     */
+    private Long resolveMerchantId(Long stallId, Long merchantId) {
+        if (merchantId != null) {
+            return merchantId;
+        }
+        if (stallId == null) {
+            return null;
+        }
+        // 查询该铺位生效中的合约，取租户ID作为商户ID
+        StallContract activeContract = contractMapper.selectOne(
+                new LambdaQueryWrapper<StallContract>()
+                        .eq(StallContract::getStallId, stallId)
+                        .eq(StallContract::getContractStatus, CommonConst.CONTRACT_STATUS_EFFECTIVE)
+                        .last("LIMIT 1"));
+        if (activeContract != null && activeContract.getTenantId() != null) {
+            return activeContract.getTenantId();
+        }
+        return null;
     }
 }
