@@ -2,7 +2,11 @@
   <div class="g-page-wrap">
     <div class="g-page-header">
       <span class="g-page-title">员工档案</span>
-      <AuthBtn permission="hr:employee:add" type="primary" @click="openAddDialog">新增员工</AuthBtn>
+      <div style="display:flex;gap:8px">
+        <span v-if="!hasAddPermission" style="font-size:12px;color:#909399;line-height:32px">审批通过的入职申请将自动创建员工档案，无需手动新增</span>
+        <AuthBtn v-if="hasAddPermission" permission="hr:employee:add" type="primary" @click="openAddDialog">新增员工</AuthBtn>
+        <el-button v-if="hasAddPermission" link @click="openHistoryAdd">历史补录</el-button>
+      </div>
     </div>
     <SearchBar :model="query" @search="loadData" @reset="handleReset">
       <el-form-item label="姓名">
@@ -26,6 +30,7 @@
         <el-table-column prop="genderText" label="性别" width="60" align="center">
           <template #default="{ row }">{{ row.genderText || '-' }}</template>
         </el-table-column>
+        <el-table-column prop="employmentTypeText" label="用工类型" width="100" align="center" />
         <el-table-column prop="employeeStatusText" label="状态" width="80" align="center">
           <template #default="{ row }"><el-tag size="small">{{ row.employeeStatusText || '-' }}</el-tag></template>
         </el-table-column>
@@ -57,13 +62,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTable } from '@/hooks/useTable'
 import { useUserStore } from '@/store/user'
 import * as api from '@/api/hr'
 
 const userStore = useUserStore()
+const hasAddPermission = computed(() => userStore.hasPermission('hr:employee:add'))
+
 const { query, records, total, loading, loadData, resetQuery } = useTable(api.getEmployeePageApi, {
   pageNum: 1, pageSize: 20, name: '', employeeNo: '', employeeStatus: undefined
 })
@@ -75,6 +82,7 @@ const form = reactive<api.EmployeeDTO>({ employeeNo: '', name: '', employmentTyp
 const rules = { employeeNo: [{ required: true, message: '工号不能为空' }], name: [{ required: true, message: '姓名不能为空' }] }
 
 const openAddDialog = () => { Object.assign(form, { id: undefined, employeeNo: '', name: '', employmentType: 1 }); dialogVisible.value = true }
+const openHistoryAdd = () => { Object.assign(form, { id: undefined, employeeNo: '', name: '', employmentType: 1, remark: '历史补录' }); dialogVisible.value = true }
 const openEditDialog = (row: api.EmployeeVO) => { Object.assign(form, { id: row.id, employeeNo: row.employeeNo, name: row.name, gender: row.gender, birthdate: row.birthdate, entryDate: row.entryDate, employmentType: row.employmentType, phone: row.phone, email: row.email, basicSalary: row.basicSalary, remark: row.remark }); dialogVisible.value = true }
 const handleDelete = (row: api.EmployeeVO) => { ElMessageBox.confirm('确认删除该员工?', '提示').then(async () => { await api.deleteEmployeeApi(row.id!); ElMessage.success('删除成功'); loadData() }) }
 const handleSubmit = async () => { await formRef.value.validate(); submitLoading.value = true; try { if (form.id) { await api.updateEmployeeApi(form); ElMessage.success('编辑成功') } else { await api.addEmployeeApi(form); ElMessage.success('新增成功') } dialogVisible.value = false; loadData() } finally { submitLoading.value = false } }

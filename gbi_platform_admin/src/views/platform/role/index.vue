@@ -54,7 +54,7 @@
           <el-input v-model="form.roleName" placeholder="请输入角色名称" maxlength="64" />
         </el-form-item>
         <el-form-item label="角色编码" prop="roleCode">
-          <el-input v-model="form.roleCode" placeholder="如 SUB_ADMIN，全大写下划线" maxlength="64" />
+          <el-input v-model="form.roleCode" placeholder="如 super_admin，全小写下划线" maxlength="64" />
         </el-form-item>
         <el-form-item label="所属公司" prop="companyId">
           <el-select v-model="form.companyId" style="width: 100%">
@@ -129,7 +129,7 @@ const rules: FormRules = {
   roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
   roleCode: [
     { required: true, message: '请输入角色编码', trigger: 'blur' },
-    { pattern: /^[A-Z][A-Z0-9_]*$/, message: '角色编码须为大写字母/数字/下划线', trigger: 'blur' }
+    { pattern: /^[a-z][a-z0-9_]*$/, message: '角色编码须为小写字母/数字/下划线', trigger: 'blur' }
   ]
 }
 
@@ -191,11 +191,12 @@ async function openMenuDialog(row: RoleVO): Promise<void> {
   if (menuTree.value.length === 0) {
     menuTree.value = await getMenuTreeApi()
   }
-  // 回显已授权菜单
-  const checkedIds = await getRoleMenusApi(row.id)
+  // 回显已授权菜单（过滤掉父级文件夹节点，防止子节点全选）
+  const checkedIds = (await getRoleMenusApi(row.id)).filter(
+    (id) => !menuTree.value.some((n) => n.id === id && n.children && n.children.length > 0)
+  )
   menuTreeRef.value?.setCheckedKeys(checkedIds)
 }
-
 async function handleSaveMenus(): Promise<void> {
   if (!currentRole.value || !menuTreeRef.value) {
     return
@@ -203,9 +204,14 @@ async function handleSaveMenus(): Promise<void> {
   menuSubmitLoading.value = true
   try {
     const checkedKeys = menuTreeRef.value.getCheckedKeys(false) as number[]
-    const halfCheckedKeys = menuTreeRef.value.getHalfCheckedKeys() as number[]
-    // 父级半选状态一并提交，保证权限完整
-    await saveRoleMenusApi(currentRole.value.id, [...checkedKeys, ...halfCheckedKeys])
+    // 只授权叶节点（有 permission 的实际菜单），过滤掉父级分组节点
+    const leafNodeIds = new Set(menuTree.value.flatMap((node) => node.children ? node.children.map((c) => c.id) : [node.id]))
+    const filteredCheckedKeys = checkedKeys.filter((id) => leafNodeIds.has(id))
+    // 过滤掉 halfCheckedKeys 中的父节点（folder类型），只保留叶节点，避免再次写入脏数据
+    const halfCheckedIdSet = new Set(menuTree.value.flatMap((node) => node.children ? node.children.map((c) => c.id) : [node.id]))
+    const halfCheckedKeys = (menuTreeRef.value.getHalfCheckedKeys() as number[]).filter((id) => halfCheckedIdSet.has(id))
+    // 已过滤父节点，仅提交叶节点
+    await saveRoleMenusApi(currentRole.value.id, [...filteredCheckedKeys, ...halfCheckedKeys])
     ElMessage.success('授权成功')
     menuDialogVisible.value = false
   } finally {

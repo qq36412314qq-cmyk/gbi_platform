@@ -1,5 +1,6 @@
 package com.gbi.platform.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -9,8 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 水电物业月度账单实体：water_elec_bill
- * 按收费类别分行存储（水费/电费各一行），缴费状态联动
+ * 水电物业月度账单实体：property_water_elec_bill
  *
  * @author gbi
  */
@@ -19,42 +19,67 @@ import java.time.LocalDateTime;
 @TableName("property_water_elec_bill")
 public class WaterElecBill extends BaseEntity {
 
-    /** 所属子公司ID */
+    /**
+     * 租户公司ID
+     */
+    @TableField(value = "company_id", fill = FieldFill.INSERT)
     private Long companyId;
 
-    /** 铺位ID */
+    /**
+     * 铺位ID
+     */
     private Long stallId;
 
-    /** 商户ID */
+    /**
+     * 商户ID
+     */
     private Long merchantId;
 
-    /** 关联应收应付计划ID */
+    /**
+     * 计费计划ID
+     */
     private Long planId;
 
-    /** 账单月份 yyyy-MM */
+    /**
+     * 账单月份 yyyy‑MM
+     */
     private String billMonth;
 
-    /** 收费类别 2物业费 3水费 4电费 */
+    /**
+     * 账单类别 1水费 2电费
+     */
     private Integer category;
 
-    /** 上期抄表读数（用于计算本期用量 = 本次读数 - 上期读数） */
+    /**
+     * 上期表读数
+     */
     @TableField("prev_meter_read")
     private BigDecimal prevMeterRead;
 
-    /** 用量（水/电为读数差，物业费定额时存 0） */
+    /**
+     * 使用量（MySQL关键字，用反引号转义）
+     */
     @TableField("`usage`")
     private BigDecimal usage;
 
-    /** 计费单价快照 */
-    @TableField("`unit_price`")
+    /**
+     * 单价
+     */
+    @TableField("unit_price")
     private BigDecimal unitPrice;
 
-    /** 账单总应收金额 */
+    /**
+     * 账单总金额
+     */
     private BigDecimal totalAmount;
 
-    /** 缴费状态 0待缴 1已缴 2部分缴费 */
+    /**
+     * 支付状态：0未支付 1已支付
+     */
     private Integer payStatus;
 
-    /** 缴费完成时间 */
+    /**
+     * 支付时间
+     */
     private LocalDateTime payTime;
 }

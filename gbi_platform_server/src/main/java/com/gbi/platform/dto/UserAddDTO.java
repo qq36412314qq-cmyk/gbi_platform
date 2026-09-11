@@ -43,12 +43,10 @@ public class UserAddDTO implements Serializable {
     private String realName;
 
     @Schema(description = "手机号码")
-    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号码格式不正确")
-    private String phone;
+   private String phone;
 
-    @Schema(description = "邮箱")
-    @Pattern(regexp = "^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$", message = "邮箱格式不正确")
-    private String email;
+   @Schema(description = "邮箱")
+   private String email;
 
     @Schema(description = "头像地址")
     @Size(max = 1000, message = "头像地址过长")

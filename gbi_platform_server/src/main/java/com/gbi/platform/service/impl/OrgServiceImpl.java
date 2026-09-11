@@ -63,6 +63,15 @@ public class OrgServiceImpl implements OrgService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void add(OrgDTO dto) {
+        // if (org_type == 子公司):
+        //   company_id = 新生成（从现有最大 company_id + 1 获取）
+        // else (部门):
+        //   company_id = 父节点的 company_id（向上递归查找最近的子公司节点）
+        if (dto.getOrgType() == 2) { // 2子公司
+            dto.setCompanyId(getMaxCompanyId() + 1);// 新生成（从现有最大 company_id + 1 获取）
+        } else {
+            dto.setCompanyId(getParentCompanyId(dto.getParentId()));// 父节点的 company_id（向上递归查找最近的子公司节点）
+        }
         // 同名校验（同一上级下）
         Long exist = orgMapper.selectCount(new LambdaQueryWrapper<SysOrg>()
                 .eq(SysOrg::getParentId, dto.getParentId())
@@ -72,7 +81,13 @@ public class OrgServiceImpl implements OrgService {
         }
         SysOrg org = new SysOrg();
         // 组织归属：子公司账号只能维护本公司组织（companyId 强制登录人）
-        org.setCompanyId(UserContext.getLoginUser().getCompanyId());
+        //org.setCompanyId(UserContext.getLoginUser().getCompanyId());
+        org.setCompanyId(dto.getCompanyId());
+        // ============【新增】start ============
+        if (dto.getCompanyId() == null) {
+            throw new BizException("上级路径未找到子公司节点，无法创建该组织");
+        }
+        // ============【新增】end ============
         org.setParentId(dto.getParentId());
         org.setOrgName(dto.getOrgName());
         org.setOrgType(dto.getOrgType());
@@ -82,6 +97,7 @@ public class OrgServiceImpl implements OrgService {
         auditLogUtil.record(CommonConst.MODULE_ORG, CommonConst.OPER_TYPE_ADD,
                 String.valueOf(org.getId()), null, org);
     }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -167,4 +183,49 @@ public class OrgServiceImpl implements OrgService {
         vo.setChildren(new ArrayList<>());
         return vo;
     }
+
+    /**
+     * 获取子公司最大companyId，仅统计org_type=2子公司；无子公司返回0
+     */
+    private Long getMaxCompanyId() {
+        LambdaQueryWrapper<SysOrg> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(SysOrg::getCompanyId)
+                .eq(SysOrg::getOrgType,2) //关键修复：只统计子公司
+                .orderByDesc(SysOrg::getCompanyId)
+                .last("LIMIT 1");
+        SysOrg sysOrg = orgMapper.selectOne(wrapper);
+        if(sysOrg == null || sysOrg.getCompanyId() == null){
+            return 0L;
+        }
+        return sysOrg.getCompanyId();
+    }
+
+
+    /**
+     * 向上迭代查找：优先找最近子公司(orgType=2)；无则取顶层集团节点ID；完全找不到返回null
+     * @param parentId 父节点ID
+     * @return companyId
+     */
+    private Long getParentCompanyId(Long parentId) {
+        Long currPid = parentId;
+        while (currPid != null) {
+            SysOrg org = orgMapper.selectById(currPid);
+            if(org == null){
+                break;
+            }
+            // 找到子公司，优先返回子公司companyId
+            if(2 == org.getOrgType()){
+                return org.getCompanyId();
+            }
+            // 判断是否集团顶层节点 parentId null/0
+            if(org.getParentId() == null || org.getParentId() == 0L){
+                // 集团顶层节点，其直属部门 company_id=0
+                return 0L;
+            }
+            currPid = org.getParentId();
+        }
+        // 整条链路全部失效，返回null，外部抛出异常
+        return null;
+    }
+
 }

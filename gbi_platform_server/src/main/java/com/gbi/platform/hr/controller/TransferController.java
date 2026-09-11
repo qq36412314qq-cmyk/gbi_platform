@@ -30,6 +30,12 @@ public class TransferController {
         return Result.success(transferService.pageEntry(pageNum, pageSize, status));
     }
 
+    @Operation(summary = "入职申请详情")
+    @GetMapping("/entry/{id}")
+    public Result<HrEntryApplyVO> getEntry(@PathVariable Long id) {
+        return Result.success(transferService.getEntry(id));
+    }
+
     @Operation(summary = "提交入职申请")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).HR_ENTRY_ADD,'')")
     @PostMapping("/entry/submit")

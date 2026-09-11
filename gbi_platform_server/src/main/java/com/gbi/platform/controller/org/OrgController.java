@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 组织接口（对齐前端 api/org.ts）
@@ -58,8 +59,9 @@ public class OrgController {
 
     @Operation(summary = "删除组织")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).ORG_DELETE,'')")
-    @DeleteMapping("/delete")
-    public Result<Void> delete(@RequestParam Long id) {
+    @PostMapping("/delete")
+    public Result<Void> delete(@RequestBody Map<String, Object> params) {
+        Long id = Long.parseLong(params.get("id").toString());
         orgService.delete(id);
         return Result.success();
     }

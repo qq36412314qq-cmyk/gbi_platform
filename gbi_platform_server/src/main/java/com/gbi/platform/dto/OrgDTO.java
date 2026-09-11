@@ -42,6 +42,9 @@ public class OrgDTO implements Serializable {
     @Max(value = 3, message = "组织类型非法")
     private Integer orgType;
 
+    @Schema(description = "所属子公司ID，后端自动计算，前端禁止传参")
+    private Long companyId;
+
     @Schema(description = "排序")
     @Min(value = 0, message = "排序号最小为0")
     @Max(value = 9999, message = "排序号最大为9999")

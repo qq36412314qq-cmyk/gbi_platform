@@ -1,6 +1,6 @@
 /**
- * 水电物业模块接口（对应后端 waterElec 三个控制器）
- * 设备管理 / 账单管理 / 缴费管理
+ * 水电物业模块接口（对应后端 waterElec 两个控制器）
+ * 设备管理 / 账单管理
  */
 import { get, post } from '@/utils/request'
 import type { PageResult } from '@/utils/request'
@@ -137,55 +137,3 @@ export function batchSyncWaterElecBillApi(ids: number[]): Promise<number> {
   return post<number>('/waterElec/bill/batchSync', ids)
 }
 
-/* ------------------------------ 缴费记录 water_elec_pay_record ------------------------------ */
-
-export interface WaterElecPayQueryDTO {
-  pageNum: number
-  pageSize: number
-  recordType?: number
-  payType?: number
-  billId?: number
-}
-
-export interface WaterElecPayRecordVO {
-  id: number
-  companyId: number
-  billId: number
-  stallId: number
-  merchantId?: number
-  payAmount: number
-  payType: number
-  payTypeText?: string
-  recordType: number
-  recordTypeText?: string
-  refundStatus: number
-  refundTime?: string
-  refundRecordId?: number
-  remark?: string
-  flowNo?: string
-  createByName?: string
-  createTime?: string
-}
-
-export interface WaterElecPayDTO {
-  billId: number
-  payType: number
-  requestId: string
-  remark?: string
-}
-
-export interface WaterElecRefundDTO {
-  payRecordId: number
-  requestId: string
-  remark?: string
-}
-
-export function getPayPageApi(params: WaterElecPayQueryDTO): Promise<PageResult<WaterElecPayRecordVO>> {
-  return get<PageResult<WaterElecPayRecordVO>>('/waterElec/pay/page', params)
-}
-export function payBillApi(data: WaterElecPayDTO): Promise<null> {
-  return post<null>('/waterElec/pay/pay', data)
-}
-export function refundPayApi(data: WaterElecRefundDTO): Promise<null> {
-  return post<null>('/waterElec/pay/refund', data)
-}

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 租赁分类接口（商铺/仓库/车位等，子公司可自定义，前端 api/lease.ts category 部分）
@@ -67,7 +68,8 @@ public class LeaseCategoryController {
     @Operation(summary = "删除分类（被铺位引用禁止删除，逻辑删除）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).LEASE_CATEGORY_DELETE,'')")
     @PostMapping("/delete")
-    public Result<Void> delete(@RequestParam Long id) {
+    public Result<Void> delete(@RequestBody Map<String, Object> params) {
+        Long id = Long.parseLong(params.get("id").toString());
         leaseCategoryService.delete(id);
         return Result.success();
     }

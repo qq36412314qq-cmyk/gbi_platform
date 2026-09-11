@@ -13,9 +13,7 @@ import com.gbi.platform.dto.UserUpdateDTO;
 import com.gbi.platform.entity.SysRole;
 import cn.hutool.core.bean.BeanUtil;
 import com.gbi.platform.entity.SysUser;
-import cn.hutool.core.bean.BeanUtil;
 import com.gbi.platform.entity.SysUserRoleRel;
-import cn.hutool.core.bean.BeanUtil;
 import com.gbi.platform.mapper.SysRoleMapper;
 import com.gbi.platform.mapper.SysUserMapper;
 import com.gbi.platform.mapper.SysUserRoleRelMapper;
@@ -72,7 +70,6 @@ public class UserServiceImpl implements UserService {
                 .orderByDesc(SysUser::getId);
         Page<SysUser> result = userMapper.selectPage(page, wrapper);
 
-        // 批量组装角色名称（避免 N+1）
         List<UserListVO> voList = new ArrayList<>();
         if (!result.getRecords().isEmpty()) {
             List<Long> userIds = result.getRecords().stream().map(SysUser::getId).toList();
@@ -104,6 +101,8 @@ public class UserServiceImpl implements UserService {
         if (exist != null && exist > 0) {
             throw new BizException("登录账号已存在：" + dto.getUsername());
         }
+        // 手机号/邮箱格式校验（可选字段，有值时才校验）
+        validatePhoneEmail(dto.getPhone(), dto.getEmail());
         // 数据隔离：子公司账号强制绑定登录人公司，集团管理员可指定
         LoginUser loginUser = UserContext.getLoginUser();
         Long companyId = loginUser.isSuperAdmin() ? dto.getCompanyId() : loginUser.getCompanyId();
@@ -138,8 +137,10 @@ public class UserServiceImpl implements UserService {
         if (exist != null && exist > 0) {
             throw new BizException("登录账号已存在：" + dto.getUsername());
         }
+        // 手机号/邮箱格式校验（可选字段，有值时才校验）
+        validatePhoneEmail(dto.getPhone(), dto.getEmail());
         SysUser before = new SysUser();
-        cn.hutool.core.bean.BeanUtil.copyProperties(user, before);
+        BeanUtil.copyProperties(user, before);
         user.setUsername(dto.getUsername());
         user.setRealName(dto.getRealName());
         user.setPhone(dto.getPhone());
@@ -177,7 +178,7 @@ public class UserServiceImpl implements UserService {
             throw new BizException("用户不存在");
         }
         SysUser before = new SysUser();
-        cn.hutool.core.bean.BeanUtil.copyProperties(user, before);
+        BeanUtil.copyProperties(user, before);
         SysUser update = new SysUser();
         update.setId(id);
         update.setPassword(passwordEncoder.encode(password));
@@ -196,7 +197,7 @@ public class UserServiceImpl implements UserService {
             throw new BizException("用户不存在");
         }
         SysUser before = new SysUser();
-        cn.hutool.core.bean.BeanUtil.copyProperties(user, before);
+        BeanUtil.copyProperties(user, before);
         SysUser update = new SysUser();
         update.setId(id);
         update.setStatus(status);
@@ -220,7 +221,6 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toMap(SysUser::getId,
                         u -> u.getRealName() == null || u.getRealName().isBlank() ? u.getUsername() : u.getRealName(),
                         (a, b) -> a));
-        // 查不到的用户兜底显示 用户+id，避免前端空白
         return distinctIds.stream()
                 .collect(Collectors.toMap(Function.identity(),
                         id -> nameMap.getOrDefault(id, "用户" + id), (a, b) -> a));
@@ -255,6 +255,22 @@ public class UserServiceImpl implements UserService {
             rel.setUserId(userId);
             rel.setRoleId(roleId);
             userRoleRelMapper.insert(rel);
+        }
+    }
+
+    /**
+     * 校验手机号/邮箱格式（可选字段，有值时才校验）
+     */
+    private void validatePhoneEmail(String phone, String email) {
+        if (StringUtils.hasText(phone)) {
+            if (!phone.matches("^1[3-9]\\d{9}$")) {
+                throw new BizException("手机号码格式不正确");
+            }
+        }
+        if (StringUtils.hasText(email)) {
+            if (!email.matches("^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$")) {
+                throw new BizException("邮箱格式不正确");
+            }
         }
     }
 }

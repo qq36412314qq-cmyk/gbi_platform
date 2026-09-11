@@ -176,7 +176,8 @@ const rules: FormRules = {
     { min: 6, max: 32, message: '密码长度 6-32 位', trigger: 'blur' }
   ],
   realName: [{ required: true, message: '请输入真实姓名', trigger: 'blur' }],
-  phone: [{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }]
+  phone: [{validator: (rule, value, callback) => { if (value && !/^1[3-9]\\d{9}$/.test(value)) callback('手机号格式不正确'); else callback(); }, trigger: 'blur'}],
+  email: [{validator: (rule, value, callback) => { if (value && !/^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$/.test(value)) callback('邮箱格式不正确'); else callback(); }, trigger: 'blur'}]
 }
 
 function openDialog(_parentId?: number, row?: UserVO): void {

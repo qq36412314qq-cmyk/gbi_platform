@@ -87,6 +87,17 @@ export function exportEmployeeApi(ids: number[]): Promise<EmployeeVO[]> {
   return post<EmployeeVO[]>('/hr/employee/export', ids)
 }
 
+
+/* ==================== 下拉选项接口 ==================== */
+export interface OrgFlatOption { id: number; orgName: string }
+export interface PostFlatOption { id: number; postName: string; postCode: string }
+export function getOrgFlatListApi(): Promise<OrgFlatOption[]> {
+  return get<OrgFlatOption[]>(`/org/tree`)
+}
+export function getPostFlatListApi(): Promise<PostFlatOption[]> {
+  return get<PageResult<PostVO>>(`/hr/org/post/page`, { pageNum: 1, pageSize: 500, status: 1 }).then(r => r.records)
+}
+
 /* ==================== 组织岗位 ==================== */
 export interface PostQueryDTO {
   pageNum: number
@@ -160,6 +171,7 @@ export interface EntryApplyVO {
   status: number
   statusText?: string
   remark?: string
+  employmentTypeText?: string
   createTime: string
 }
 
@@ -192,7 +204,10 @@ export function revokeEntryApi(id: number): Promise<void> {
   return post<void>(`/hr/transfer/entry/revoke/${id}`)
 }
 
-/* ==================== 转正申请 ==================== */
+export function getEntryDetailApi(id: number): Promise<EntryApplyVO> {
+}
+
+/* =================== 转正申请 ==================== */
 export interface RegularApplyQueryDTO {
   pageNum: number
   pageSize: number

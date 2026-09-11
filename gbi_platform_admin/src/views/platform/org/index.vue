@@ -139,8 +139,8 @@ async function loadTree(): Promise<void> {
 function openDialog(parentId?: number, row?: OrgVO): void {
   formRef.value?.clearValidate()
   Object.assign(form, {
-    id: undefined,
-    parentId: parentId ?? row?.parentId ?? 0,
+    id: row?.id ?? undefined,
+    parentId: parentId ?? row?.parentId ?? (treeData.value[0]?.id ?? 0),
     orgName: row?.orgName ?? '',
     orgType: row?.orgType ?? 1,
     sortOrder: row?.sortOrder ?? 0,

@@ -1,27 +1,31 @@
 package com.gbi.platform.service;
 
+import com.gbi.platform.dto.DiscountApplyDTO;
 import com.gbi.platform.dto.DiscountApplyQueryDTO;
 import com.gbi.platform.vo.DiscountApplyVO;
+import com.gbi.platform.vo.DiscountCalcVO;
 import com.gbi.platform.vo.PageVO;
 
 import java.math.BigDecimal;
 
 /**
- * 优惠申请服务（租赁合同高频使用，报销/采购无优惠策略仅金额阈值校验）
- * 流程：合同保存计算优惠 → 集团阈值判定 → 超阈值发起 contract_discount 审批 → 通过后合同生效并生成收款计划
+ * 优惠申请服务（支持多业务类型：租赁/物业/水电/幼儿园）
+ * 流程：提交申请 → 阈值判定 → 超阈值发起审批 → 通过后生成应收应付计划
  *
  * @author gbi
  */
 public interface DiscountApplyService {
 
     /**
-     * 合同优惠申请：构建申请单 + 快照 + 阈值判定
-     * need_audit=1 时自动发起 contract_discount 审批（状态=审批中），否则直接通过并生成收款计划
-     *
-     * @return 优惠申请ID
+     * 合同优惠申请（兼容现有逻辑）
      */
     Long createForContract(Long contractId, Long policyId, Integer waiveMonths, BigDecimal discountRate,
                            BigDecimal deductAmount, String remark);
+
+    /**
+     * 通用优惠申请（支持多业务类型）
+     */
+    Long createApply(DiscountApplyDTO dto);
 
     PageVO<DiscountApplyVO> page(DiscountApplyQueryDTO dto);
 
@@ -31,8 +35,12 @@ public interface DiscountApplyService {
     void cancel(Long id);
 
     /**
-     * 审批结果回调（ContractDiscountFlowHandler 调用）
-     * result = 2 通过（生成收款计划）/ 3 驳回 / 4 作废
+     * 审批结果回调
      */
     void handleFlowResult(Long flowInstanceId, int result);
+
+    /**
+     * 预览计算优惠金额
+     */
+    DiscountCalcVO calcPreview(DiscountApplyDTO dto);
 }

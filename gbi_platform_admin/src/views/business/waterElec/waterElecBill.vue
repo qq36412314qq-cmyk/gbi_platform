@@ -93,7 +93,7 @@
         <el-form-item label="抄表读数">
           <div>
             <div v-for="(read, index) in generateForm.meterReads" :key="index" class="b-read-row">
-              <el-select v-model="read.meterId" placeholder="选择设备" style="width: 180px" @change="(val) => selectMeter(index, val)">
+              <el-select v-model="read.meterId" placeholder="选择设备" style="width: 180px" @change="(val: number) => selectMeter(index, val!)">
                 <el-option v-for="m in meterOptions" :key="m.id" :label="`${m.stallName}(${m.meterNo})`" :value="m.id" />
               </el-select>
               <el-input-number v-model="read.currentRead" :precision="2" :min="0" placeholder="当前读数" style="width: 120px" />
@@ -240,7 +240,6 @@ async function handleGenerate(): Promise<void> {
       generateDialogVisible.value = false
       selectedRows.value = []
       loadData()
-      router.push('/property/unpaidBill')
     } catch (e: any) { ElMessage.error(e?.msg || '生成失败') } finally {
       generateLoading.value = false
     }

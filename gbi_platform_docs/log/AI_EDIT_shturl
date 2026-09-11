@@ -1,51 +1,230 @@
-AI_EDIT_LOG
-## 【2026-09-06 10:17:12】install.sql升级：对齐正式环境group_rent_db.sql表结构
+# AI_EDIT_LOG
 
-- 用户原始需求：以正式环境group_rent_db.sql为基准，升级install.sql安装脚本
-- 涉及修改/新增文件：
-  - D:\Office\Project\Java\gbi_platform\gbi_platform_docs\attachments\sql\install.sql
-- 变更摘要：
-  1. 表名统一：19张表从旧命名规范（biz_*、water_elec_*、stall_*等）迁移到正式环境命名（property_*、finance_*等）
-  2. 新增表：finance_fee_pay_bill、finance_pay_flow、finance_pay_order、finance_pay_order_item等21张表已同步
-  3. 旧表清除：biz_fee_bill、water_elec_bill、stall_info等旧表名全部移除，无残留
-  4. 保留升级脚本：upgrade_v2.7_unified_bill.sql和init_hr_menu.sql尾部内容已恢复
-  5. 最终结果：66张表，与group_rent_db.sql完全一致
-- 风险与注意事项：
-  - 本升级仅修改install.sql安装脚本（建表DDL），不涉及生产数据迁移
-  - 已上线环境的表名变更需另行执行ALTER TABLE重命名，不可直接覆盖
-  - 建议上线前在测试环境执行install.sql验证无报错后再部署
-AI_EDIT_LOG
-## 【2026-09-06 10:39:14】financePay.vue铺位列升级为三级展现
+## 【2026-09-07 12:15:00】用户管理页面操作问题修复
 
-- 用户原始需求：修改financePay.vue 89-94行的铺位调用，参考feeBill.vue的三级展现方式
+- 用户原始需求：用户管理页面新增/编辑权限问题、选填项校验不严谨、删除接口不支持POST
 - 涉及修改/新增文件：
-  - D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/vo/PayOrderVO.java
-  - D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/service/impl/FinanceServiceImpl.java
-  - D:/Office/Project/Java/gbi_platform/gbi_platform_admin/src/api/finance.ts
-  - D:/Office/Project/Java/gbi_platform/gbi_platform_admin/src/views/finance/financePay.vue
+  - `gbi_platform_admin/src/views/platform/user/index.vue`（前端用户管理页）
+  - `gbi_platform_server/src/main/java/com/gbi/platform/dto/UserAddDTO.java`
+  - `gbi_platform_server/src/main/java/com/gbi/platform/dto/UserUpdateDTO.java`
+  - `gbi_platform_server/src/main/java/com/gbi/platform/service/impl/UserServiceImpl.java`
 - 变更摘要：
-  1. PayOrderVO.java：新增stallMarketName和categoryName字段
-  2. FinanceServiceImpl.java：新增MarketInfoMapper和StallCategoryMapper注入，在fillStallAndMerchantNames中填充市场名称和分类名称
-  3. finance.ts：PayOrderVO接口新增stallMarketName和categoryName可选字段
-  4. financePay.vue：铺位列模板从单级改为三级（市场/分类/铺位）展现
+  1. 修复 index.vue 第179行 phone 验证器后缺少逗号导致的 JS 语法错误
+  2. 移除 UserAddDTO/UserUpdateDTO 中 phone/email 的 @Pattern 注解（避免空字符串校验失败）
+  3. 在 UserServiceImpl 的 add() 和 update() 方法中新增 validatePhoneEmail() 校验逻辑
+  4. 补充 update() 方法中缺失的 user.setPhone() 赋值
+  5. 确认 admin 用户 role 关联正常，super_admin 角色已配置所有 user 权限
+  6. 后端编译启动成功（端口8080），前端 Vite dev server 启动成功（端口5173）
 - 风险与注意事项：
-  - 后端新增了2次额外查询（每缴费单1次MarketInfo查询+1次StallCategory查询），在记录量大时可能有性能影响
-  - 建议在后续优化中改为批量查询（IN查询）替代逐条SELECT
-AI_EDIT_LOG
-## 【2026-09-06 10:46:53】编译运行项目
+  - deleteById 仍为物理删除，违反"业务单据禁止物理删除"红线，待后续改造为逻辑删除
+  - 前端 HMR 自动生效，无需重启前端
 
-- 用户原始需求：编译运行项目
+## 【2026-09-07 12:15:00】用户管理页面操作问题修复
+
+- 用户原始需求：用户管理页面新增/编辑权限问题、选填项校验不严谨、删除接口不支持POST
 - 涉及修改/新增文件：
-  - D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/service/impl/FinanceServiceImpl.java（去除BOM）
-  - D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/vo/PayOrderVO.java（去除BOM）
-  - D:/Office/Project/Java/gbi_platform/gbi_platform_admin/src/api/finance.ts（去除BOM）
-  - D:/Office/Project/Java/gbi_platform/gbi_platform_admin/src/views/finance/financePay.vue（去除BOM）
+  - gbi_platform_admin/src/views/platform/user/index.vue
+  - gbi_platform_server/src/main/java/com/gbi/platform/dto/UserAddDTO.java
+  - gbi_platform_server/src/main/java/com/gbi/platform/dto/UserUpdateDTO.java
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/UserServiceImpl.java
 - 变更摘要：
-  1. 完成FinanceServiceImpl.java和PayOrderVO.java的铺位三级展示字段修改
-  2. 发现并修复了4个文件的UTF-8 BOM问题（Java不支持BOM）
-  3. 后端编译成功，已后台启动在端口8080（PID 35664）
-  4. 前端已在运行，端口5173（PID 22796）
-  5. 登录接口验证通过（code=200）
+  1. 修复 index.vue 第179行 phone 验证器后缺少逗号导致的 JS 语法错误
+  2. 移除 UserAddDTO/UserUpdateDTO 中 phone/email 的 @Pattern 注解（避免空字符串校验失败）
+  3. 在 UserServiceImpl 的 add() 和 update() 方法中新增 validatePhoneEmail() 校验逻辑
+  4. 补充 update() 方法中缺失的 user.setPhone() 赋值
+  5. 确认 admin 用户 role 关联正常，super_admin 角色已配置所有 user 权限
+  6. 后端编译成功，前端 Vite dev server 运行在 http://localhost:5173
 - 风险与注意事项：
-  - BOM问题会导致Java编译失败（'需要class/interface/enum/record'错误）
-  - 后续修改Java文件后需确认无BOM再编译
+  - deleteById 仍为物理删除，违反"业务单据禁止物理删除"红线，待后续改造
+
+## 【2026-09-07 12:36:00】角色管理页面问题修复
+
+- 用户原始需求：修复新增/编辑角色角色编码校验错误、菜单授权父级被误授权、删除接口不支持POST
+- 涉及修改/新增文件：
+  - gbi_platform_admin/src/views/platform/role/index.vue
+  - gbi_platform_server/src/main/java/com/gbi/platform/controller/org/RoleController.java
+- 变更摘要：
+  1. 修复前端角色编码正则：^[A-Z]... 改为 ^[a-z]...，与后端 @Pattern 及数据库实际数据（super_admin/auditor）对齐
+  2. 修复前端角色编码 placeholder 文字：全大写下划线 → 全小写下划线
+  3. 修复菜单授权逻辑：新增 leafNodeIds 过滤，只提交无子节点的叶节点菜单ID，避免父级分组节点被存入 sys_role_menu_rel
+  4. 修复后端删除接口：@DeleteMapping("/delete") 改为 @PostMapping("/delete")，入参改为 @RequestBody Map，与前端 deleteRoleApi 调用方式一致
+- 风险与注意事项：
+  - RoleController 使用全限定名 java.util.Map 代替 import，避免多余 import 行
+  - 菜单授权过滤后，super_admin 等全量授权角色的 menuIds 列表会变小（只含叶节点），但不影响权限校验效果（因为权限匹配的是 menu.permission）
+  - 后端已重新编译启动，前端 HMR 自动生效
+
+## 【2026-09-07 13:00:00】角色菜单授权父级连带选中问题修复
+
+- 用户原始需求：角色test的菜单授权打开后，物业管理下所有子项都被错误选中
+- 涉及修改/新增文件：无代码修改，仅数据库数据清理
+- 变更摘要：
+  1. 根因：旧代码将folder节点menu_id=36（物业管理）写入sys_role_menu_rel，setCheckedKeys([36,37])触发Element Plus树自动全选子孙节点
+  2. 清理：DELETE FROM sys_role_menu_rel WHERE role_id=3 AND menu_id=36，当前仅保留menu_id=37
+  3. 已有前端叶节点过滤逻辑（filteredCheckedKeys）已部署，后续保存不会写入folder节点
+- 风险与注意事项：
+  - role_id=1（super_admin）和role_id=2（auditor）也存在folder节点历史数据，但不影响权限功能，暂不清理
+  - 无需重启服务，前端HMR已生效
+
+## 【2026-09-07 13:10:00】菜单授权父级全选问题修复
+
+- 用户原始需求：菜单授权弹窗打开后，一级分类下的所有子项都被自动勾选
+- 涉及修改/新增文件：
+  - gbi_platform_admin/src/views/platform/role/index.vue
+- 变更摘要：
+  1. 数据库清理：删除 role=3 的 menu_id=36（folder节点）脏数据，仅保留叶节点 37/52/68
+  2. openMenuDialog 加载时过滤：setCheckedKeys 前过滤掉有子节点的父级菜单ID，防止脏数据触发全选
+  3. handleSaveMenus 保存时过滤：halfCheckedKeys 也经过叶节点过滤，防止父节点再次被写入库
+- 风险与注意事项：
+  - super_admin(role=1) 仍有 folder 节点历史数据，但因其有 *:*:* 通配权限，不影响功能显示
+  - 前端 HMR 自动生效，无需重启前端服务
+  - 后端无需重启
+
+## 【2026-09-07 13:20:00】菜单授权面板重新设计
+
+- 用户原始需求：菜单授权弹窗改为1级菜单横向Tab排列，2级/3级菜单在Tab内按原设计排列
+- 涉及修改文件：gbi_platform_admin/src/views/platform/role/index.vue
+- 变更摘要：
+  1. 将 el-tree 替换为 el-tabs + el-checkbox-group 组合布局
+  2. 一级菜单（menu_type=1, parent_id=0）作为横向 Tab 标签（共6个：中台管理/系统设置/物业管理/财务管理/审批中心/人力资源）
+  3. 二级菜单（menu_type=2）作为 Tab 内的分组标题，三级菜单（menu_type=3）作为分组内的复选框
+  4. 弹窗宽度从 420px 扩展至 800px，适配横向 Tab 布局
+  5. 保留父节点过滤逻辑，保存时仅提交叶节点（有 permission 的三级菜单）ID
+  6. 新增 handleMenuDialogClosed 重置函数，关闭弹窗时清空状态
+- 风险与注意事项：
+  - 无需重新编译后端，纯前端改动，HMR 自动生效
+  - 菜单数据结构依赖 getMenuTreeApi 返回的树形结构，保持不变
+
+## 【2026-09-08 10:30:00】前后端启动
+
+- 用户原始需求：快速运行前后端服务
+- 启动结果：
+  1. 后端 Spring Boot 启动成功，端口 8080，PID=14144，启动耗时 4.7s
+  2. 前端 Vite dev server 启动成功，端口 5173，PID=24112
+- 服务地址：后端 http://localhost:8080，前端 http://localhost:5173
+
+## 【2026-09-08 10:40:00】租赁铺位删除接口修复
+
+- 用户原始需求：铺位删除报错"缺少请求参数：id"
+- 涉及修改文件：gbi_platform_server/src/main/java/com/gbi/platform/controller/property/lease/LeaseStallController.java
+- 变更摘要：
+  1. delete 方法入参从 @RequestParam Long id 改为 @RequestBody Map<String, Object> params，与前端 post('/.../delete', {id}) 对齐
+  2. 文件修复 UTF-8 BOM 导致编译失败问题
+- 风险与注意事项：
+  - 前后端均已验证正常，删除 99999（不存在铺位）返回"铺位不存在或已删除"
+
+## 【2026-09-08 10:50:00】租赁分类删除接口修复
+
+- 用户原始需求：租赁分类删除报错"缺少请求参数：id"
+- 涉及修改文件：gbi_platform_server/src/main/java/com/gbi/platform/controller/property/lease/LeaseCategoryController.java
+- 变更摘要：
+  1. delete 方法入参从 @RequestParam Long id 改为 @RequestBody Map<String, Object> params，与前端 post('/.../category/delete', {id}) 对齐
+  2. 移除 UTF-8 BOM，避免 Maven 编译失败
+- 风险与注意事项：
+  - 验证通过：分类删除返回"操作成功"，铺位删除返回"铺位不存在或已删除"
+  - 前后端均已正常运行
+AI_EDIT_LOG
+## 【2026-09-10 19:23:38】任务简述：删除"缴费管理"页面及关联路由和菜单
+
+- 用户原始需求：去掉"缴费管理"页面（与"缴费明细单"重复），同步清理 sys_menu 相关数据
+- 涉及修改/新增文件：
+  - gbi_platform_admin/src/router/index.ts（删除 WaterElecPay 路由块）
+  - gbi_platform_admin/src/api/waterElec.ts（删除缴费记录接口区块 + 更新注释）
+  - gbi_platform_admin/src/views/business/waterElec/waterElecPay.vue（已删除）
+- 变更摘要：
+  1. 移除 router index.ts 中 path='pay' / name='WaterElecPay' 的路由配置（原第 135-140 行）
+  2. waterElec.ts 删除 WaterElecPayQueryDTO / WaterElecPayRecordVO / WaterElecPayDTO / WaterElecRefundDTO 接口及 getPayPageApi / payBillApi / refundPayApi 三个函数，更新模块注释从"三个控制器"改为"两个控制器"
+  3. 删除 waterElecPay.vue 文件（waterElecBill.vue / waterElecMeter.vue 保留）
+- 风险与注意事项：
+  - 后端 Controller/Service 未修改，water_elec_pay_record 表及数据保留，不影响其他模块
+  - 需在 group_rent_db 执行以下 SQL 清理 sys_menu 数据（见 Step6）
+AI_EDIT_LOG
+## 【2026-09-10 19:26:00】任务简述：删除"缴费管理"页面后重新编译运行前后端
+
+- 用户原始需求：去掉"缴费管理"页面，包括sys_menu表数据、路由、导航
+- 涉及修改文件：
+  - gbi_platform_admin/src/router/index.ts（删除WaterElecPay路由）
+  - gbi_platform_admin/src/api/waterElec.ts（删除缴费记录接口区块）
+  - gbi_platform_admin/src/views/business/waterElec/waterElecPay.vue（已删除）
+- 变更摘要：
+  1. 移除router中path='pay'的路由配置
+  2. waterElec.ts删除缴费相关接口，更新模块注释
+  3. 删除waterElecPay.vue文件
+  4. 停止旧后端进程，重新编译并启动后端服务
+  5. 前端Vite服务保持运行
+- 风险与注意事项：
+  - 需执行SQL清理sys_menu表（menu_id 39, 49, 50）
+  - 后端无需改动，water_elec_pay_record表数据保留
+AI_EDIT_LOG
+## 【2026-09-10 19:35:00】任务简述：修复生成水电费账单时 DuplicateKeyException（uk_bill_plan 冲突）
+
+- 用户原始需求：生成记录报错，检查逻辑
+- 涉及修改文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/WaterElecBillServiceImpl.java
+- 变更摘要：
+  1. 根因：同一铺位同月同时有水费和电费两个类别，各自调用 writeToUnifiedBill 写入统一账单 biz_fee_bill；第一次成功写入并插入 BillPlanRel，第二次查到已存在统一账单后仍生成 planId 并再次 insert BillPlanRel，触发 uk_bill_plan(bill_type, bill_id, plan_id, is_delete) 唯一键冲突
+  2. 修复 writeToUnifiedBill：先查询统一账单是否存在，存在则跳过 insert 直接复用；生成 planId 后插入 BillPlanRel 前加幂等判断（selectCount），已存在则跳过并打日志
+- 风险与注意事项：
+  - writeToUnifiedBill 的 category 参数当前未使用（统一用 water_elec biz_type），若后续需区分水/电分类同步需另行处理
+  - 重新编译并重启后端生效，登录验证 code=200
+AI_EDIT_LOG
+## 【2026-09-10 19:45:00】任务简述：修复"申请请假"系统繁忙错误
+
+- 用户原始需求：修复"申请请假"提示系统繁忙的问题
+- 涉及修改文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/entity/OaLeaveApply.java
+- 变更摘要：
+  1. 根因：实体字段与数据库列名不匹配导致 SQLSyntaxErrorException
+  2. 修复：添加 @TableField 注解映射字段到正确列名
+     - applyNo → exist=false（表中无此列）
+     - applyUserId → applicant_id
+     - applyUserName → applicant_name
+     - leaveDays → days
+     - flowInstanceId → flow_instance_id
+     - applyStatus → status
+     - remark → exist=false（表中无此列）
+  3. 重新编译并重启后端，登录验证 code=200
+- 风险与注意事项：
+  - applyNo 和 remark 标记为 exist=false，不会写入数据库也不会读取
+  - 如需要 persist 这些字段，需先 ALTER TABLE 添加对应列
+AI_EDIT_LOG
+## 【2026-09-10 19:50:00】任务简述：修复"申请请假"提示"节点未匹配到审批人"
+
+- 用户原始需求：修复"申请请假"提交时出现的"节点[子公司经理审批]未匹配到审批人"错误
+- 涉及文件：无代码修改，仅数据库数据补录
+- 变更摘要：
+  1. 根因：flow_definition 表 contract 流程定义引用角色编码 sub_manager/finance_admin/group_finance，但 sys_role 表中仅有 super_admin 和 auditor，导致 resolveRoleUserIds 返回空列表抛出 BizException
+  2. 新增角色：sub_manager（子公司经理）、finance_admin（财务管理员）、group_finance（集团财务），company_id=0（集团全局角色）
+  3. 将 admin 用户（user_id=1）分配至上述三个角色，确保开发测试环境可正常审批
+  4. SQL 脚本已固化：gbi_platform_docs/fix_leave_flow_roles.sql
+- 风险与注意事项：
+  - 本次无需重启后端，角色数据在数据库中即时生效
+  - 后续新公司入驻需在各 company_id 下同步创建对应角色，否则审批流程将再次报此错
+AI_EDIT_LOG
+## 【2026-09-10 19:59:00】任务简述：修复"公告撤回"报错
+
+- 用户原始需求：修复公告"撤回"操作提示出错
+- 涉及修改文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java
+- 变更摘要：
+  1. 根因：OaController 撤回接口使用 @PreAuthorize("hasPermission(T(PermissionConst).OA_ANNOUNCEMENT_RECALL,'')")，但 PermissionConst 中缺少该常量，导致 SpelEvaluationException
+  2. 新增常量：public static final String OA_ANNOUNCEMENT_RECALL = "oa:announcement:recall"
+  3. 重新编译并重启后端，验证撤回接口返回 code=200，数据库中 publish_status 正确更新为 4
+- 风险与注意事项：
+  - 前端需同步在 sys_menu 中配置 oa:announcement:recall 权限按钮，否则 UI 层面仍可访问但权限校验会拦截
+AI_EDIT_LOG
+## 【2026-09-10 20:15:00】任务简述：修复"添加会议室"报错 Unknown column 'location'
+
+- 用户原始需求：修复会议室管理页面添加会议室时数据库列名不匹配的错误
+- 涉及修改文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/entity/OaMeetingRoom.java
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/OaServiceImpl.java
+- 变更摘要：
+  1. 根因：OaMeetingRoom 实体字段与 oa_meeting_room 表列名完全不匹配
+     - location → building（DB 无 location 列）
+     - facilities → 拆分为 has_projector/has_video_conf/has_phone（DB 无 facilities 列）
+     - remark → description（DB 无 remark 列）
+     - 缺少 floor 列映射
+  2. 实体修复：添加 @TableField 注解映射正确列名，新增 floor 字段
+  3. Service 修复：addMeetingRoom/updateMeetingRoom 将 facilities 字符串解析为三个布尔标志；toMeetingRoomVO 将三个标志合并回逗号分隔字符串
+- 风险与注意事项：
+  - 编译通过，添加会议室接口返回 code=200，数据库写入正确

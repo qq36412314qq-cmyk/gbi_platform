@@ -1,6 +1,7 @@
 package com.gbi.platform.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gbi.platform.common.constant.CommonConst;
 import com.gbi.platform.common.exception.BizException;
@@ -12,7 +13,7 @@ import com.gbi.platform.service.FlowEngineService;
 import com.gbi.platform.service.OaService;
 import com.gbi.platform.util.AuditLogUtil;
 import com.gbi.platform.vo.*;
-import com.gbi.platform.vo.PageVO;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -160,7 +160,16 @@ public class OaServiceImpl implements OaService {
         room.setRoomName(roomName);
         room.setLocation(location);
         room.setCapacity(capacity);
-        room.setFacilities(facilities);
+        // 解析设施字符串，写入三个布尔标志列
+        if (facilities != null) {
+            String[] items = facilities.split(",");
+            for (String item : items) {
+                String it = item.trim().toLowerCase();
+                if (it.contains("投影") || it.contains("projector")) room.setHasProjector(1);
+                else if (it.contains("视频") || it.contains("会议")) room.setHasVideoConf(1);
+                else if (it.contains("电话")) room.setHasPhone(1);
+            }
+        }
         room.setStatus(CommonConst.STATUS_ENABLED);
         room.setRemark(remark);
         meetingRoomMapper.insert(room);
@@ -173,7 +182,16 @@ public class OaServiceImpl implements OaService {
         room.setRoomName(roomName);
         room.setLocation(location);
         room.setCapacity(capacity);
-        room.setFacilities(facilities);
+        // 解析设施字符串，写入三个布尔标志列
+        if (facilities != null) {
+            String[] items = facilities.split(",");
+            for (String item : items) {
+                String it = item.trim().toLowerCase();
+                if (it.contains("投影") || it.contains("projector")) room.setHasProjector(1);
+                else if (it.contains("视频") || it.contains("会议")) room.setHasVideoConf(1);
+                else if (it.contains("电话")) room.setHasPhone(1);
+            }
+        }
         room.setStatus(status);
         room.setRemark(remark);
         meetingRoomMapper.updateById(room);
@@ -186,6 +204,16 @@ public class OaServiceImpl implements OaService {
             meetingRoomMapper.deleteById(id);
         }
 
+    @Override
+    public void toggleMeetingRoomStatus(Long id) {
+        OaMeetingRoom room = meetingRoomMapper.selectById(id);
+        if (room == null) throw new BizException("会议室不存在");
+        Integer newStatus = (room.getStatus() == null || room.getStatus() == 1) ? 0 : 1;
+        meetingRoomMapper.update(null, new LambdaUpdateWrapper<OaMeetingRoom>()
+                .eq(OaMeetingRoom::getId, id)
+                .set(OaMeetingRoom::getStatus, newStatus));
+    }
+
     private OaMeetingRoomVO toMeetingRoomVO(OaMeetingRoom entity) {
         OaMeetingRoomVO vo = new OaMeetingRoomVO();
         vo.setId(entity.getId());
@@ -193,8 +221,13 @@ public class OaServiceImpl implements OaService {
         vo.setRoomName(entity.getRoomName());
         vo.setLocation(entity.getLocation());
         vo.setCapacity(entity.getCapacity());
-        vo.setFacilities(entity.getFacilities());
-        
+        // 将三个布尔标志合并为逗号分隔字符串回显给前端
+        List<String> facilityItems = new ArrayList<>();
+        if (entity.getHasProjector() != null && entity.getHasProjector() == 1) facilityItems.add("投影仪");
+        if (entity.getHasVideoConf() != null && entity.getHasVideoConf() == 1) facilityItems.add("视频会议");
+        if (entity.getHasPhone() != null && entity.getHasPhone() == 1) facilityItems.add("电话");
+        vo.setFacilities(String.join(", ", facilityItems));
+        vo.setStatus(entity.getStatus());
         vo.setRemark(entity.getRemark());
         vo.setCreateTime(entity.getCreateTime());
         return vo;

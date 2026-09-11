@@ -45,6 +45,7 @@ public class LeaseCategoryServiceImpl implements LeaseCategoryService {
     public List<CategoryVO> list(CategoryQueryDTO dto) {
         LambdaQueryWrapper<StallCategory> wrapper = new LambdaQueryWrapper<StallCategory>()
                 .eq(dto != null && dto.getStatus() != null, StallCategory::getStatus, dto == null ? null : dto.getStatus())
+                .eq(StallCategory::getIsDelete, 0)
                 .orderByAsc(StallCategory::getSortOrder)
                 .orderByAsc(StallCategory::getId);
         List<StallCategory> categories = categoryMapper.selectList(wrapper);
@@ -57,6 +58,7 @@ public class LeaseCategoryServiceImpl implements LeaseCategoryService {
         LambdaQueryWrapper<StallCategory> wrapper = new LambdaQueryWrapper<StallCategory>()
                 .like(StringUtils.hasText(dto.getCategoryName()), StallCategory::getCategoryName, dto.getCategoryName())
                 .eq(dto.getStatus() != null, StallCategory::getStatus, dto.getStatus())
+                .eq(StallCategory::getIsDelete, 0)
                 .orderByAsc(StallCategory::getSortOrder)
                 .orderByAsc(StallCategory::getId);
         Page<StallCategory> result = categoryMapper.selectPage(page, wrapper);
@@ -120,6 +122,7 @@ public class LeaseCategoryServiceImpl implements LeaseCategoryService {
     private void checkNameUnique(Long excludeId, String categoryName) {
         Long count = categoryMapper.selectCount(new LambdaQueryWrapper<StallCategory>()
                 .eq(StallCategory::getCategoryName, categoryName)
+                .eq(StallCategory::getIsDelete, 0)
                 .ne(excludeId != null, StallCategory::getId, excludeId));
         if (count != null && count > 0) {
             throw new BizException("分类名称已存在");

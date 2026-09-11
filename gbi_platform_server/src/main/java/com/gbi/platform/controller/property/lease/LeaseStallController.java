@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 租赁铺位接口（商铺/仓库/车位等租赁标的，前端 api/lease.ts stall 部分）
@@ -77,7 +78,8 @@ public class LeaseStallController {
     @Operation(summary = "删除铺位（有合同禁止删除，逻辑删除）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).LEASE_STALL_DELETE,'')")
     @PostMapping("/delete")
-    public Result<Void> delete(@RequestParam Long id) {
+    public Result<Void> delete(@RequestBody Map<String, Object> params) {
+        Long id = Long.parseLong(params.get("id").toString());
         leaseStallService.delete(id);
         return Result.success();
     }

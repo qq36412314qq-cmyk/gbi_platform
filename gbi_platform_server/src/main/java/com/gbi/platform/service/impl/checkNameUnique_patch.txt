@@ -1,0 +1,9 @@
+    private void checkNameUnique(Long excludeId, String categoryName) {
+        Long count = categoryMapper.selectCount(new LambdaQueryWrapper<StallCategory>()
+                .eq(StallCategory::getCategoryName, categoryName)
+                .eq(StallCategory::getIsDelete, 0)
+                .ne(excludeId != null, StallCategory::getId, excludeId));
+        if (count != null && count > 0) {
+            throw new BizException("分类名称已存在");
+        }
+    }

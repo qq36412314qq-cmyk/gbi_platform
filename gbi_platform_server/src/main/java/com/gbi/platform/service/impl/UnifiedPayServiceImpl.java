@@ -334,8 +334,8 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
         item.setPayBillId(payOrder.getId());
         item.setBillId(bill.getId());
         item.setBizType(CommonConst.BIZ_TYPE_PROPERTY_FEE);
-        item.setRuleName(lookupRuleName(bill.getRuleId(), CommonConst.BIZ_TYPE_PROPERTY_FEE));
-        item.setFeeItemType(lookupFeeItemName(bill.getRuleId(), CommonConst.BIZ_TYPE_PROPERTY_FEE));
+        item.setRuleName(lookupRuleName(null, CommonConst.BIZ_TYPE_WATER_ELEC));
+        item.setFeeItemType(lookupFeeItemName(null, CommonConst.BIZ_TYPE_WATER_ELEC));
         item.setBillMonth(bill.getBillMonth());
         item.setAmount(bill.getAmount());
         item.setDiscountAmount(BigDecimal.ZERO);
@@ -453,8 +453,8 @@ public class UnifiedPayServiceImpl implements UnifiedPayService {
         item.setPayBillId(payOrder.getId());
         item.setBillId(bill.getId());
         item.setBizType(CommonConst.BIZ_TYPE_WATER_ELEC);
-        item.setRuleName(lookupRuleName(bill.getRuleId(), CommonConst.BIZ_TYPE_PROPERTY_FEE));
-        item.setFeeItemType(lookupFeeItemName(bill.getRuleId(), CommonConst.BIZ_TYPE_PROPERTY_FEE));
+        item.setRuleName(lookupRuleName(null, CommonConst.BIZ_TYPE_WATER_ELEC));
+        item.setFeeItemType(lookupFeeItemName(null, CommonConst.BIZ_TYPE_WATER_ELEC));
         item.setBillMonth(bill.getBillMonth());
         item.setAmount(bill.getTotalAmount());
         item.setDiscountAmount(BigDecimal.ZERO);

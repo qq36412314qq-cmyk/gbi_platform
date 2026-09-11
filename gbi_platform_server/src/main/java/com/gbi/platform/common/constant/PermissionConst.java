@@ -131,6 +131,7 @@ public final class PermissionConst {
     public static final String OA_ANNOUNCEMENT_EDIT = "oa:announcement:edit";
     public static final String OA_ANNOUNCEMENT_DELETE = "oa:announcement:delete";
     public static final String OA_ANNOUNCEMENT_PUBLISH = "oa:announcement:publish";
+    public static final String OA_ANNOUNCEMENT_RECALL = "oa:announcement:recall";
 
     /* ------------------------------ OA-打卡 ------------------------------ */
     public static final String OA_CLOCK_LIST = "oa:clock:list";

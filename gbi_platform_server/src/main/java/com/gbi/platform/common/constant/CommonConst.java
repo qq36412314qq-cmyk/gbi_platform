@@ -122,6 +122,7 @@ public final class CommonConst {
     public static final String BIZ_TYPE_WATER_ELEC = "water_elec";
     public static final String BIZ_TYPE_DEPOSIT = "deposit";
     public static final String BIZ_TYPE_MARKETING = "marketing";
+    public static final String BIZ_TYPE_KINDERGARTEN = "kindergarten";
 
     /* ------------------------------ 收费类别 ------------------------------ */
     public static final int FEE_CATEGORY_RENT = 1;
@@ -207,8 +208,8 @@ public final class CommonConst {
     public static final int STALL_STATUS_EXPIRE_SOON = 3;
 
     /* ------------------------------ 合同状态 ------------------------------ */
-    public static final int CONTRACT_STATUS_SIGNING = 0;    // 签约中（合同创建后、缴费完成前）
-    public static final int CONTRACT_STATUS_EFFECTIVE = 1;  // 生效中（缴费完成后）
+    public static final int CONTRACT_STATUS_SIGNING = 0;
+    public static final int CONTRACT_STATUS_EFFECTIVE = 1;
     public static final int CONTRACT_STATUS_TERMINATED = 2;
     public static final int CONTRACT_STATUS_EXPIRED = 3;
 
@@ -217,6 +218,15 @@ public final class CommonConst {
     public static final int DISCOUNT_TYPE_RATE = 2;
     public static final int DISCOUNT_TYPE_DEDUCT = 3;
     public static final int DISCOUNT_TYPE_COMBO = 4;
+    public static final int DISCOUNT_TYPE_FIXED = 5;
+    public static final int DISCOUNT_TYPE_TIER = 6;
+
+    /* ------------------------------ 适用范围类型 ------------------------------ */
+    public static final int SCOPE_TYPE_CONTRACT = 1;
+    public static final int SCOPE_TYPE_STALL = 2;
+    public static final int SCOPE_TYPE_TENANT = 3;
+    public static final int SCOPE_TYPE_MARKET = 4;
+    public static final int SCOPE_TYPE_CATEGORY = 5;
 
     /* ------------------------------ 优惠审批标识 ------------------------------ */
     public static final int APPLY_NEED_AUDIT_NO = 0;
@@ -242,29 +252,21 @@ public final class CommonConst {
     public static final int FLOW_STATUS_NORMAL = 6;
     public static final int FLOW_STATUS_FLUSHING = 7;
     public static final int FLOW_STATUS_FLUSHED = 8;
-    /* ------------------------------ 财务流水状态（finance_pay_flow.flow_status）------------------------------ */
-    /** 正常 */
-    public static final int FINANCE_FLOW_STATUS_NORMAL = 1;
 
-    /** 冲红中 */
+    /* ------------------------------ 财务流水状态 ------------------------------ */
+    public static final int FINANCE_FLOW_STATUS_NORMAL = 1;
     public static final int FINANCE_FLOW_STATUS_FLUSHING = 2;
-    /** 已冲红 */
     public static final int FINANCE_FLOW_STATUS_FLUSHED = 3;
-    /** 已作废 */
     public static final int FINANCE_FLOW_STATUS_VOIDED = 4;
-    /* ------------------------------ 缴费单状态（finance_pay_order.pay_status）缴费状态 0待缴 1部分缴费 2已缴 3已退费 4已冲红 5已作废------------------------------ */
-    /** 待缴 */
+
+    /* ------------------------------ 缴费单状态 ------------------------------ */
     public static final int FINANCE_PAY_ORDER_STATUS_PENDING = 0;
-    /** 部分缴费 */
     public static final int FINANCE_PAY_ORDER_STATUS_PART = 1;
-    /** 已缴 */
     public static final int FINANCE_PAY_ORDER_STATUS_DONE = 2;
-    /** 已退费 */
     public static final int FINANCE_PAY_ORDER_STATUS_REFUND = 3;
-    /** 已冲红 */
     public static final int FINANCE_PAY_ORDER_STATUS_FLUSHED = 4;
-    /** 已作废 */
     public static final int FINANCE_PAY_ORDER_STATUS_VOIDED = 5;
+
     /* ------------------------------ 流程类型 ------------------------------ */
     public static final int FLOW_TYPE_INCOME = 1;
     public static final int FLOW_TYPE_EXPENSE = 2;
@@ -277,6 +279,13 @@ public final class CommonConst {
 
     /* ------------------------------ 覆盖标志 ------------------------------ */
     public static final int OVERRIDE_FLAG_NO = 0;
+
+    /* ------------------------------ 阈值类型 ------------------------------ */
+    public static final int THRESHOLD_TYPE_WAIVE_MONTHS = 1;
+    public static final int THRESHOLD_TYPE_MIN_RATE = 2;
+    public static final int THRESHOLD_TYPE_MAX_DEDUCT = 3;
+    public static final int THRESHOLD_TYPE_MAX_FIXED = 4;
+    public static final int THRESHOLD_TYPE_MAX_RATIO = 5;
 
     /* ------------------------------ 配置阈值key ------------------------------ */
     public static final String CONFIG_DISCOUNT_WAIVE_MONTHS_LIMIT = "discount.waive_months_limit";

@@ -27,7 +27,7 @@
             <el-tag size="small" :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center" fixed="right">
+        <el-table-column prop="submitUserName" label="提交人" width="100" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleToggle(row)">{{ row.status === 1 ? '停用' : '启用' }}</el-button>
           </template>
@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getMeetingRoomPageApi, addMeetingRoomApi, updateMeetingRoomApi, type MeetingRoomVO } from '@/api/oa'
+import { getMeetingRoomPageApi, addMeetingRoomApi, updateMeetingRoomApi, toggleMeetingRoomApi, type MeetingRoomVO } from '@/api/oa'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { useUserStore } from '@/store/user'
 
@@ -105,7 +105,7 @@ async function handleSubmit() {
 }
 
 async function handleToggle(row: MeetingRoomVO) {
-  await updateMeetingRoomApi({ ...row, status: row.status === 1 ? 0 : 1 })
+  await toggleMeetingRoomApi(row.id)
   ElMessage.success('操作成功')
   loadData()
 }

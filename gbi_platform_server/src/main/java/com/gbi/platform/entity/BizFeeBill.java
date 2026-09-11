@@ -73,4 +73,13 @@ public class BizFeeBill extends BaseEntity {
 
     /** 源账单ID（property_water_elec_bill.id / property_fee_bill.id，用于幂等和追溯） */
     private Long sourceBillId;
+
+    /** 关联优惠策略ID */
+    private Long policyId;
+
+    /** 关联优惠申请ID */
+    private Long applyId;
+
+    /** 优惠类型快照 */
+    private Integer discountType;
 }

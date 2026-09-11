@@ -88,6 +88,14 @@ public class OaController {
         return Result.success();
     }
 
+    @Operation(summary = "切换会议室启用/停用状态")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).OA_MEETING_ROOM_EDIT,'')" )
+    @PostMapping("/meeting/room/toggle/{id}")
+    public Result<Void> toggleRoom(@PathVariable Long id) {
+        oaService.toggleMeetingRoomStatus(id);
+        return Result.success();
+    }
+
     @Operation(summary = "删除会议室")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).OA_MEETING_ROOM_DELETE,'')")
     @PostMapping("/meeting/room/delete/{id}")

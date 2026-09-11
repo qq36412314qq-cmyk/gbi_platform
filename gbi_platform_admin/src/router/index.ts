@@ -133,12 +133,6 @@ export const constantRoutes: RouteRecordRaw[] = [
         meta: { title: '未支付订单', icon: 'Wallet', permission: 'property:unpaidBill:list', isCache: true }
       },
       {
-        path: 'pay',
-        name: 'WaterElecPay',
-        component: () => import('@/views/business/waterElec/waterElecPay.vue'),
-        meta: { title: '缴费管理', icon: 'Wallet', permission: 'waterElec:pay:list', isCache: true }
-      },
-      {
         path: 'lease',
         redirect: '/property/lease/stall',
         meta: { title: '租赁管理', icon: 'Goods' },

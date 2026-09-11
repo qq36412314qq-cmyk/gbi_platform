@@ -25,6 +25,7 @@ public interface OaService {
     void addMeetingRoom(Long companyId, String roomName, String location, Integer capacity, String facilities, String remark);
     void updateMeetingRoom(Long id, String roomName, String location, Integer capacity, String facilities, Integer status, String remark);
     void deleteMeetingRoom(Long id);
+    void toggleMeetingRoomStatus(Long id);
 
     /* ==================== 会议室预约 ==================== */
     PageVO<OaMeetingBookingVO> pageMeetingBooking(Long pageNum, Long pageSize, Long roomId, Long bookerId, java.time.LocalDate startDate, java.time.LocalDate endDate);

@@ -44,8 +44,11 @@ public class DiscountPolicyServiceImpl implements DiscountPolicyService {
                 .and(w -> w.eq(BizDiscountPolicy::getCompanyId, CommonConst.COMPANY_ROOT)
                         .or().eq(BizDiscountPolicy::getCompanyId, companyId))
                 .like(StringUtils.hasText(dto.getPolicyName()), BizDiscountPolicy::getPolicyName, dto.getPolicyName())
+                .eq(dto.getBizType() != null, BizDiscountPolicy::getBizType, dto.getBizType())
                 .eq(dto.getDiscountType() != null, BizDiscountPolicy::getDiscountType, dto.getDiscountType())
+                .eq(dto.getScopeType() != null, BizDiscountPolicy::getScopeType, dto.getScopeType())
                 .eq(dto.getStatus() != null, BizDiscountPolicy::getStatus, dto.getStatus())
+                .orderByDesc(BizDiscountPolicy::getSortOrder)
                 .orderByDesc(BizDiscountPolicy::getId);
         Page<BizDiscountPolicy> page = policyMapper.selectPage(new Page<>(dto.getPageNum(), dto.getPageSize()), wrapper);
         List<DiscountPolicyVO> vos = page.getRecords().stream().map(this::toVO).collect(Collectors.toList());
@@ -106,18 +109,45 @@ public class DiscountPolicyServiceImpl implements DiscountPolicyService {
         vo.setId(p.getId());
         vo.setCompanyId(p.getCompanyId());
         vo.setPolicyName(p.getPolicyName());
+        vo.setBizType(p.getBizType());
+        vo.setBizTypeText(bizTypeText(p.getBizType()));
         vo.setDiscountType(p.getDiscountType());
         vo.setDiscountTypeText(discountTypeText(p.getDiscountType()));
         vo.setWaiveMonths(p.getWaiveMonths());
         vo.setDiscountRate(p.getDiscountRate());
         vo.setDeductAmount(p.getDeductAmount());
+        vo.setFixedAmount(p.getFixedAmount());
+        vo.setTierConfig(p.getTierConfig());
         vo.setScopeType(p.getScopeType());
+        vo.setScopeTypeText(scopeTypeText(p.getScopeType()));
+        vo.setScopeIds(p.getScopeIds());
         vo.setStartTime(p.getStartTime());
         vo.setEndTime(p.getEndTime());
+        vo.setMaxApplyMonths(p.getMaxApplyMonths());
+        vo.setAutoApprove(p.getAutoApprove());
+        vo.setAutoApproveText(Objects.equals(p.getAutoApprove(), CommonConst.STATUS_ENABLED) ? "自动生效" : "需审批");
         vo.setStatus(p.getStatus());
         vo.setStatusText(Objects.equals(p.getStatus(), CommonConst.STATUS_ENABLED) ? "启用" : "停用");
+        vo.setSortOrder(p.getSortOrder());
         vo.setRemark(p.getRemark());
+        vo.setCreateBy(p.getCreateBy());
+        vo.setCreateTime(p.getCreateTime());
+        vo.setUpdateBy(p.getUpdateBy());
+        vo.setUpdateTime(p.getUpdateTime());
         return vo;
+    }
+
+    private String bizTypeText(String bizType) {
+        if (bizType == null) {
+            return "";
+        }
+        return switch (bizType) {
+            case CommonConst.BIZ_TYPE_RENT -> "租赁费";
+            case CommonConst.BIZ_TYPE_PROPERTY_FEE -> "物业费";
+            case CommonConst.BIZ_TYPE_WATER_ELEC -> "水电费";
+            case CommonConst.BIZ_TYPE_KINDERGARTEN -> "幼儿园费";
+            default -> bizType;
+        };
     }
 
     private String discountTypeText(Integer type) {
@@ -129,6 +159,22 @@ public class DiscountPolicyServiceImpl implements DiscountPolicyService {
             case CommonConst.DISCOUNT_TYPE_RATE -> "折扣率";
             case CommonConst.DISCOUNT_TYPE_DEDUCT -> "减免金额";
             case CommonConst.DISCOUNT_TYPE_COMBO -> "组合";
+            case CommonConst.DISCOUNT_TYPE_FIXED -> "定额优惠";
+            case CommonConst.DISCOUNT_TYPE_TIER -> "阶梯优惠";
+            default -> String.valueOf(type);
+        };
+    }
+
+    private String scopeTypeText(Integer type) {
+        if (type == null) {
+            return "";
+        }
+        return switch (type) {
+            case CommonConst.SCOPE_TYPE_CONTRACT -> "按合同";
+            case CommonConst.SCOPE_TYPE_STALL -> "按铺位";
+            case CommonConst.SCOPE_TYPE_TENANT -> "按租户";
+            case CommonConst.SCOPE_TYPE_MARKET -> "按市场";
+            case CommonConst.SCOPE_TYPE_CATEGORY -> "按分类";
             default -> String.valueOf(type);
         };
     }

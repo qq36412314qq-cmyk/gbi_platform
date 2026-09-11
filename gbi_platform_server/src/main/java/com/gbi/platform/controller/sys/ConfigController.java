@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -70,8 +69,9 @@ public class ConfigController {
 
     @Operation(summary = "删除参数")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).CONFIG_DELETE,'')")
-    @DeleteMapping("/delete")
-    public Result<Void> delete(@RequestParam Long id) {
+    @PostMapping("/delete")
+    public Result<Void> delete(@RequestBody Map<String, Object> params) {
+        Long id = Long.parseLong(params.get("id").toString());
         configService.delete(id);
         return Result.success();
     }

@@ -69,8 +69,8 @@ public class RoleController {
 
     @Operation(summary = "删除角色")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).ROLE_DELETE,'')")
-    @DeleteMapping("/delete")
-    public Result<Void> delete(@RequestParam Long id) {
+    @PostMapping("/delete")
+    public Result<Void> delete(@RequestBody java.util.Map<String, Object> params) { Long id = Long.parseLong(params.get("id").toString());
         roleService.delete(id);
         return Result.success();
     }

@@ -8,16 +8,18 @@ import com.gbi.platform.common.security.LoginUser;
 import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.hr.dto.EmployeeDTO;
 import com.gbi.platform.hr.entity.HrEmployee;
+import com.gbi.platform.hr.entity.HrEntryApply;
 import com.gbi.platform.hr.mapper.HrEmployeeMapper;
+import com.gbi.platform.hr.mapper.HrEntryApplyMapper;
 import com.gbi.platform.hr.service.HrEmployeeService;
 import com.gbi.platform.hr.vo.HrEmployeeVO;
 import com.gbi.platform.util.AuditLogUtil;
 import com.gbi.platform.vo.PageVO;
-import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 public class HrEmployeeServiceImpl implements HrEmployeeService {
 
     private final HrEmployeeMapper employeeMapper;
+    private final HrEntryApplyMapper entryApplyMapper;
     private final AuditLogUtil auditLogUtil;
 
     @Override
@@ -128,8 +131,46 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void createFromEntry(Long entryApplyId) {
-        // 由HrTransferService调用，入职审批通过后创建员工档案
-        log.info("createFromEntry called with entryApplyId={}", entryApplyId);
+        HrEntryApply apply = entryApplyMapper.selectById(entryApplyId);
+        if (apply == null) {
+            log.warn("createFromEntry: 入职申请不存在，ID={}", entryApplyId);
+            return;
+        }
+        if (!Integer.valueOf(CommonConst.APPLY_STATUS_PASS).equals(apply.getStatus())) {
+            log.warn("createFromEntry: 入职申请尚未审批通过，ID={} 当前状态={}", entryApplyId, String.valueOf(apply.getStatus()));
+            return;
+        }
+        // 防重：同一 company_id + employee_no 已存在则跳过
+        LambdaQueryWrapper<HrEmployee> dupCheck = new LambdaQueryWrapper<HrEmployee>()
+                .eq(HrEmployee::getCompanyId, apply.getCompanyId())
+                .eq(HrEmployee::getEmployeeNo, apply.getEmployeeNo());
+        Long count = employeeMapper.selectCount(dupCheck);
+        if (count != null && count > 0) {
+            log.info("createFromEntry: 员工档案已存在，跳过建档：company_id={}, employee_no={}", apply.getCompanyId(), apply.getEmployeeNo());
+            return;
+        }
+        HrEmployee employee = new HrEmployee();
+        employee.setCompanyId(apply.getCompanyId());
+        employee.setEmployeeNo(apply.getEmployeeNo());
+        employee.setName(apply.getName());
+        employee.setIdCardNo(apply.getIdCardNo());
+        employee.setPhone(apply.getPhone());
+        employee.setGender(apply.getGender());
+        employee.setBirthdate(apply.getBirthdate());
+        employee.setEntryDate(apply.getEntryDate());
+        employee.setEmploymentType(apply.getEmploymentType() != null ? apply.getEmploymentType() : 1);
+        employee.setEmployeeStatus(CommonConst.STATUS_ENABLED);
+        employee.setOrgId(apply.getOrgId());
+        employee.setPostId(apply.getPostId());
+        employee.setBankAccount(apply.getBankAccount());
+        employee.setBasicSalary(apply.getBasicSalary());
+        employee.setRemark(apply.getRemark());
+        employee.setCreateBy(apply.getCreateBy());
+        employeeMapper.insert(employee);
+        auditLogUtil.record(CommonConst.MODULE_HR_EMPLOYEE, CommonConst.OPER_TYPE_ADD,
+                String.valueOf(employee.getId()), null, employee);
+        log.info("入职审批通过，自动建档成功：employeeId={}, employeeNo={}, name={}",
+                employee.getId(), employee.getEmployeeNo(), employee.getName());
     }
 
     private HrEmployeeVO toVO(HrEmployee entity) {
@@ -193,4 +234,3 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
         return value;
     }
 }
-

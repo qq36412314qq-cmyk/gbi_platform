@@ -16,6 +16,7 @@ import java.math.BigDecimal; import java.time.LocalDate; import java.time.LocalD
     @Schema(description="出生日期") private LocalDate birthdate;
     @Schema(description="计划入职日期") private LocalDate entryDate;
     @Schema(description="用工类型") private Integer employmentType;
+    @Schema(description="用工类型文本") private String employmentTypeText;
     @Schema(description="目标组织ID") private Long orgId;
     @Schema(description="目标岗位ID") private Long postId;
     @Schema(description="基本工资") private BigDecimal basicSalary;

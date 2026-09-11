@@ -239,41 +239,51 @@ public class WaterElecBillServiceImpl implements WaterElecBillService {
      */
     private void writeToUnifiedBill(Long companyId, Long stallId, String billMonth, int category, BigDecimal amount) {
         // category: 3=水费, 4=电费，统一用 water_elec biz_type
-        Long existing = bizFeeBillMapper.selectCount(new LambdaQueryWrapper<BizFeeBill>()
+        BizFeeBill unifiedBill = bizFeeBillMapper.selectOne(new LambdaQueryWrapper<BizFeeBill>()
                 .eq(BizFeeBill::getCompanyId, companyId)
                 .eq(BizFeeBill::getStallId, stallId)
                 .eq(BizFeeBill::getBillMonth, billMonth)
-                .eq(BizFeeBill::getBizType, CommonConst.BIZ_TYPE_WATER_ELEC));
-        if (existing != null && existing > 0) {
-            
+                .eq(BizFeeBill::getBizType, CommonConst.BIZ_TYPE_WATER_ELEC)
+                .last("LIMIT 1"));
+        if (unifiedBill == null) {
+            unifiedBill = new BizFeeBill();
+            unifiedBill.setCompanyId(companyId);
+            unifiedBill.setBizType(CommonConst.BIZ_TYPE_WATER_ELEC);
+            unifiedBill.setStallId(stallId);
+            unifiedBill.setBillMonth(billMonth);
+            unifiedBill.setOriginalAmount(amount);
+            unifiedBill.setDiscountAmount(BigDecimal.ZERO);
+            unifiedBill.setAdjustAmount(BigDecimal.ZERO);
+            unifiedBill.setRealAmount(amount);
+            unifiedBill.setPayStatus(CommonConst.BILL_PAY_STATUS_UNPAID);
+            unifiedBill.setLockedFlag(1);
+            unifiedBill.setCreateBy(UserContext.getUserIdOrZero());
+            bizFeeBillMapper.insert(unifiedBill);
+        } else {
+            log.info("统一账单已存在，跳过写入，直接同步计划：companyId={}, stallId={}, month={}", companyId, stallId, billMonth);
         }
-
-        BizFeeBill unifiedBill = new BizFeeBill();
-        unifiedBill.setCompanyId(companyId);
-        unifiedBill.setBizType(CommonConst.BIZ_TYPE_WATER_ELEC);
-        unifiedBill.setStallId(stallId);
-        unifiedBill.setBillMonth(billMonth);
-        unifiedBill.setOriginalAmount(amount);
-        unifiedBill.setDiscountAmount(BigDecimal.ZERO);
-        unifiedBill.setAdjustAmount(BigDecimal.ZERO);
-        unifiedBill.setRealAmount(amount);
-        unifiedBill.setPayStatus(CommonConst.BILL_PAY_STATUS_UNPAID);
-        unifiedBill.setLockedFlag(1);
-        unifiedBill.setCreateBy(UserContext.getUserIdOrZero());
-        try { bizFeeBillMapper.insert(unifiedBill); } catch (Exception ex) { log.warn("统一账单已存在，跳过写入：companyId={}, stallId={}, month={}", companyId, stallId, billMonth); unifiedBill = bizFeeBillMapper.selectOne(new LambdaQueryWrapper<BizFeeBill>().eq(BizFeeBill::getCompanyId, companyId).eq(BizFeeBill::getStallId, stallId).eq(BizFeeBill::getBillMonth, billMonth).eq(BizFeeBill::getBizType, CommonConst.BIZ_TYPE_WATER_ELEC).last("LIMIT 1")); if (unifiedBill == null) { return; } }
 
         Long planId = recvPayPlanService.generatePlanForBizFeeBill(unifiedBill);
         if (planId != null) {
             bizFeeBillMapper.update(null, new LambdaUpdateWrapper<BizFeeBill>()
                     .eq(BizFeeBill::getId, unifiedBill.getId())
                     .set(BizFeeBill::getPlanId, planId));
-            BillPlanRel rel = new BillPlanRel();
-            rel.setCompanyId(companyId);
-            rel.setBillType(CommonConst.BIZ_TYPE_WATER_ELEC);
-            rel.setBillId(unifiedBill.getId());
-            rel.setPlanId(planId);
-            rel.setSplitAmount(unifiedBill.getRealAmount());
-            billPlanRelMapper.insert(rel);
+            // 幂等：同一 bill+plan 已有关联时跳过，避免水电同类重复插入触发 uk_bill_plan 冲突
+            long relCount = billPlanRelMapper.selectCount(new LambdaQueryWrapper<BillPlanRel>()
+                    .eq(BillPlanRel::getBillType, CommonConst.BIZ_TYPE_WATER_ELEC)
+                    .eq(BillPlanRel::getBillId, unifiedBill.getId())
+                    .eq(BillPlanRel::getPlanId, planId));
+            if (relCount == 0) {
+                BillPlanRel rel = new BillPlanRel();
+                rel.setCompanyId(companyId);
+                rel.setBillType(CommonConst.BIZ_TYPE_WATER_ELEC);
+                rel.setBillId(unifiedBill.getId());
+                rel.setPlanId(planId);
+                rel.setSplitAmount(unifiedBill.getRealAmount());
+                billPlanRelMapper.insert(rel);
+            } else {
+                log.info("BillPlanRel 已存在，跳过插入：billId={}, planId={}", unifiedBill.getId(), planId);
+            }
         }
         log.info("水电费账单同步写入统一账单表：companyId={}, stallId={}, month={}, bizBillId={}",
                 companyId, stallId, billMonth, unifiedBill.getId());

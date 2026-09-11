@@ -84,6 +84,10 @@ export function updateMeetingRoomApi(data: MeetingRoomVO): Promise<void> {
   return post<void>('/oa/meeting/room/update', data)
 }
 
+export function toggleMeetingRoomApi(id: number): Promise<void> {
+  return post<void>(`/oa/meeting/room/toggle/${id}`)
+}
+
 /* ==================== 会议室预约 ==================== */
 export interface MeetingBookingVO {
   id: number
@@ -231,8 +235,8 @@ export function clockInApi(data: ClockInDTO): Promise<void> {
 export interface WorkReportVO {
   id: number
   companyId: number
-  userId: number
-  userName: string
+  submitUserId: number
+  submitUserName: string
   reportType: number
   reportTypeText?: string
   reportPeriod: string

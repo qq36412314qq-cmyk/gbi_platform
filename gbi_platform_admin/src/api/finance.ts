@@ -101,7 +101,7 @@ export interface PayOrderVO {
   id: number
   payBillNo: string
   companyId: number
-  sourceType: string
+  sourceType: number
   sourceTypeText?: string
   sourceId?: number
   stallId?: number

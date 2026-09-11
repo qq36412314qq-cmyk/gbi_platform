@@ -15,13 +15,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 /**
  * 用户接口（对齐前端 api/org.ts user 部分）
@@ -61,8 +61,9 @@ public class UserController {
 
     @Operation(summary = "删除用户")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).USER_DELETE,'')")
-    @DeleteMapping("/delete")
-    public Result<Void> delete(@RequestParam Long id) {
+    @PostMapping("/delete")
+    public Result<Void> delete(@RequestBody Map<String, Object> params) {
+        Long id = Long.parseLong(params.get("id").toString());
         userService.delete(id);
         return Result.success();
     }

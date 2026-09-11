@@ -86,7 +86,7 @@ const router = useRouter()
 
 const loading = ref(true)
 const error = ref(false)
-const data = ref<PayOrderPrintVO>({ payOrder: {}, items: [] })
+const data = ref<PayOrderPrintVO>({ payOrder: { id: 0, payBillNo: '', companyId: 0, sourceType: 0, payStatus: 0, createTime: '', remark: '', totalAmount: 0, paidAmount: 0, unpaidAmount: 0 }, items: [] })
 const printContent = ref<HTMLElement | null>(null)
 
 const stallDisplay = computed(() => {
