@@ -1,27 +1,26 @@
-﻿<template>
+<template>
   <div class="g-page-wrap finance-flow-wrap">
     <!-- 顶部操作区 -->
     <div class="g-page-header">
       <span class="g-page-title">财务流水</span>
-      <div>
-        <AuthBtn permission="finance:flow:export" type="primary" @click="handleExport">导出流水</AuthBtn>
-      </div>
     </div>
 
     <!-- 搜索筛选区 -->
     <SearchBar :model="query" @search="loadData" @reset="handleReset">
-      <el-form-item label="业务类型">
-        <el-select v-model="query.businessType" placeholder="全部" clearable style="width: 140px">
-          <el-option label="租金" value="rent" />
-          <el-option label="水电物业" value="water_elec" />
-          <el-option label="押金" value="deposit" />
-          <el-option label="营销抵扣" value="marketing" />
+      <el-form-item label="来源类型">
+        <el-select v-model="query.sourceType" placeholder="全部" clearable style="width: 140px">
+          <el-option label="物业费" value="fee_bill" />
+          <el-option label="水电费" value="water_elec" />
         </el-select>
       </el-form-item>
-      <el-form-item label="收支方向">
-        <el-select v-model="query.flowType" placeholder="全部" clearable style="width: 130px">
-          <el-option label="收入" :value="1" />
-          <el-option label="支出退费" :value="2" />
+      <el-form-item label="缴费状态">
+        <el-select v-model="query.payStatus" placeholder="全部" clearable style="width: 130px">
+          <el-option label="待缴" :value="0" />
+          <el-option label="部分缴费" :value="1" />
+          <el-option label="已缴" :value="2" />
+          <el-option label="已退费" :value="3" />
+          <el-option label="已冲红" :value="4" />
+          <el-option label="已作废" :value="5" />
         </el-select>
       </el-form-item>
       <el-form-item label="时间范围">
@@ -40,7 +39,7 @@
 
     <!-- 表格展示区 -->
     <TablePage v-model:page-num="query.pageNum" v-model:page-size="query.pageSize" :total="total" @refresh="loadData">
-      <el-table v-loading="loading" :data="records" border stripe @expand="loadFlowItems">
+      <el-table v-loading="loading" :data="records" border stripe @expand-change="loadFlowItems">
         <el-table-column type="expand" width="50">
           <template #default="{ row }">
             <el-table :data="expandedItems[row.id] || []" border stripe size="small" style="margin: 0 20px">
@@ -59,8 +58,8 @@
             </el-table>
           </template>
         </el-table-column>
-        <el-table-column prop="id" label="流水ID" width="90" align="center" />
-        <el-table-column prop="createTime" label="生成时间" min-width="140" align="center" />
+        <el-table-column prop="id" label="缴费单ID" width="100" align="center" />
+        <el-table-column prop="createTime" label="创建时间" min-width="140" align="center" />
         <el-table-column label="所属公司" width="90" align="center">
           <template #default="{ row }">
             <el-tag size="small" :type="row.companyId === 0 ? 'primary' : 'success'">
@@ -68,46 +67,25 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="业务类型" width="100" align="center">
+        <el-table-column label="来源类型" width="100" align="center">
           <template #default="{ row }">
-            <el-tag size="small">{{ row.businessTypeText }}</el-tag>
+            <el-tag size="small">{{ row.sourceTypeText || '-' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="收支方向" width="100" align="center">
+        <el-table-column prop="payBillNo" label="缴费单编号" width="180" align="center" />
+        <el-table-column label="应收总额" width="110" align="right">
           <template #default="{ row }">
-            <el-tag size="small" :type="row.flowType === 1 ? 'danger' : 'success'">{{ row.flowTypeText }}</el-tag>
+            <span class="g-money">{{ Number(row.totalAmount).toFixed(2) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="flowNo" label="流水单号" width="180" align="center" />
-        <el-table-column label="应收原价" width="100" align="right">
+        <el-table-column label="已缴金额" width="100" align="right">
           <template #default="{ row }">
-            <span>{{ Number(row.originalAmount).toFixed(2) }}</span>
+            <span>{{ Number(row.paidAmount).toFixed(2) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="优惠抵扣" width="100" align="right">
+        <el-table-column label="未缴金额" width="100" align="right">
           <template #default="{ row }">
-            <span>{{ Number(row.discountAmount).toFixed(2) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="实收金额" width="100" align="right">
-          <template #default="{ row }">
-            <span class="g-money">{{ Number(row.realAmount).toFixed(2) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="支付渠道" width="100" align="center">
-          <template #default="{ row }">
-            {{ row.payTypeText || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="缴费人" min-width="120" align="center" v-if="showPayerColumn">
-          <template #default="{ row }">
-            <span>{{ row.payerName || row.merchantName || '-' }}</span>
-            <span v-if="row.payerCompanyName" class="payer-company">（{{ row.payerCompanyName }}）</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="合同编号" width="130" align="center" v-if="showContractColumn">
-          <template #default="{ row }">
-            {{ row.contractNo || '-' }}
+            <span :class="Number(row.unpaidAmount) > 0 ? 'g-text-danger' : ''">{{ Number(row.unpaidAmount).toFixed(2) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="绑定铺位" min-width="160" align="center" show-overflow-tooltip>
@@ -116,10 +94,10 @@
             <span v-else>铺位#{{ row.stallId }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="90" align="center">
+        <el-table-column label="缴费状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag size="small" :type="flowStatusType(row.flowStatus)">
-              {{ row.flowStatusText || '正常' }}
+            <el-tag size="small" :type="payStatusType(row.payStatus)">
+              {{ row.payStatusText || '待缴' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -131,35 +109,35 @@
 
 <script setup lang="ts">
 /**
- * 财务流水页：finance_pay_flow 全域统一资金台账（只读视图）
- * 数据表：finance_pay_flow
- * 功能：分页查询、条件筛选、导出、展开明细
+ * 财务流水页：finance_pay_order 缴费单主表（只读视图）
+ * 主数据表：finance_pay_order（聚合支付载体）
+ * 展开明细表：finance_pay_order_item（通过 payBillId 直接关联）
+ * 功能：分页查询、条件筛选、展开明细
  */
-import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive } from 'vue'
 import {
-  getFinanceFlowPageApi,
-  exportFinanceFlowApi,
-  type FinanceFlowVO,
-  type PayOrderItemVO,
-  getFinanceFlowItemsApi
+  getFinancePayOrderPageApi,
+  getFinancePayOrderItemsApi,
+  type PayOrderVO,
+  type PayOrderItemVO
 } from '@/api/finance'
 import { useTable } from '@/hooks/useTable'
 
 /* ---------------- 分页查询 ---------------- */
-const { query, records, total, loading, loadData, resetQuery } = useTable<FinanceFlowVO>(getFinanceFlowPageApi, {
-  businessType: undefined,
-  flowType: undefined,
+const { query, records, total, loading, loadData, resetQuery } = useTable<PayOrderVO>(getFinancePayOrderPageApi, {
+  sourceType: undefined,
+  payStatus: undefined,
   startTime: undefined,
   endTime: undefined
 })
 
+const timeRange = ref<[string, string] | null>(null)
+
 function handleReset(): void {
   resetQuery()
+  timeRange.value = null
   loadData()
 }
-
-const timeRange = ref<[string, string] | null>(null)
 
 function handleTimeChange(val: [string, string] | null): void {
   if (val) {
@@ -177,49 +155,40 @@ function handleQuery(): void {
   loadData()
 }
 
-/* ---------------- 条件列显示 ---------------- */
-// 显示缴费人列：仅当列表中有非水电物业的业务类型
-const showPayerColumn = computed(() =>
-  records.value.some(r => !['water_elec', null, undefined].includes(r.businessType))
-)
-
-// 显示合同编号列：仅当列表中有非水电物业的业务类型
-const showContractColumn = computed(() =>
-  records.value.some(r => !['water_elec', null, undefined].includes(r.businessType))
-)
-
-/* ---------------- 导出 ---------------- */
-async function handleExport(): Promise<void> {
-  try {
-    const fileUrl = await exportFinanceFlowApi({ ...query })
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/api\/?$/, '')
-    window.open(`${baseUrl}${fileUrl}`, '_blank')
-    ElMessage.success('导出成功')
-  } catch {
-    ElMessage.error('导出失败，请稍后重试')
-  }
-}
-
 /* ---------------- 展开明细 ---------------- */
-const expandedItems = ref<Record<number, PayOrderItemVO[]>>({})
+const expandedItems = reactive<Record<number, PayOrderItemVO[]>>({})
 
-async function loadFlowItems(row: FinanceFlowVO): Promise<void> {
-  if (!expandedItems.value[row.id]) {
-    try {
-      expandedItems.value[row.id] = await getFinanceFlowItemsApi(row.id)
-    } catch {
-      expandedItems.value[row.id] = []
-    }
+/**
+ * Element Plus v2.9+ el-table 展开/折叠统一走 expand-change
+ * 回调签名：(row, expandedRows: Row[]) —— 展开时 expandedRows 包含当前行，折叠时不包含
+ * 注意：用 reactive 而非 ref，保证新增 key 时 template 中 expandedItems[row.id] 能触发重渲染
+ * 改造说明：原通过 flowId 间接查询（finance_pay_flow.pay_bill_id → finance_pay_order_item）
+ *           现直接通过 payOrderId 查询（finance_pay_order.id = finance_pay_order_item.pay_bill_id）
+ */
+async function loadFlowItems(row: PayOrderVO, expandedRows: PayOrderVO[]): Promise<void> {
+  const isExpanding = expandedRows.some((r) => r.id === row.id)
+  if (!isExpanding) return
+  if (expandedItems[row.id]) return
+
+  try {
+    const data = await getFinancePayOrderItemsApi(row.id)
+    expandedItems[row.id] = data
+  } catch (err) {
+    console.error('加载缴费单明细失败 rowId=', row.id, err)
+    expandedItems[row.id] = []
   }
 }
 
 /* ---------------- 状态标签颜色 ---------------- */
-function flowStatusType(status: number | undefined): string {
+function payStatusType(status: number | undefined | null): 'primary' | 'success' | 'info' | 'warning' | 'danger' | undefined {
   switch (status) {
-    case 2: return 'warning'  // 冲红中
-    case 3: return 'info'    // 已冲红
-    case 4: return 'info'    // 已作废
-    default: return ''
+    case 0: return 'warning'   // 待缴
+    case 1: return 'warning'   // 部分缴费
+    case 2: return 'success'   // 已缴
+    case 3: return 'info'      // 已退费
+    case 4: return 'info'      // 已冲红
+    case 5: return 'info'      // 已作废
+    default: return undefined
   }
 }
 </script>
@@ -229,8 +198,8 @@ function flowStatusType(status: number | undefined): string {
   font-weight: 600;
   color: #e6a23c;
 }
-.payer-company {
-  color: #909399;
-  font-size: 12px;
+.g-text-danger {
+  color: #f56c6c;
+  font-weight: 600;
 }
 </style>

@@ -1,854 +1,395 @@
-# 中小型企业轻量化薪酬标准体系与薪资档案自动化设计方案（v6‑final 完整版）
+﻿# 中小型企业轻量化薪酬标准体系与薪资档案自动化设计方案（v6‑final 完整版）  > 文档说明  1. 本模块为现有HR系统**增量扩展**，完全兼容已有业务代码、数据库表、流程引擎、权限、审计日志体系；仅新增表、新增方法、扩展字段，无破坏性修改，存量历史数据支持平滑迁移。  2. REST接口规范：接口路径全部使用`/`分层分隔，**不使用下划线、连字符**。  3. 本版本为**独立完整的轻量化薪酬体系方案**，无需依赖任何旧版薪资方案，可全新落地部署；涵盖薪酬级别带宽体系、多模式薪资模板、全维度批量调薪、版本化薪资档案、奖金管控全能力，为完整闭环的薪资绩效解决方案。  **适用企业规模**：中小型企业（50‑500人） **技术栈**：Spring Boot 3 + MyBatis‑Plus + JDK 21 + MySQL 8.0  ## 一、设计目标  1. **入职零薪资录入**：选择岗位/薪酬级别自动带出薪资模板，审批通过自动生成员工档案与V1版本薪资档案；支持个别人员手动调整薪资，增加薪级带宽合规校验。  2. **薪资版本全程可追溯**：调薪、岗位异动、晋升仅新增新版本，历史版本只读，不可修改删除，满足财务审计追溯要求；薪资档案快照保存当时员工薪酬级别。  3. **模板与个人档案解耦**：薪资模板仅作为新员工默认基线；修改、停用模板，**不会改动存量员工薪资档案，仅对后续新入职生效**。  4. **薪酬级别轻量化管理**：支持薪酬级别配置（带宽：最低‑中位‑最高）；支持模板绑定岗位 / 绑定薪酬级别 / 岗位+薪酬级别组合三种模式；员工打上薪级标签，支持按薪酬级别筛选批量调薪。  5. **支持多维度批量调薪**：支持单员工、手动勾选一批、按部门、按岗位、按薪酬级别、全员普调；底层复用单员工调薪逻辑，全部生成新版本，历史记录完整留存。  6. **月度核算全自动**：自动读取员工当前生效薪资档案作为计算基线，叠加考勤、绩效、扣款、各类奖金动态业务数据生成月度工资。  7. **奖金灵活管控**：区分自动计算奖金、手工浮动奖金；支持开关控制专项奖金是否单独审批，月度工资单统一发放审批，适配内控审计要求。  8. **敏感配置流程管控**：薪资模板、批量调薪任务、年终奖新增修改均可接入审批流程，规避人为误操作风险。  ## 二、数据库设计  > 说明：原有存量表只做ALTER追加字段；全新业务新增数据表。  ### 2.1 薪资规则模板表 `hr_salary_rule`（v6新增绑定薪酬级别字段）  ```SQL CREATE TABLE hr_salary_rule (   id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,   company_id            BIGINT NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团总部',   post_id               BIGINT NULL DEFAULT NULL COMMENT '关联岗位ID，NULL表示通用模板',   post_level            VARCHAR(32) NULL DEFAULT NULL COMMENT '职级快照',   grade_code            VARCHAR(32) NULL COMMENT '关联薪酬级别编码，hr_salary_grade.grade_code',   bind_type             TINYINT NOT NULL DEFAULT 1 COMMENT '绑定类型：1绑定岗位 2绑定薪酬级别 3岗位+薪酬级别组合',   rule_name             VARCHAR(128) NOT NULL COMMENT '模板名称',   basic_salary          DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '基本工资标准',   performance_base      DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '绩效基数标准',   position_allowance    DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '岗位津贴标准',   other_allowance       DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '其他固定补贴标准',   fixed_month_bonus     DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '岗位默认月度奖金参考值（仅算薪默认，非实际发放）',   social_security_rate  DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '社保个人缴纳比例（%）',   housing_fund_rate     DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '公积金个人缴纳比例（%）',   is_general            TINYINT NOT NULL DEFAULT 0 COMMENT '是否通用模板 0否 1是',   status                TINYINT NOT NULL DEFAULT 1 COMMENT '状态 0停用 1启用',   remark                VARCHAR(500) NULL DEFAULT NULL,   create_by             BIGINT NOT NULL DEFAULT 0,   create_time           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,   update_by             BIGINT NULL DEFAULT NULL,   update_time           DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,   is_delete             TINYINT NOT NULL DEFAULT 0,   PRIMARY KEY (id),   UNIQUE KEY uk_company_post_general (company_id, post_id, is_general),   KEY idx_company_status (company_id, status, is_delete) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='薪资规则模板表'; ```  > bind_type枚举 1：绑定岗位（原有模式）；2：绑定薪酬级别；3：岗位+薪酬级别组合。  ### 2.2 新增薪酬级别表 `hr_salary_grade`  ```SQL CREATE TABLE hr_salary_grade (   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,   company_id BIGINT NOT NULL DEFAULT 0 COMMENT '公司ID，多租户隔离',   grade_code VARCHAR(32) NOT NULL COMMENT '薪酬级别编码，例：P4、P5、P6、M1',   grade_name VARCHAR(64) NOT NULL COMMENT '薪酬级别名称',   salary_min DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '带宽下限，该级别工资最小值',   salary_mid DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '带宽中位参考薪资',   salary_max DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '带宽上限，该级别工资最大值',   remark VARCHAR(500) NULL COMMENT '级别说明',   status TINYINT NOT NULL DEFAULT 1 COMMENT '0停用，1启用',   create_by BIGINT NOT NULL DEFAULT 0,   create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,   update_by BIGINT NULL DEFAULT NULL,   update_time DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,   is_delete TINYINT NOT NULL DEFAULT 0,   UNIQUE KEY uk_company_gradecode (company_id,grade_code,is_delete),   KEY idx_company_status (company_id,status,is_delete) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='薪酬级别（薪级）配置表'; ```  > **示例初始化数据（可直接执行）**  ```SQL INSERT INTO hr_salary_grade(company_id,grade_code,grade_name,salary_min,salary_mid,salary_max,status,create_by) VALUES (0,'P4','专员P4',8000,9500,11000,1,1), (0,'P5','高级专员P5',10000,12000,14000,1,1), (0,'P6','资深专员P6',13000,15500,18000,1,1), (0,'M1','主管M1',16000,19000,22000,1,1); ```  ### 2.3 员工主档案扩展，增加薪酬级别字段  ```SQL ALTER TABLE hr_employee ADD COLUMN salary_grade_code VARCHAR(32) NULL COMMENT '员工当前薪酬级别编码，关联hr_salary_grade.grade_code'; ``` > 存量兼容说明：存量员工无薪酬级别，salary_grade_code保持NULL；入职时必填grade_code； > 若需存量初始化，可执行：UPDATE hr_employee SET salary_grade_code = 'P1' WHERE salary_grade_code IS NULL AND employee_status IN (1,2);  ### 2.4 员工薪资档案表 `hr_salary_archive`（扩展薪级快照）  ```SQL -- 移除MySQL8.0不支持的DROP INDEX IF EXISTS内联语法，索引删除前置校验由Java代码层实现 ALTER TABLE hr_salary_archive   ADD COLUMN version_no         INT NOT NULL DEFAULT 1 COMMENT '版本号' AFTER employee_name,   ADD COLUMN effective_date     DATE NOT NULL DEFAULT '1970-01-01' COMMENT '生效日期' AFTER version_no,   ADD COLUMN effective_end_date DATE NULL DEFAULT NULL COMMENT '失效日期' AFTER effective_date,   ADD COLUMN source_type        TINYINT NOT NULL DEFAULT 1 COMMENT '来源 1模板自动 2人工录入 3调薪' AFTER effective_end_date,   ADD COLUMN adjust_reason      VARCHAR(500) NULL DEFAULT NULL COMMENT '调薪原因' AFTER source_type,   ADD COLUMN prev_archive_id    BIGINT NULL DEFAULT NULL COMMENT '上一版档案ID' AFTER adjust_reason,   ADD COLUMN salary_grade_code  VARCHAR(32) NULL COMMENT '生成该版本时员工薪酬级别快照';  ALTER TABLE hr_salary_archive   ADD KEY idx_employee_current (employee_id, is_delete, effective_date, effective_end_date),   ADD KEY idx_company_employee (company_id, employee_id, is_delete, version_no),   ADD UNIQUE KEY uk_employee_version (employee_id, version_no, is_delete); ```  字段说明  |字段|说明| |---|---| |version_no|薪资档案版本号，入职V1，每次调薪版本号+1| |effective_date|版本生效日期，业务强制赋值；DDL默认1970-01-01仅作为NOT NULL约束占位值，入库前必须覆写为真实入职日期或调薪生效日期| |effective_end_date|版本失效日期；当前生效版本为NULL；调薪时自动填充为新版本生效前一日| |source_type|1‑模板自动生成；2‑人工录入；3‑调薪生成| |adjust_reason|调薪备注、调整原因| |prev_archive_id|关联上一个版本ID，用于版本链路追溯| |salary_grade_code|薪资版本生成时刻员工薪酬级别快照，用于历史审计|  ### 2.5（可选）员工薪级变更流水表，完整留痕  ```SQL CREATE TABLE hr_employee_grade_log (   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,   company_id BIGINT NOT NULL,   employee_id BIGINT NOT NULL,   old_grade_code VARCHAR(32) NULL,   new_grade_code VARCHAR(32) NOT NULL,   change_reason VARCHAR(500) NULL COMMENT '晋升/调级',   effective_date DATE NOT NULL COMMENT '级别生效日期',   create_by BIGINT NOT NULL,   create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,   is_delete TINYINT NOT NULL DEFAULT 0 ) COMMENT='员工薪酬级别变更流水'; ```  ### 2.6 薪资模板表扩展（接入审批引擎）  > **设计原则**：薪资模板变更直接在业务表上操作，不重复造轮子新建申请表。审批通过才生效，驳回/撤回保持不变。审批流程统一走现有 `/flow/task` 统一审批引擎，业务侧只需实现 `FlowBizHandler` 回调接口。  ```SQL -- hr_salary_rule 表扩展审批字段 ALTER TABLE hr_salary_rule   ADD COLUMN flow_instance_id BIGINT NULL DEFAULT NULL COMMENT '当前关联的审批流实例ID，用于关联flow_instance表' AFTER remark,   ADD COLUMN apply_status TINYINT NOT NULL DEFAULT 1 COMMENT '1直接生效 0审批中 2已驳回 3已撤回' AFTER flow_instance_id;  ALTER TABLE hr_salary_rule   ADD KEY idx_flow_instance_id (flow_instance_id),   ADD KEY idx_apply_status (company_id, apply_status, is_delete); ```  > **审批引擎接入规范**： > 1. 前端调用 `/flow/task/page` 查询待办、`/flow/task/handle` 处理审批（pass/reject/transfer）、`/flow/apply/page` 查询我的申请、`/flow/apply/revoke` 撤回申请——**前端不需要实现自定义审批列表页**； > 2. 后端实现 `FlowBizHandler` 接口，bizType 对应 `flow_definition.biz_type`，审批通过回调 `onPass` 生效变更、驳回回调 `onReject` 回滚草稿态、撤回回调 `onCancel` 清理数据； > 3. 提交审批时调用 `FlowEngineService.submit(companyId, bizType, sourceId, submitterId, submitterName)` 创建流程实例并返回 `instanceId`，业务表回填 `flow_instance_id`； > 4. 流程定义通过 `flow_definition` 表统一管理，后台 `/flow/def/page` 维护，**不需要新建业务侧流程定义表**。  ### 2.7 批量调薪任务主‑子表（新增，用于批量调薪能力）  ```SQL -- 批量调薪任务主表 CREATE TABLE hr_salary_batch_adjust (   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,   company_id BIGINT NOT NULL DEFAULT 0,   batch_no VARCHAR(64) NOT NULL COMMENT '批量任务编号',   adjust_effective_date DATE NOT NULL COMMENT '调薪统一生效日期',   adjust_reason VARCHAR(500) NULL COMMENT '调薪原因（年度普调/岗位晋升等）',   apply_user_id BIGINT NOT NULL COMMENT '操作人ID',   status TINYINT NOT NULL DEFAULT 0 COMMENT '0草稿 1待审批 2已执行完成 3已驳回 4部分失败',   flow_instance_id BIGINT NULL COMMENT '审批流程实例ID，可为null',   total_count INT NOT NULL DEFAULT 0 COMMENT '总人数',   success_count INT NOT NULL DEFAULT 0 COMMENT '成功生成版本人数',   fail_count INT NOT NULL DEFAULT 0 COMMENT '失败人数',   remark VARCHAR(1000) NULL COMMENT '失败汇总备注',   create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,   update_time DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,   is_delete TINYINT NOT NULL DEFAULT 0,   KEY idx_company_status (company_id,status,is_delete) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批量调薪任务头';  -- 批量调薪任务子表，存储每一个员工调薪明细快照 CREATE TABLE hr_salary_batch_adjust_item (   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,   batch_id BIGINT NOT NULL COMMENT '关联主表id',   employee_id BIGINT NOT NULL COMMENT '员工ID',   old_version_id BIGINT NULL COMMENT '旧薪资档案版本ID',   new_basic_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,   new_performance_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,   new_position_allowance DECIMAL(12,2) NOT NULL DEFAULT 0.00,   new_other_allowance DECIMAL(12,2) NOT NULL DEFAULT 0.00,   exec_status TINYINT NOT NULL DEFAULT 0 COMMENT '0待执行 1成功 2失败',   fail_msg VARCHAR(500) NULL COMMENT '失败原因文本',   is_delete TINYINT NOT NULL DEFAULT 0,   KEY idx_batch (batch_id,is_delete) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批量调薪任务明细'; ```  ### 2.8 月度工资单表扩展 `hr_salary_month`  ```SQL ALTER TABLE hr_salary_month ADD COLUMN month_bonus DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '月度奖金', ADD COLUMN other_bonus DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '其他临时奖金（含发放月份带入年终奖）', ADD COLUMN bonus_remark VARCHAR(500) NULL COMMENT '奖金备注说明', ADD COLUMN bonus_flow_instance_id BIGINT NULL COMMENT '专项奖金审批流程实例ID；自动计算奖金可为NULL'; ```  ### 2.9 年度奖金表 `hr_year_bonus`  ```SQL CREATE TABLE hr_year_bonus (   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,   company_id BIGINT NOT NULL DEFAULT 0 COMMENT '公司ID',   employee_id BIGINT NOT NULL COMMENT '员工ID',   bonus_year INT NOT NULL COMMENT '奖金归属年度，例：2026',   bonus_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '年终奖应发金额',   actual_pay_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '实际发放金额',   pay_month VARCHAR(7) NULL COMMENT '实际发放月份 yyyy‑MM',   salary_month_id BIGINT NULL COMMENT '关联月度工资单ID',   flow_instance_id BIGINT NULL COMMENT '年终奖审批流程实例ID，自动计算可为NULL',   remark VARCHAR(500) NULL COMMENT '核算说明',   create_by BIGINT NOT NULL DEFAULT 0,   create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,   update_by BIGINT NULL DEFAULT NULL,   update_time DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,   is_delete TINYINT NOT NULL DEFAULT 0,   UNIQUE KEY uk_emp_year (company_id,employee_id,bonus_year,is_delete),   KEY idx_company_year (company_id,bonus_year,is_delete) )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工年度奖金表'; ```  ### 2.10 系统配置新增  ```SQL INSERT INTO sys_config(company_id,config_key,config_name,config_value,remark) VALUES (0,'salary/bonus/singleAuditEnable','专项奖金是否开启单独审批','0','0关闭，1开启；开启后人手工录入专项奖金必须走审批流程'), (0,'salary/batchAdjust/auditEnable','批量调薪是否开启审批','0','0关闭可直接执行，1开启批量调薪需要审批'), (0,'salary/grade/warnOnly','薪级带宽校验仅警告不拦截','1','1超出带宽仅警告，0超出直接拦截保存'); ```  ### 2.11 流程定义初始化SQL（统一走现有审批引擎）  > 所有薪资模块的审批流程定义统一存入 `flow_definition` 表，通过 `/flow/task` 接口驱动审批，**不新建业务侧流程定义表或申请表**。业务侧只需实现对应的 `FlowBizHandler` 回调处理器。  ```SQL INSERT INTO flow_definition (company_id, def_name, def_code, biz_type, node_config_json, status, remark, create_by) VALUES (   0,   '薪资模板变更审批',   'salary_rule',   'hr_salary_rule',   '[{"nodeName":"子公司经理审批","nodeMode":"single","handlerType":"role","handlerValue":"sub_manager"}]',   1,   '薪资规则模板的新增/修改/停用必须经此流程审批后生效',   1 ), (   0,   '批量调薪审批',   'salary_batch_adjust',   'hr_salary_batch_adjust',   '[{"nodeName":"部门负责人审批","nodeMode":"single","handlerType":"role","handlerValue":"dept_manager"}]',   1,   '批量调薪任务审批流程',   1 ), (   0,   '年终奖审批',   'salary_year_bonus',   'hr_year_bonus',   '[{"nodeName":"部门负责人审批","nodeMode":"single","handlerType":"role","handlerValue":"dept_manager"},{"nodeName":"财务复核","nodeMode":"single","handlerType":"role","handlerValue":"finance_manager"}]',   1,   '年终奖新增/修改审批（本期实现）',   1 ), (   0,   '调薪审批',   'salary_archive_adjust',   'hr_salary_archive',   '[{"nodeName":"部门负责人审批","nodeMode":"single","handlerType":"role","handlerValue":"dept_manager"},{"nodeName":"HR审批","nodeMode":"single","handlerType":"role","handlerValue":"hr_manager"}]',   1,   '单人调薪/晋升调级审批（本期实现）',   1 ); ```  > **注意**：`flow_definition` 表已存在于项目中，上述 SQL 仅为新增 2 条年终奖/调薪审批定义。薪资模板变更审批（`salary_rule`）和批量调薪审批（`salary_batch_adjust`）已存在。  ### 2.12 存量在职员工初始化脚本  ```SQL INSERT INTO hr_salary_archive (company_id, employee_id, employee_name, version_no, effective_date, source_type, basic_salary, create_by, create_time) SELECT   company_id,   id,   name,   1,   IFNULL(entry_date, '1970-01-01') AS effective_date    2 AS source_type,   basic_salary,   create_by,   create_time FROM hr_employee WHERE is_delete = 0   AND employee_status IN (1,2)   AND id NOT IN (SELECT employee_id FROM hr_salary_archive WHERE is_delete = 0);   -- 注释说明：entry_date为NULL的存量数据视为未登记入职日期，归档时由HR手动补充 ``` ### 2.13 升级SQL执行顺序（不可跳步）  1. 新建 `hr_salary_grade` / `hr_employee_grade_log` 2. ALTER `hr_employee` 新增 `salary_grade_code` 3. ALTER `hr_salary_archive`（先DROP INDEX，再ADD COLUMN，再ADD KEY） 4. 新建 `hr_salary_rule`（或ALTER扩展bind_type/grade_code字段） 5. ALTER `hr_salary_rule` 新增 `flow_instance_id`、`apply_status`（接入审批引擎） 6. 新建 `hr_salary_batch_adjust` / `hr_salary_batch_adjust_item` 7. ALTER `hr_salary_month` 新增4个奖金字段 8. 新建 `hr_year_bonus`（本期实现） 9. INSERT sys_config（3条） 10. INSERT flow_definition（**新增2条**：年终奖审批、调薪审批；薪资模板变更/批量调薪审批已存在） 11. 执行存量员工初始化脚本（步骤2.12）  > **注意**：`hr_salary_rule_apply` 申请表已废弃，改为业务表 `hr_salary_rule` 直接加审批字段；审批引擎统一通过 `FlowBizHandler` + `flow_definition` + `flow_instance` 驱动。  ## 三、核心业务流程  ### 3.1 薪资模板匹配优先级（同时支持岗位、薪酬级别、组合模式）  > 匹配顺序由高到低  1. bind_type=3 岗位+薪酬级别组合模板  2. bind_type=2 薪酬级别模板  3. bind_type=1 岗位模板  4. 系统通用模板兜底  ### 3.2 入职申请自动建档流程（整合薪酬级别）  ```Plaintext HR填写入职申请 ├─填写岗位（可选） ├─填写员工薪酬级别 grade_code（启用薪级体系必填） ↓ 系统按优先级自动匹配薪资模板 ↓ 自动预填整套薪资（基本工资、津贴、绩效基数） ↓ 带宽校验：拟定薪资对比该薪酬级别min‑max；配置控制警告/拦截 ↓ HR可手动修改基本工资（津贴绩效取自模板） ↓ 提交hr_entry审批流 ↓ 审批通过 ↓ 创建hr_employee员工档案，写入salary_grade_code ↓ 自动生成hr_salary_archive V1版本薪资档案   取值逻辑：一期仅基本工资允许表单填写；津贴/绩效/其他补贴从模板读取（入职申请表暂不扩展津贴绩效字段，二期迭代可扩展） > 通用模板 > 0   档案快照salary_grade_code保存当前员工薪级   sourceType自动判断：完全匹配模板=1，人工改动=2 ↓ 流程结束  【分支】审批驳回 / 申请撤回：不生成员工档案，也不生成薪资档案 ```  ### 3.3 单人调薪版本化流程（带宽校验）  ```Plaintext HR发起调薪，填写新薪资、调薪生效日期（支持未来生效） ↓ 读取员工当前薪酬级别，做薪级带宽校验（警告或拦截） ↓ 数据库行锁FOR UPDATE锁定员工当前生效薪资档案，防止并发冲突 ↓ 校验：新版本生效日期必须晚于旧版本生效日期 ↓ 旧版本档案设置effective_end_date = 新版本生效日期 - 1天（旧版本失效，记录保留） ↓ 创建新版本档案，version+1，source_type=3调薪，prev_archive_id关联旧版本ID   新版本快照salary_grade_code取员工当前薪级 ↓ 记录审计日志，流程结束 ``` > 【技术说明】MyBatis-Plus LambdaQueryWrapper不支持FOR UPDATE， > updateArchive方法中需用原生@Select注解或JdbcTemplate执行带行锁的查询： > @Select("SELECT * FROM hr_salary_archive WHERE employee_id=#{employeeId} >   AND company_id=#{companyId} AND is_delete=0 >   AND effective_date<=#{today} AND (effective_end_date IS NULL >   OR effective_end_date>=#{today}) >   ORDER BY version_no DESC LIMIT 1 FOR UPDATE") > HrSalaryArchive selectCurrentForUpdate(...);  ### 3.4 晋升调级流程（薪酬级别变更 + 审批引擎接入）  > 两件事情：①更新员工薪酬级别；②生成薪资新版本；**统一走现有审批引擎**（bizType=`hr_salary_archive`，FlowBizHandler=`SalaryArchiveFlowHandler`）  ```Plaintext HR发起晋升申请（前端提交页面） ├─填写新薪酬级别、调薪薪资、生效日期 ├─带宽预校验：新薪资必须落在新薪级带宽区间（仅警告或拦截，由配置控制） ↓ 提交调薪审批（调用 FlowEngineService.submit） ↓ 审批中心待办（/flow/task/page 统一待办列表） ├─部门负责人审批 └─HR审批 ↓ 【FlowBizHandler.onPass 回调触发】   1、写入hr_employee_grade_log变更流水   2、更新hr_employee.salary_grade_code为新grade_code   3、执行调薪逻辑生成薪资新版本（复用单人调薪updateArchive方法）   4、新版本快照salary_grade_code记录新grade_code ↓ 【FlowBizHandler.onReject 回调触发】   申请标记已驳回，薪资不变、薪级不变 ```  > **本期实现**：调薪审批走现有 `/flow/task` 审批引擎，实现 `SalaryArchiveFlowHandler implements FlowBizHandler`。  ### 3.5 批量调薪完整业务流程（支持：单人、勾选一批、按部门、岗位、薪酬级别、全员）  ```Plaintext HR打开【批量调薪】功能 ↓ 方式A：Excel导入；方式B：页面筛选（筛选条件：部门、岗位、薪酬级别、在职状态） ↓ 可以选择：统一涨固定金额 / 统一涨百分比 / 逐行手工录入每个人新薪资 ↓ 页面做前置校验：员工在职、存在生效薪资档案、薪资不为负数、薪级带宽校验 ↓ 填写统一生效日期、调薪原因；保存生成批量调薪任务（主表+子表） ↓ 读取系统配置：salary/batchAdjust/auditEnable   开关开启：提交批量调薪审批流   开关关闭：直接进入执行阶段 ↓ 审批通过后执行批量任务   ⚠️每个员工独立小事务；调用已有updateArchive()调薪方法；内部自带FOR UPDATE行锁   单条员工失败记录fail_msg，其他员工继续执行，不整体回滚 ↓ 执行完成输出报告：总条数、成功条数、失败明细，可下载 ↓ 流程结束  重要约束：批量调薪**只会生成薪资档案新版本，不会修改薪资模板；如需新人同步新标准，需要HR手动更新薪资模板** ```  ### 3.6 月度薪资核算完整流程（含奖金）  ```Plaintext 选择算薪月份 ↓ 查询在职员工列表 ↓ 循环每个员工：查询该月份生效、未逻辑删除的薪资档案   查询条件：effective_date ≤ 当月1号 AND (effective_end_date IS NULL OR effective_end_date ≥当月1号) ↓ 基线取值优先级：当月生效薪资档案 → 岗位薪资模板 → 通用模板 → 员工档案basicSalary快照 ↓ 生成hr_salary_month月度工资单基线（基本工资、津贴、社保公积金扣款） ↓ 分支1：绩效系统自动计算月奖金 → 直接回写month_bonus，bonus_flow_instance_id留空 分支2：手工录入专项月奖金   读取配置开关salary/bonus/singleAuditEnable   开关开启：必须提交奖金审批，审批通过才写入month_bonus并回填bonus_flow_instance_id   开关关闭：允许直接录入month_bonus ↓ 分支3：年终奖发放：从hr_year_bonus读取数据，带入other_bonus，回填bonus_flow_instance_id、关联salary_month_id ↓ 汇总计算应发工资 = 基线薪资 +月奖金 +其他奖金 -考勤、扣款 ↓ 提交月度工资单整体发放审批 ↓ 审批通过后工资单归档，支持导出银行代发文件 ```  ### 3.7 薪资模板审批流程（统一走现有审批引擎）  > **本期实现**：薪资模板变更审批走现有 `/flow/task` 审批引擎，实现 `SalaryRuleFlowHandler implements FlowBizHandler`（bizType=`hr_salary_rule`）。不新建 `hr_salary_rule_apply` 申请表。  ```Plaintext HR编辑薪资模板（新增/修改/停用） ├─ hr_salary_rule 记录 apply_status=0（审批中）、flow_instance_id（回填审批实例ID） ├─ 模板草稿状态，不立即对新入职生效 ↓ 提交审批（调用 FlowEngineService.submit(companyId, "hr_salary_rule", ruleId, submitterId)） ↓ 审批中心待办（/flow/task/page 统一待办列表） ├─ 子公司经理审批 ↓ 【FlowBizHandler.onPass 回调触发】   apply_status=1（已生效），模板正式生效   仅对后续新入职自动匹配，存量档案不受影响 ↓ 【FlowBizHandler.onReject 回调触发】   apply_status=2（已驳回），模板仍停留在审批前状态   HR可重新编辑提交 ↓ 【FlowBizHandler.onCancel 回调触发】   apply_status=3（已撤回），模板恢复原状态 ```  ### 3.8 专项奖金业务说明（含年终奖，本期实现）  1. **自动计算奖金（绩效输出）**：无需单独奖金审批；但归属的月度工资单**必须执行整体发放审批**。  2. **手工浮动/一次性奖金（项目奖、评优奖、年终奖）**：      - 配置开关开启：必须走奖金审批，流程实例ID落库；驳回/撤回不生成奖金数据。      - 配置开关关闭：允许直接录入，页面提示为简化模式，审计建议开启审批开关。      - **年终奖（本期实现）**：`hr_year_bonus` 表的年终奖新增/修改统一走现有审批引擎（bizType=`hr_year_bonus`，FlowBizHandler=`YearBonusFlowHandler`），通过 `/flow/task` 处理审批。年终奖审批通过后才可以发放到月度工资单。  3. 薪资模板内`fixed_month_bonus`仅作为算薪默认参考值；当月实际发放奖金以月度工资单字段为准；修改模板不修改历史工资单。  ## 四、接口设计（路径全部使用`/`分层，无下划线、连字符）  ### 4.1 薪酬级别管理接口  |接口|请求方式|说明| |---|---|---| |`/hr/salary/grade/page`|GET|薪酬级别分页列表| |`/hr/salary/grade/get/{gradeCode}`|GET|获取单个薪酬级别详情| |`/hr/salary/grade/add`|POST|新增薪酬级别| |`/hr/salary/grade/update`|POST|修改薪酬级别带宽信息| |`/hr/salary/grade/disable`|POST|停用薪酬级别|  ### 4.2 薪资模板接口  |接口|请求方式|说明| |---|---|---| |`/hr/salary/rule/page`|GET|薪资模板分页列表| |`/hr/salary/rule/getByPost/{postId}`|GET|根据岗位ID获取当前生效薪资模板| |`/hr/salary/rule/getByGrade/{gradeCode}`|GET|根据薪酬级别获取模板| |`/hr/salary/rule/add`|POST|新增薪资模板（apply_status=0 草稿态）| |`/hr/salary/rule/update`|POST|修改薪资模板（apply_status=0 草稿态）| |`/hr/salary/rule/disable`|POST|停用薪资模板（apply_status=0 草稿态）| |`/hr/salary/rule/submitAudit/{ruleId}`|POST|提交模板变更去审批（调用FlowEngineService.submit，回填flow_instance_id）| |`/hr/salary/rule/pageMyApply`|GET|**【可选】**也可直接用 `/flow/apply/page?bizType=hr_salary_rule` 查询薪资模板审批申请记录|  > **审批引擎接口**：提交审批统一调用 `FlowEngineService.submit(companyId, "hr_salary_rule", ruleId, submitterId)`； > 前端待办/申请列表统一调用 `/flow/task/page`、`/flow/apply/page`、`/flow/task/handle`，**不新建业务侧审批列表接口**。  ### 4.3 薪资档案接口  |接口|请求方式|说明| |---|---|---| |`/hr/salary/archive/page`|GET|薪资档案分页列表| |`/hr/salary/archive/getByEmployee/{employeeId}`|GET|查询该员工全部薪资版本历史| |`/hr/salary/archive/getCurrent/{employeeId}`|GET|查询员工当前正在生效的薪资版本| |`/hr/salary/archive/addVersion`|POST|单人调薪，生成新版本薪资档案| |`/hr/salary/archive/history/{employeeId}`|GET|获取薪资版本时间线数据|  ### 4.4 批量调薪接口  |接口|请求方式|说明| |---|---|---| |`/hr/salary/batchAdjust/page`|GET|批量调薪任务分页列表| |`/hr/salary/batchAdjust/get/{batchId}`|GET|获取批量调薪任务以及明细| |`/hr/salary/batchAdjust/createByFilter`|POST|**本期实现**：页面筛选条件创建批量调薪任务（部门/岗位/薪酬级别筛选）| |`/hr/salary/batchAdjust/createByImport`|POST|**二期实现**：Excel导入创建批量调薪任务（暂不实现）| |`/hr/salary/batchAdjust/submitAudit/{batchId}`|POST|提交批量调薪任务去审批（调用FlowEngineService.submit，bizType=`hr_salary_batch_adjust`）| |`/hr/salary/batchAdjust/execute/{batchId}`|POST|执行批量调薪任务（审批通过后执行）| |`/hr/salary/batchAdjust/downloadFail/{batchId}`|GET|下载失败明细Excel|  ### 4.5 月度工资单接口  |接口|请求方式|说明| |---|---|---| |`/hr/salary/month/page`|GET|月度工资单分页列表| |`/hr/salary/month/generate`|POST|生成指定月份工资基线| |`/hr/salary/month/saveBonus`|POST|保存当月奖金数据| |`/hr/salary/month/submitAudit`|POST|提交月度工资整体发放审批|  ### 4.6 年度奖金接口（本期实现）  |接口|请求方式|说明| |---|---|---| |`/hr/salary/yearBonus/page`|GET|年度奖金分页列表| |`/hr/salary/yearBonus/getByEmp/{employeeId}`|GET|获取员工历年年终奖记录| |`/hr/salary/yearBonus/add`|POST|新增年终奖记录（草稿态，flow_instance_id=null）| |`/hr/salary/yearBonus/update`|POST|修改年终奖记录（草稿态）| |`/hr/salary/yearBonus/submitAudit/{id}`|POST|提交年终奖去审批（调用FlowEngineService.submit，bizType=`hr_year_bonus`）|  > **审批引擎接入**：年终奖审批统一走 `/flow/task`，业务侧实现 `YearBonusFlowHandler implements FlowBizHandler`。审批通过后 `hr_year_bonus` 的 `flow_instance_id` 保留不变、`status` 置为已通过（1）；驳回/撤回保持草稿态。  ## 五、后端核心代码（关键片段）  ### 5.0 审批引擎接入：FlowBizHandler 实现规范  > 薪资模块所有审批（模板变更、批量调薪、年终奖、调薪）统一通过实现 `FlowBizHandler` 接口接入现有审批引擎。不新建业务侧审批记录表，流程定义统一走 `flow_definition` 表，实例/任务统一走 `flow_instance` / `flow_task` 表。  #### 本期需要实现的 FlowBizHandler（共4个）  | Handler类 | bizType | 触发业务 | 说明 | |---|---|---|---| | `SalaryRuleFlowHandler` | `hr_salary_rule` | 薪资模板变更审批 | 审批通过 apply_status→1 生效 | | `SalaryArchiveFlowHandler` | `hr_salary_archive` | 单人调薪/晋升审批 | 审批通过才执行调薪生成新版本 | | `BatchAdjustFlowHandler` | `hr_salary_batch_adjust` | 批量调薪审批 | 审批通过才执行批量任务 | | `YearBonusFlowHandler` | `hr_year_bonus` | 年终奖审批 | 审批通过年终奖才确认生效 |  #### Handler 代码模板（对齐项目已有 HrEntryFlowHandler 模式）  ```Java /**  * 薪资模板变更审批回调处理器  * 对齐项目已有 FlowBizHandler 接口模式（参考 HrEntryFlowHandler）  */ @Slf4j @Component @RequiredArgsConstructor public class SalaryRuleFlowHandler implements FlowBizHandler {      private final SalaryRuleService salaryRuleService;      @Override     public String bizType() {         return "hr_salary_rule"; // 对齐 flow_definition.biz_type     }      /** 提交前校验（可选） */     @Override     public void onSubmit(Long sourceId) {         HrSalaryRule rule = salaryRuleService.getById(sourceId);         if (rule == null) {             throw new BizException("薪资模板不存在");         }         // 其他校验...     }      /** 审批通过回调 */     @Override     public void onPass(Long sourceId, Long instanceId) {         log.info("SalaryRuleFlowHandler.onPass: ruleId={}, instanceId={}", sourceId, instanceId);         HrSalaryRule rule = salaryRuleService.getById(sourceId);         if (rule != null) {             rule.setApplyStatus(1); // 1已生效             rule.setFlowInstanceId(null); // 审批完成清空实例ID             salaryRuleService.updateById(rule);         }     }      /** 审批驳回回调 */     @Override     public void onReject(Long sourceId, Long instanceId) {         log.info("SalaryRuleFlowHandler.onReject: ruleId={}, instanceId={}", sourceId, instanceId);         HrSalaryRule rule = salaryRuleService.getById(sourceId);         if (rule != null) {             rule.setApplyStatus(2); // 2已驳回，HR可重新编辑提交             salaryRuleService.updateById(rule);         }     }      /** 撤回/终止回调 */     @Override     public void onCancel(Long sourceId, Long instanceId) {         log.info("SalaryRuleFlowHandler.onCancel: ruleId={}, instanceId={}", sourceId, instanceId);         HrSalaryRule rule = salaryRuleService.getById(sourceId);         if (rule != null) {             rule.setApplyStatus(3); // 3已撤回             salaryRuleService.updateById(rule);         }     } } ```  #### 业务侧提交审批代码  ```Java /** 薪资模板业务中提交审批的示例 */ public void submitAudit(Long ruleId, Long submitterId) {     HrSalaryRule rule = salaryRuleMapper.selectById(ruleId);     if (rule == null) throw new BizException("薪资模板不存在");     if (rule.getApplyStatus() != null && rule.getApplyStatus() != 1) {         throw new BizException("当前模板状态不允许提交审批");     }          // 调用审批引擎创建流程实例     Long instanceId = flowEngineService.submit(         UserContext.getCompanyId(),         "hr_salary_rule",   // bizType 对应 flow_definition.biz_type         ruleId,             // sourceId 为业务主键         submitterId,         UserContext.getUserName()     );          // 回填业务表     rule.setApplyStatus(0);           // 0审批中     rule.setFlowInstanceId(instanceId); // 关联流程实例     salaryRuleMapper.updateById(rule); } ```  ### 5.1 获取生效薪资模板（支持薪酬级别、岗位组合匹配）  ```Java /**  * 获取生效薪资模板  * 优先级：岗位+薪级组合模板 > 薪级模板 > 岗位模板 > 通用模板  */ public HrSalaryRule getActiveRule(Long companyId, Long postId, String gradeCode) {     //1、优先找 岗位+薪酬级别组合 bind_type=3     if(postId != null && gradeCode != null){         HrSalaryRule comboRule = salaryRuleMapper.selectOne(                 Wrappers.lambdaQuery(HrSalaryRule.class)                         .eq(HrSalaryRule::getCompanyId,companyId)                         .eq(HrSalaryRule::getPostId,postId)                         .eq(HrSalaryRule::getGradeCode,gradeCode)                         .eq(HrSalaryRule::getBindType,3)                         .eq(HrSalaryRule::getStatus,1)                         .eq(HrSalaryRule::getIsDelete,0)                         .last("LIMIT 1"));         if(comboRule != null) return comboRule;     }     //2、匹配薪酬级别模板 bind_type=2     if(gradeCode != null){         HrSalaryRule gradeRule = salaryRuleMapper.selectOne(                 Wrappers.lambdaQuery(HrSalaryRule.class)                         .eq(HrSalaryRule::getCompanyId,companyId)                         .eq(HrSalaryRule::getGradeCode,gradeCode)                         .eq(HrSalaryRule::getBindType,2)                         .eq(HrSalaryRule::getStatus,1)                         .eq(HrSalaryRule::getIsDelete,0)                         .last("LIMIT 1"));         if(gradeRule != null) return gradeRule;     }     //3、匹配岗位模板 bind_type=1     if(postId != null){         HrSalaryRule postRule = salaryRuleMapper.selectOne(                 Wrappers.lambdaQuery(HrSalaryRule.class)                         .eq(HrSalaryRule::getCompanyId,companyId)                         .eq(HrSalaryRule::getPostId,postId)                         .eq(HrSalaryRule::getBindType,1)                         .eq(HrSalaryRule::getStatus,1)                         .eq(HrSalaryRule::getIsDelete,0)                         .last("LIMIT 1"));         if(postRule != null) return postRule;     }     //4、通用模板兜底     return salaryRuleMapper.selectOne(             Wrappers.lambdaQuery(HrSalaryRule.class)                     .eq(HrSalaryRule::getCompanyId,companyId)                     .isNull(HrSalaryRule::getPostId)                     .eq(HrSalaryRule::getIsGeneral,1)                     .eq(HrSalaryRule::getStatus,1)                     .eq(HrSalaryRule::getIsDelete,0)                     .last("LIMIT 1")); } ```  ### 5.2 批量调薪执行伪代码（独立子事务，复用原有updateArchive）  ```Java public void executeBatchAdjust(Long batchId){     HrSalaryBatchAdjust batchTask = batchAdjustMapper.selectById(batchId);     List<HrSalaryBatchAdjustItem> itemList = itemMapper.selectList(Wrappers.lambdaQuery(HrSalaryBatchAdjustItem.class)             .eq(HrSalaryBatchAdjustItem::getBatchId,batchId).eq(HrSalaryBatchAdjustItem::getExecStatus,0));      int success = 0;     int fail = 0;     for(HrSalaryBatchAdjustItem item : itemList){         Boolean execResult = transactionTemplate.execute(status -> {             try {                 SalaryArchiveDTO dto = new SalaryArchiveDTO();                 dto.setEmployeeId(item.getEmployeeId());                 dto.setNewEffectiveDate(batchTask.getAdjustEffectiveDate()); // TODO: 需在SalaryArchiveDTO中新增newEffectiveDate字段（LocalDate类型）                 dto.setBasicSalary(item.getNewBasicSalary());                 dto.setPerformanceSalary(item.getNewPerformanceSalary());                 dto.setPositionAllowance(item.getNewPositionAllowance());                 dto.setOtherAllowance(item.getNewOtherAllowance());                 dto.setRemark(batchTask.getAdjustReason());                 //复用原有单人调薪逻辑，自带行锁FOR UPDATE                 HrSalaryArchive newArchive = salaryArchiveService.updateArchive(dto);                 item.setExecStatus(1);                 item.setOldVersionId(newArchive.getPrevArchiveId());                 itemMapper.updateById(item);                 return true;             }catch (Exception e){                 item.setExecStatus(2);                 item.setFailMsg(e.getMessage());                 itemMapper.updateById(item);                 status.setRollbackOnly();                 return false;             }         });         if(Boolean.TRUE.equals(execResult)) success++;         else fail++;     }     //更新批量任务统计     batchTask.setSuccessCount(success);     batchTask.setFailCount(fail);     if(fail == 0){         batchTask.setStatus(2);     }else if(success >0){         batchTask.setStatus(4);     }     batchAdjustMapper.updateById(batchTask); } ``` ### 5.3 入职申请自动生成薪资档案（createFromEntry）  > 触发时机：hr_entry审批流FlowHandler.onPass回调时调用  ```Java /**  * 审批通过后自动创建薪资档案  * 优先级：入职申请表手动填写 > 岗位模板默认值（逐字段独立判断）  */ @Transactional(rollbackFor = Exception.class) public void createFromEntry(Long entryApplyId) {     //1. 查询入职申请表     HrEntryApply apply = entryApplyMapper.selectById(entryApplyId);     if (apply == null || !CommonConst.APPLY_STATUS_PASS.equals(apply.getStatus())) {         throw new BusinessException("入职申请不存在或未通过审批");     }      //2. 查询匹配薪资模板（companyId从上下文获取，租户隔离）     Long companyId = UserContext.getCompanyId();     HrSalaryRule rule = salaryRuleService.getActiveRule(companyId, apply.getPostId(), apply.getGradeCode());      //3. 创建薪资档案V1版本     HrSalaryArchive archive = new HrSalaryArchive();     archive.setCompanyId(companyId);     archive.setEmployeeId(apply.getEmployeeId());     archive.setEmployeeName(apply.getEmployeeName());     archive.setVersionNo(1);     archive.setEffectiveDate(apply.getEntryDate() != null ? apply.getEntryDate() : LocalDate.now());     archive.setSourceTypeId(1); // 模板自动带出     archive.setSalaryGradeCode(apply.getGradeCode()); // 薪级快照     archive.setAdjustReason("入职自动生成");      //4. 逐字段独立判断取值（入职申请表字段 > 模板字段 > 默认0）     // 注意：hr_entry_apply目前只有basicSalary字段，津贴类从模板取     archive.setBasicSalary(         apply.getBasicSalary() != null              ? apply.getBasicSalary()              : (rule != null ? rule.getBasicSalary() : BigDecimal.ZERO)     );     archive.setPerformanceBase(         rule != null ? rule.getPerformanceBase() : BigDecimal.ZERO     );     archive.setPositionAllowance(         rule != null ? rule.getPositionAllowance() : BigDecimal.ZERO     );     archive.setOtherAllowance(         rule != null ? rule.getOtherAllowance() : BigDecimal.ZERO     );      //5. 带宽校验（如配置开关开启）     if (rule != null && rule.getGradeCode() != null) {         HrSalaryGrade grade = salaryGradeMapper.selectOne(             Wrappers.lambdaQuery(HrSalaryGrade.class)                 .eq(HrSalaryGrade::getCompanyId, companyId)                 .eq(HrSalaryGrade::getGradeCode, rule.getGradeCode())                 .eq(HrSalaryGrade::getIsDelete, 0)         );         if (grade != null) {             validateBandwidth(archive.getBasicSalary(), grade);         }     }      //6. 保存薪资档案     salaryArchiveMapper.insert(archive);          log.info("入职自动生成薪资档案成功 employeeId={} versionNo=1 archiveId={}",               archive.getEmployeeId(), archive.getId()); }  /**  * 带宽校验辅助方法  */ private void validateBandwidth(BigDecimal salary, HrSalaryGrade grade) {     String warnOnlyConfig = sysConfigService.getValue("salary/grade/warnOnly");     boolean warnOnly = "1".equals(warnOnlyConfig);          if (salary.compareTo(grade.getSalaryMin()) < 0          || salary.compareTo(grade.getSalaryMax()) > 0) {         if (!warnOnly) {             throw new BusinessException(                 String.format("薪资%.2f超出薪酬级别[%s]带宽[%.2f, %.2f]",                      salary, grade.getGradeCode(), grade.getSalaryMin(), grade.getSalaryMax())             );         }         log.warn("薪资带宽警告 employeeSalary={} gradeCode={}", salary, grade.getGradeCode());     } } ```  ## 六、前端页面清单（新增/改造页面）  > 前端页面路径全部使用 `src/views/hr/salary/` 前缀，文件名按模块命名。  1. **薪酬级别管理页面** `salary/grade.vue`：维护薪级编码、带宽min/mid/max，启用停用。（本期新增）  2. **薪资规则模板管理页面** `salary/rule.vue`：新增bind_type绑定类型选择，可以绑定岗位/薪酬级别/组合；支持草稿态编辑、提交审批、查看审批状态（通过 `apply_status` + `flow_instance_id`）。（本期改造）  3. **薪资档案页面（新版本化）** `salary/archive.vue`：列表展示版本、生效日期、来源、薪酬级别快照；调薪弹窗带宽校验提示；调薪审批（本期实现）：提交后走审批引擎，审批通过才生成新版本。（本期改造）  4. **批量调薪页面** `salary/batchAdjust.vue`：     - **本期实现**：页面筛选创建方式（筛选条件：部门/岗位/薪酬级别/在职状态）；     - **二期实现**：Excel导入创建批量调薪任务（`createByImport`）；     - 支持统一涨薪比例/固定金额；预览新旧薪资；提交审批或直接执行；查看任务结果、下载失败明细。  5. **月度工资页面** `salary/month.vue`：生成工资基线、维护奖金、提交整体发放审批。（本期改造）  6. **年度奖金页面** `salary/yearBonus.vue`（本期实现）：年终奖维护、发起审批申请，统一走 `/flow/task` 审批引擎。  7. **入职申请页** `hr/transfer/index.vue`：增加薪酬级别选择；根据岗位+薪级自动匹配模板；带宽校验提示；仅基本工资允许编辑。（本期改造）  > **审批中心页面**：待办/申请/审批轨迹全部使用统一审批中心（前端 `/flow/task/page`、`/flow/apply/page`、`/flow/instance/detail`），**薪资模块不新建独立审批列表页**，待办跳转直接指向统一审批中心页面。  ## 七、关键业务约束（重点，避免踩坑）  1. **薪酬级别hr_salary_grade只是标签+带宽校验规则**      - 修改薪酬级别带宽min/max，**不会自动更新任何在职员工薪资档案**。      - 如果需要给某薪酬级别员工普调工资，走【批量调薪】功能生成新版本薪资档案。  2. **薪资模板和薪酬级别关系**      - 模板只是新人入职的默认样板；模板绑定薪酬级别，只影响新入职；存量员工不受模板修改影响。  3. **批量调薪约束**      - 批量调薪**不会修改薪资模板**；普调完成后，如果希望后续新人使用新标准，需要HR手动更新薪资模板。      - 每个员工独立小事务；个别失败不影响其他人；依靠原有调薪内部悲观行锁防止并发冲突。  4. **晋升（薪酬级别变更）**      - 修改员工的`salary_grade_code`属于员工属性变更；**必须配套生成新版本薪资档案**，不能只改字段不改薪资。      - 薪资档案保存薪级快照，历史审计不受员工现在改薪级的干扰。  5. **带宽校验开关**：`salary/grade/warnOnly`；1只弹窗警告，0直接拦截保存，适配不同阶段管理诉求。  6. **多租户隔离：companyId全部从UserContext上下文获取，不信任前端入参。**  7. **奖金隔离：薪资档案只保存固定薪资基线；月奖金、年终奖保存在独立业务表，不存入薪资档案版本。**  ## 八、上线实施步骤  |步骤|内容|验证点| |---|---|---| |1|数据库全量备份，执行全部升级SQL脚本（含 flow_definition 新增2条年终奖/调薪审批定义）|新增表、字段、索引、示例薪级数据全部创建成功；存量员工迁移数据无报错；flow_definition 审批定义可通过 `/flow/def/page` 查到| |2|CommonConst 常量补充：`FLOW_DEF_SALARY_RULE`、`FLOW_DEF_SALARY_BATCH_ADJUST`、`FLOW_DEF_SALARY_YEAR_BONUS`、`FLOW_DEF_SALARY_ARCHIVE_ADJUST`、`MODULE_HR_SALARY` 等常量|编译无报错，符合项目规范| |3|**实现4个 FlowBizHandler**：`SalaryRuleFlowHandler`、`SalaryArchiveFlowHandler`、`BatchAdjustFlowHandler`、`YearBonusFlowHandler`（参考项目已有 `HrEntryFlowHandler` 模式）|每个 Handler 的 `bizType()` 与 flow_definition.biz_type 一致；审批通过/驳回/撤回回调正确| |4|开发薪酬级别全套模块、批量调薪主子表业务、批量调薪流程处理器（页面筛选方式）|单元测试通过；批量任务幂等校验；**Excel导入二期实现**| |5|改造原有服务：入职生成档案时写入薪级快照；单人调薪增加薪级带宽校验；调薪审批走 FlowBizHandler（本期实现）|入职、单人调薪端到端测试；调薪审批完整流程测试| |6|原有薪资模板模块扩展 bind_type、grade_code 字段；业务表扩展 flow_instance_id、apply_status；提交审批调用 FlowEngineService.submit|薪资模板新增修改审批完整测试；`/flow/task/page` 可查到待办| |7|年终奖模块开发（本期实现）：hr_year_bonus 表 + YearBonusFlowHandler 审批接入|年终奖新增/修改走审批引擎；`/flow/task/handle` 审批通过后年终奖生效| |8|前端页面开发：salary/grade.vue、salary/rule.vue、salary/archive.vue、salary/batchAdjust.vue（页面筛选方式）、salary/yearBonus.vue；入职页面增加薪酬级别选择；带宽校验提示交互|页面交互完整；审批跳转指向统一审批中心 `/flow/task/page`| |9|全链路端到端测试：薪级‑模板匹配、入职、单人调薪、批量调薪、晋升调级、月度算薪、年终奖审批、奖金管控|全部业务链路跑通；所有审批统一走 `/flow/task`| |10|存量业务回归测试，旧入职流程、旧算薪不受改动影响|回归全部通过| |11|生产部署上线||  ## 九、测试用例（新增重点用例）  |编号|场景|预期结果| |---|---|---| |T11|入职填写岗位+薪酬级别P5，存在【岗位+薪级】组合模板|优先匹配组合模板，预填薪资，档案快照保存P5| |T12|新员工薪资超出薪级带宽；配置warnOnly=1|弹窗警告，仍然允许保存；sourceType=2人工录入| |T13|新员工薪资超出薪级带宽；warnOnly=0|直接拦截，无法提交入职申请| |T14|批量调薪，筛选全部P5薪酬级别在职员工，统一涨8%|批量任务生成；每个P5员工生成薪资新版本；旧版本保留；失败记录明细；模板不自动变更；**Excel导入二期**| |T15|员工晋升P5→P6，走调薪审批（FlowBizHandler）|员工主档案grade_code更新；生成薪资新版本；档案快照记录P6；薪级变更流水写入；所有审批通过才生效| |T16|修改薪酬级别P5带宽，min/max上调|存量P5员工薪资档案完全不变，只改变后续校验规则| |T17|批量调薪开关开启，不提交审批直接执行|不允许执行，必须走审批通过才可以生成薪资版本| |T18|批量调薪中某员工已经离职|标记该条失败，其他正常员工完成调薪| |T19|薪资模板提交审批，`/flow/task/page` 可查到待办|审批中心待办正常显示；pass后apply_status=1模板生效；reject后apply_status=2可重新编辑| |T20|年终奖新增/修改，走 `/flow/task` 审批引擎|年终奖提交后apply_status=0审批中；审批通过后才可以发放到月度工资单| |T21|审批驳回后HR重新编辑模板再提交|apply_status=0审批中，新流程实例ID正确回填|  ## 十、方案独立落地摘要  本方案为**全新独立完整的中小企业薪酬薪资解决方案**，无需依赖任何旧版薪资体系、无需承接历史版本逻辑，可独立部署、全新落地。方案自主涵盖薪酬级别带宽配置、多类型薪资模板绑定、版本化薪资档案管理、多维度批量调薪、月度全自动算薪、专项/年度奖金管控、全流程审批审计等全套核心能力。整体采用系统增量开发模式，无强制历史版本绑定，适配50-500人中小企业从零搭建标准化、可追溯、可审计的薪酬体系，所有业务流程、数据库脚本、接口、页面、测试用例均为独立配套，可直接作为落地实施标准方案使用。  > v6版本在原有薪资模板、版本化薪资档案、奖金管理基础之上，新增轻量化薪酬级别（薪级带宽），支持岗位、薪酬级别、岗位+薪酬级别组合三种模板绑定模式； 支持多种筛选维度批量调薪：单人、勾选部分员工、按部门、岗位、薪酬级别、全员普调；批量调薪底层复用单人调薪逻辑，全部生成薪资新版本，历史记录完整可审计； 薪酬级别仅作为员工标签和薪资带宽校验规则，**修改级别带宽或者薪资模板，不会自动改动存量员工工资；在职员工薪资变更，一律生成薪资档案新版本，保证审计留痕。**  
+---
 
-> 文档说明
+## 十一、多城市社保公积金核算升级（v7 增量扩展）
 
-1. 本模块为现有HR系统**增量扩展**，完全兼容已有业务代码、数据库表、流程引擎、权限、审计日志体系；仅新增表、新增方法、扩展字段，无破坏性修改，存量历史数据支持平滑迁移。
+> 本章为 v6 方案的**增量扩展**，不破坏任何现有表结构和业务流程。原有薪资模板、版本化档案、月度核算逻辑保持不变，仅新增社保公积金参数配置体系和分项核算能力。
 
-2. REST接口规范：接口路径全部使用`/`分层分隔，**不使用下划线、连字符**。
+### 11.1 升级背景
 
-3. 本版本为**独立完整的轻量化薪酬体系方案**，无需依赖任何旧版薪资方案，可全新落地部署；涵盖薪酬级别带宽体系、多模式薪资模板、全维度批量调薪、版本化薪资档案、奖金管控全能力，为完整闭环的薪资绩效解决方案。
+| 现有问题 | 升级后能力 |
+|---------|-----------|
+| hr_salary_rule.social_security_rate 单一固定比例 | 按城市+险种+行业+生效周期独立配置费率 |
+| 无基数上下限控制 | 每个城市/险种配置 ase_min/ase_max，自动 clamp |
+| 无年度基数重算 | 每年7月自动取上年度月均工资重新核定基数 |
+| 社保台账与算薪脱节 | hr_social_calc_detail 明细表与月度薪资联动 |
+| 历史费率不可回溯 | 参数配置变更时 old→new 双记录存档 |
+| 个税未实现 | 月度薪资核算增加个税计算字段 |
 
-**适用企业规模**：中小型企业（50‑500人）
-**技术栈**：Spring Boot 3 + MyBatis‑Plus + JDK 21 + MySQL 8.0
+### 11.2 新增数据库表
 
-## 一、设计目标
+#### 11.2.1 城市字典 sys_city
 
-1. **入职零薪资录入**：选择岗位/薪酬级别自动带出薪资模板，审批通过自动生成员工档案与V1版本薪资档案；支持个别人员手动调整薪资，增加薪级带宽合规校验。
-
-2. **薪资版本全程可追溯**：调薪、岗位异动、晋升仅新增新版本，历史版本只读，不可修改删除，满足财务审计追溯要求；薪资档案快照保存当时员工薪酬级别。
-
-3. **模板与个人档案解耦**：薪资模板仅作为新员工默认基线；修改、停用模板，**不会改动存量员工薪资档案，仅对后续新入职生效**。
-
-4. **薪酬级别轻量化管理**：支持薪酬级别配置（带宽：最低‑中位‑最高）；支持模板绑定岗位 / 绑定薪酬级别 / 岗位+薪酬级别组合三种模式；员工打上薪级标签，支持按薪酬级别筛选批量调薪。
-
-5. **支持多维度批量调薪**：支持单员工、手动勾选一批、按部门、按岗位、按薪酬级别、全员普调；底层复用单员工调薪逻辑，全部生成新版本，历史记录完整留存。
-
-6. **月度核算全自动**：自动读取员工当前生效薪资档案作为计算基线，叠加考勤、绩效、扣款、各类奖金动态业务数据生成月度工资。
-
-7. **奖金灵活管控**：区分自动计算奖金、手工浮动奖金；支持开关控制专项奖金是否单独审批，月度工资单统一发放审批，适配内控审计要求。
-
-8. **敏感配置流程管控**：薪资模板、批量调薪任务、年终奖新增修改均可接入审批流程，规避人为误操作风险。
-
-## 二、数据库设计
-
-> 说明：原有存量表只做ALTER追加字段；全新业务新增数据表。
-
-### 2.1 薪资规则模板表 `hr_salary_rule`（v6新增绑定薪酬级别字段）
-
-```SQL
-CREATE TABLE hr_salary_rule (
-  id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  company_id            BIGINT NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团总部',
-  post_id               BIGINT NULL DEFAULT NULL COMMENT '关联岗位ID，NULL表示通用模板',
-  post_level            VARCHAR(32) NULL DEFAULT NULL COMMENT '职级快照',
-  grade_code            VARCHAR(32) NULL COMMENT '关联薪酬级别编码，hr_salary_grade.grade_code',
-  bind_type             TINYINT NOT NULL DEFAULT 1 COMMENT '绑定类型：1绑定岗位 2绑定薪酬级别 3岗位+薪酬级别组合',
-  rule_name             VARCHAR(128) NOT NULL COMMENT '模板名称',
-  basic_salary          DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '基本工资标准',
-  performance_base      DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '绩效基数标准',
-  position_allowance    DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '岗位津贴标准',
-  other_allowance       DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '其他固定补贴标准',
-  fixed_month_bonus     DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '岗位默认月度奖金参考值（仅算薪默认，非实际发放）',
-  social_security_rate  DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '社保个人缴纳比例（%）',
-  housing_fund_rate     DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '公积金个人缴纳比例（%）',
-  is_general            TINYINT NOT NULL DEFAULT 0 COMMENT '是否通用模板 0否 1是',
-  status                TINYINT NOT NULL DEFAULT 1 COMMENT '状态 0停用 1启用',
-  remark                VARCHAR(500) NULL DEFAULT NULL,
-  create_by             BIGINT NOT NULL DEFAULT 0,
-  create_time           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_by             BIGINT NULL DEFAULT NULL,
-  update_time           DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  is_delete             TINYINT NOT NULL DEFAULT 0,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_company_post_general (company_id, post_id, is_general),
-  KEY idx_company_status (company_id, status, is_delete)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='薪资规则模板表';
-```
-
-> bind_type枚举
-1：绑定岗位（原有模式）；2：绑定薪酬级别；3：岗位+薪酬级别组合。
-
-### 2.2 新增薪酬级别表 `hr_salary_grade`
-
-```SQL
-CREATE TABLE hr_salary_grade (
+`sql
+CREATE TABLE IF NOT EXISTS sys_city (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  company_id BIGINT NOT NULL DEFAULT 0 COMMENT '公司ID，多租户隔离',
-  grade_code VARCHAR(32) NOT NULL COMMENT '薪酬级别编码，例：P4、P5、P6、M1',
-  grade_name VARCHAR(64) NOT NULL COMMENT '薪酬级别名称',
-  salary_min DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '带宽下限，该级别工资最小值',
-  salary_mid DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '带宽中位参考薪资',
-  salary_max DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '带宽上限，该级别工资最大值',
-  remark VARCHAR(500) NULL COMMENT '级别说明',
-  status TINYINT NOT NULL DEFAULT 1 COMMENT '0停用，1启用',
+  city_code VARCHAR(32) NOT NULL COMMENT '城市编码，如 BJ/GZ/SZ',
+  city_name VARCHAR(64) NOT NULL COMMENT '城市名称',
+  province VARCHAR(32) DEFAULT NULL,
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '0停用 1启用',
+  remark VARCHAR(500) DEFAULT NULL,
   create_by BIGINT NOT NULL DEFAULT 0,
   create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_by BIGINT NULL DEFAULT NULL,
-  update_time DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  update_by BIGINT DEFAULT NULL,
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   is_delete TINYINT NOT NULL DEFAULT 0,
-  UNIQUE KEY uk_company_gradecode (company_id,grade_code,is_delete),
-  KEY idx_company_status (company_id,status,is_delete)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='薪酬级别（薪级）配置表';
-```
+  UNIQUE KEY uk_city_code (city_code, is_delete)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='城市字典表';
+`
 
-> **示例初始化数据（可直接执行）**
+#### 11.2.2 险种字典 sys_insurance_type
 
-```SQL
-INSERT INTO hr_salary_grade(company_id,grade_code,grade_name,salary_min,salary_mid,salary_max,status,create_by)
-VALUES
-(0,'P4','专员P4',8000,9500,11000,1,1),
-(0,'P5','高级专员P5',10000,12000,14000,1,1),
-(0,'P6','资深专员P6',13000,15500,18000,1,1),
-(0,'M1','主管M1',16000,19000,22000,1,1);
-```
+`sql
+CREATE TABLE IF NOT EXISTS sys_insurance_type (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  insurance_code VARCHAR(32) NOT NULL COMMENT 'PENSION/MEDICAL/UNEMPLOYMENT/WORK_INJURY/MATERNITY/LONG_CARE/SUPPLEMENT_MEDICAL/ANNUITY',
+  insurance_name VARCHAR(64) NOT NULL,
+  insurance_type TINYINT NOT NULL COMMENT '1法定五险 2补充福利 3试点险种',
+  personal_share TINYINT NOT NULL DEFAULT 1 COMMENT '是否含个人缴纳 0否 1是',
+  company_share TINYINT NOT NULL DEFAULT 1 COMMENT '是否含单位缴纳 0否 1是',
+  status TINYINT NOT NULL DEFAULT 1,
+  remark VARCHAR(500) DEFAULT NULL,
+  create_by BIGINT NOT NULL DEFAULT 0,
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  is_delete TINYINT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_insurance_code (insurance_code, is_delete)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='险种字典表';
+`
 
-### 2.3 员工主档案扩展，增加薪酬级别字段
+**初始数据：**
 
-```SQL
-ALTER TABLE hr_employee
-ADD COLUMN salary_grade_code VARCHAR(32) NULL COMMENT '员工当前薪酬级别编码，关联hr_salary_grade.grade_code';
-```
-> 存量兼容说明：存量员工无薪酬级别，salary_grade_code保持NULL；入职时必填grade_code；
-> 若需存量初始化，可执行：UPDATE hr_employee SET salary_grade_code = 'P1' WHERE salary_grade_code IS NULL AND employee_status IN (1,2);
+| insurance_code | insurance_name | insurance_type | personal_share | company_share |
+|---|---|---|---|---|
+| PENSION | 养老保险 | 1 | 1 | 1 |
+| MEDICAL | 医疗保险 | 1 | 1 | 1 |
+| UNEMPLOYMENT | 失业保险 | 1 | 1 | 1 |
+| WORK_INJURY | 工伤保险 | 1 | 0 | 1 |
+| MATERNITY | 生育保险 | 1 | 0 | 1 |
+| LONG_CARE | 长期护理险 | 3 | 1 | 1 |
+| SUPPLEMENT_MEDICAL | 补充医疗保险 | 2 | 1 | 1 |
+| ANNUITY | 企业年金 | 2 | 1 | 1 |
 
-### 2.4 员工薪资档案表 `hr_salary_archive`（扩展薪级快照）
+#### 11.2.3 行业字典 sys_industry
 
-```SQL
--- 移除MySQL8.0不支持的DROP INDEX IF EXISTS内联语法，索引删除前置校验由Java代码层实现
-ALTER TABLE hr_salary_archive
-  ADD COLUMN version_no         INT NOT NULL DEFAULT 1 COMMENT '版本号' AFTER employee_name,
-  ADD COLUMN effective_date     DATE NOT NULL DEFAULT '1970-01-01' COMMENT '生效日期' AFTER version_no,
-  ADD COLUMN effective_end_date DATE NULL DEFAULT NULL COMMENT '失效日期' AFTER effective_date,
-  ADD COLUMN source_type        TINYINT NOT NULL DEFAULT 1 COMMENT '来源 1模板自动 2人工录入 3调薪' AFTER effective_end_date,
-  ADD COLUMN adjust_reason      VARCHAR(500) NULL DEFAULT NULL COMMENT '调薪原因' AFTER source_type,
-  ADD COLUMN prev_archive_id    BIGINT NULL DEFAULT NULL COMMENT '上一版档案ID' AFTER adjust_reason,
-  ADD COLUMN salary_grade_code  VARCHAR(32) NULL COMMENT '生成该版本时员工薪酬级别快照';
+`sql
+CREATE TABLE IF NOT EXISTS sys_industry (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  industry_code VARCHAR(32) NOT NULL,
+  industry_name VARCHAR(128) NOT NULL,
+  work_injury_rate_base DECIMAL(6,4) DEFAULT 0.0000 COMMENT '工伤保险行业基准费率(%)',
+  status TINYINT NOT NULL DEFAULT 1,
+  remark VARCHAR(500) DEFAULT NULL,
+  create_by BIGINT NOT NULL DEFAULT 0,
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  is_delete TINYINT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_industry_code (industry_code, is_delete)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='行业字典表';
+`
 
-ALTER TABLE hr_salary_archive
-  ADD KEY idx_employee_current (employee_id, is_delete, effective_date, effective_end_date),
-  ADD KEY idx_company_employee (company_id, employee_id, is_delete, version_no),
-  ADD UNIQUE KEY uk_employee_version (employee_id, version_no, is_delete);
-```
+#### 11.2.4 社保参数配置 hr_social_param_config
 
-字段说明
+`sql
+CREATE TABLE IF NOT EXISTS hr_social_param_config (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT NOT NULL DEFAULT 0,
+  city_code VARCHAR(32) NOT NULL,
+  insurance_code VARCHAR(32) NOT NULL,
+  industry_code VARCHAR(32) DEFAULT NULL COMMENT '仅工伤等按行业浮动险种填写',
+  period_start DATE NOT NULL COMMENT '生效起始日期',
+  period_end DATE DEFAULT NULL COMMENT '生效截止日期，NULL=持续有效',
+  base_min DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '缴费基数下限',
+  base_max DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '缴费基数上限',
+  personal_rate DECIMAL(6,4) NOT NULL DEFAULT 0.0000 COMMENT '个人缴纳比例(%)',
+  company_rate DECIMAL(6,4) NOT NULL DEFAULT 0.0000 COMMENT '单位缴纳比例(%)',
+  is_active TINYINT NOT NULL DEFAULT 1 COMMENT '是否当前有效',
+  remark VARCHAR(500) DEFAULT NULL,
+  create_by BIGINT NOT NULL DEFAULT 0,
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_by BIGINT DEFAULT NULL,
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  is_delete TINYINT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_city_insurance_period (city_code, insurance_code, period_start, is_delete),
+  KEY idx_effective (city_code, insurance_code, period_start, period_end, is_delete)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='社保公积金参数配置表';
+`
 
-|字段|说明|
-|---|---|
-|version_no|薪资档案版本号，入职V1，每次调薪版本号+1|
-|effective_date|版本生效日期，业务强制赋值；DDL默认1970-01-01仅作为NOT NULL约束占位值，入库前必须覆写为真实入职日期或调薪生效日期|
-|effective_end_date|版本失效日期；当前生效版本为NULL；调薪时自动填充为新版本生效前一日|
-|source_type|1‑模板自动生成；2‑人工录入；3‑调薪生成|
-|adjust_reason|调薪备注、调整原因|
-|prev_archive_id|关联上一个版本ID，用于版本链路追溯|
-|salary_grade_code|薪资版本生成时刻员工薪酬级别快照，用于历史审计|
+**参数变更规则（强制）：**
+- 修改当前生效记录时，先将原记录 is_active 置 0
+- 再 INSERT 新记录（period_start = 新生效日期，is_active = 1）
+- **禁止直接 UPDATE 当前生效记录的费率/基数**，确保历史可回溯
 
-### 2.5（可选）员工薪级变更流水表，完整留痕
+#### 11.2.5 公积金参数配置 hr_housing_fund_config
 
-```SQL
-CREATE TABLE hr_employee_grade_log (
+`sql
+CREATE TABLE IF NOT EXISTS hr_housing_fund_config (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  company_id BIGINT NOT NULL DEFAULT 0,
+  city_code VARCHAR(32) NOT NULL,
+  period_start DATE NOT NULL,
+  period_end DATE DEFAULT NULL,
+  base_min DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  base_max DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  employee_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '员工个人比例(%)',
+  company_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '单位比例(%)',
+  is_active TINYINT NOT NULL DEFAULT 1,
+  remark VARCHAR(500) DEFAULT NULL,
+  create_by BIGINT NOT NULL DEFAULT 0,
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_by BIGINT DEFAULT NULL,
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  is_delete TINYINT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_city_period (city_code, period_start, is_delete),
+  KEY idx_company_city (company_id, city_code, is_delete)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公积金参数配置表';
+`
+
+#### 11.2.6 社保核算明细 hr_social_calc_detail
+
+`sql
+CREATE TABLE IF NOT EXISTS hr_social_calc_detail (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   company_id BIGINT NOT NULL,
   employee_id BIGINT NOT NULL,
-  old_grade_code VARCHAR(32) NULL,
-  new_grade_code VARCHAR(32) NOT NULL,
-  change_reason VARCHAR(500) NULL COMMENT '晋升/调级',
-  effective_date DATE NOT NULL COMMENT '级别生效日期',
-  create_by BIGINT NOT NULL,
-  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  is_delete TINYINT NOT NULL DEFAULT 0
-) COMMENT='员工薪酬级别变更流水';
-```
-
-### 2.6 薪资模板审批申请表 `hr_salary_rule_apply`
-
-```SQL
-CREATE TABLE hr_salary_rule_apply (
-  id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  company_id          BIGINT NOT NULL DEFAULT 0,
-  apply_type          TINYINT NOT NULL COMMENT '1新增 2修改 3停用',
-  rule_id             BIGINT NULL DEFAULT NULL,
-  rule_name           VARCHAR(128) NOT NULL,
-  post_id             BIGINT NULL DEFAULT NULL,
-  grade_code          VARCHAR(32) NULL COMMENT '关联薪酬级别编码',
-  bind_type           TINYINT NOT NULL DEFAULT 1 COMMENT '绑定类型 1岗位 2薪酬级别 3岗位+薪酬级别组合',
-  basic_salary        DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  performance_base    DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  position_allowance  DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  other_allowance     DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  fixed_month_bonus   DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '岗位默认月度奖金参考值',
-  social_security_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-  housing_fund_rate   DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-  remark              VARCHAR(500) NULL,
-  apply_user_id       BIGINT NOT NULL,
-  apply_user_name     VARCHAR(64) NULL,
-  status              TINYINT NOT NULL DEFAULT 0 COMMENT '0审批中 1已通过 2已驳回 3已撤回',
-  flow_instance_id    BIGINT NULL DEFAULT NULL,
-  is_delete           TINYINT NOT NULL DEFAULT 0,
-  create_time         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_time         DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_company_status (company_id, status, is_delete),
-  KEY idx_apply_user (apply_user_id, create_time),
-  KEY idx_rule_id (rule_id, is_delete)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='薪资模板审批申请表';
-```
-
-### 2.7 批量调薪任务主‑子表（新增，用于批量调薪能力）
-
-```SQL
--- 批量调薪任务主表
-CREATE TABLE hr_salary_batch_adjust (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  company_id BIGINT NOT NULL DEFAULT 0,
-  batch_no VARCHAR(64) NOT NULL COMMENT '批量任务编号',
-  adjust_effective_date DATE NOT NULL COMMENT '调薪统一生效日期',
-  adjust_reason VARCHAR(500) NULL COMMENT '调薪原因（年度普调/岗位晋升等）',
-  apply_user_id BIGINT NOT NULL COMMENT '操作人ID',
-  status TINYINT NOT NULL DEFAULT 0 COMMENT '0草稿 1待审批 2已执行完成 3已驳回 4部分失败',
-  flow_instance_id BIGINT NULL COMMENT '审批流程实例ID，可为null',
-  total_count INT NOT NULL DEFAULT 0 COMMENT '总人数',
-  success_count INT NOT NULL DEFAULT 0 COMMENT '成功生成版本人数',
-  fail_count INT NOT NULL DEFAULT 0 COMMENT '失败人数',
-  remark VARCHAR(1000) NULL COMMENT '失败汇总备注',
-  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_time DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  is_delete TINYINT NOT NULL DEFAULT 0,
-  KEY idx_company_status (company_id,status,is_delete)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批量调薪任务头';
-
--- 批量调薪任务子表，存储每一个员工调薪明细快照
-CREATE TABLE hr_salary_batch_adjust_item (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  batch_id BIGINT NOT NULL COMMENT '关联主表id',
-  employee_id BIGINT NOT NULL COMMENT '员工ID',
-  old_version_id BIGINT NULL COMMENT '旧薪资档案版本ID',
-  new_basic_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  new_performance_salary DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  new_position_allowance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  new_other_allowance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  exec_status TINYINT NOT NULL DEFAULT 0 COMMENT '0待执行 1成功 2失败',
-  fail_msg VARCHAR(500) NULL COMMENT '失败原因文本',
-  is_delete TINYINT NOT NULL DEFAULT 0,
-  KEY idx_batch (batch_id,is_delete)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批量调薪任务明细';
-```
-
-### 2.8 月度工资单表扩展 `hr_salary_month`
-
-```SQL
-ALTER TABLE hr_salary_month
-ADD COLUMN month_bonus DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '月度奖金',
-ADD COLUMN other_bonus DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '其他临时奖金（含发放月份带入年终奖）',
-ADD COLUMN bonus_remark VARCHAR(500) NULL COMMENT '奖金备注说明',
-ADD COLUMN bonus_flow_instance_id BIGINT NULL COMMENT '专项奖金审批流程实例ID；自动计算奖金可为NULL';
-```
-
-### 2.9 年度奖金表 `hr_year_bonus`
-
-```SQL
-CREATE TABLE hr_year_bonus (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  company_id BIGINT NOT NULL DEFAULT 0 COMMENT '公司ID',
-  employee_id BIGINT NOT NULL COMMENT '员工ID',
-  bonus_year INT NOT NULL COMMENT '奖金归属年度，例：2026',
-  bonus_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '年终奖应发金额',
-  actual_pay_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '实际发放金额',
-  pay_month VARCHAR(7) NULL COMMENT '实际发放月份 yyyy‑MM',
-  salary_month_id BIGINT NULL COMMENT '关联月度工资单ID',
-  flow_instance_id BIGINT NULL COMMENT '年终奖审批流程实例ID，自动计算可为NULL',
-  remark VARCHAR(500) NULL COMMENT '核算说明',
+  employee_name VARCHAR(64) NOT NULL COMMENT '员工姓名快照',
+  city_code VARCHAR(32) NOT NULL COMMENT '城市快照',
+  salary_month VARCHAR(7) NOT NULL,
+  base_effective_year VARCHAR(8) DEFAULT NULL,
+  social_base DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  housing_fund_base DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  -- 养老
+  pension_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  pension_company DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  pension_rate_personal DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  pension_rate_company DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  -- 医疗
+  medical_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  medical_company DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  medical_rate_personal DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  medical_rate_company DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  -- 失业
+  unemployment_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  unemployment_company DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  unemployment_rate_personal DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  unemployment_rate_company DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  -- 工伤
+  work_injury_company DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  work_injury_rate DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  -- 生育
+  maternity_company DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  maternity_rate DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  -- 长护险
+  long_care_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  long_care_company DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  long_care_rate_personal DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  long_care_rate_company DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+  -- 公积金
+  housing_fund_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  housing_fund_company DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  housing_fund_rate_personal DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  housing_fund_rate_company DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  -- 汇总
+  social_total_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  social_total_company DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  remark VARCHAR(500) DEFAULT NULL,
   create_by BIGINT NOT NULL DEFAULT 0,
   create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_by BIGINT NULL DEFAULT NULL,
-  update_time DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   is_delete TINYINT NOT NULL DEFAULT 0,
-  UNIQUE KEY uk_emp_year (company_id,employee_id,bonus_year,is_delete),
-  KEY idx_company_year (company_id,bonus_year,is_delete)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工年度奖金表';
-```
+  KEY idx_employee_month (employee_id, salary_month, is_delete),
+  KEY idx_company_month (company_id, salary_month, is_delete)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='社保公积金核算明细表';
+`
 
-### 2.10 系统配置新增
+### 11.3 存量表 ALTER 变更
 
-```SQL
-INSERT INTO sys_config(company_id,config_key,config_name,config_value,remark)
-VALUES
-(0,'salary/bonus/singleAuditEnable','专项奖金是否开启单独审批','0','0关闭，1开启；开启后人手工录入专项奖金必须走审批流程'),
-(0,'salary/batchAdjust/auditEnable','批量调薪是否开启审批','0','0关闭可直接执行，1开启批量调薪需要审批'),
-(0,'salary/grade/warnOnly','薪级带宽校验仅警告不拦截','1','1超出带宽仅警告，0超出直接拦截保存');
-```
+#### 11.3.1 hr_employee 新增字段
 
-### 2.11 流程定义初始化SQL
+`sql
+ALTER TABLE hr_employee
+  ADD COLUMN social_declare_base DECIMAL(12,2) NULL COMMENT '社保申报基数（年度锁定）' AFTER basicSalary,
+  ADD COLUMN housing_fund_declare_base DECIMAL(12,2) NULL COMMENT '公积金申报基数（年度锁定）' AFTER social_declare_base,
+  ADD COLUMN base_effective_year VARCHAR(8) NULL COMMENT '基数生效年度，如2026，代表2026-07至2027-06' AFTER housing_fund_declare_base,
+  ADD COLUMN city_code VARCHAR(32) NULL COMMENT '工作城市编码，关联sys_city' AFTER company_id,
+  ADD COLUMN industry_code VARCHAR(32) NULL COMMENT '所属行业编码，关联sys_industry' AFTER city_code;
+`
 
-```SQL
-INSERT INTO flow_definition (company_id, def_name, def_code, biz_type, node_config_json, status, remark, create_by)
-VALUES (
-  0,
-  '薪资模板变更审批',
-  'salary_rule',
-  'hr_salary_rule',
-  '[{"nodeName":"子公司经理审批","nodeMode":"single","handlerType":"role","handlerValue":"sub_manager"}]',
-  1,
-  '薪资规则模板的新增/修改/停用必须经此流程审批后生效',
-  1
-),
-(
-  0,
-  '批量调薪审批',
-  'salary_batch_adjust',
-  'hr_salary_batch_adjust',
-  '[{"nodeName":"部门负责人审批","nodeMode":"single","handlerType":"role","handlerValue":"dept_manager"}]',
-  1,
-  '批量调薪任务审批流程',
-  1
-);
-```
+#### 11.3.2 hr_salary_rule 比例字段改为可空
 
-### 2.12 存量在职员工初始化脚本
+`sql
+ALTER TABLE hr_salary_rule
+  MODIFY COLUMN social_security_rate DECIMAL(5,2) DEFAULT NULL COMMENT '社保个人比例(%),NULL表示继承全局参数',
+  MODIFY COLUMN housing_fund_rate DECIMAL(5,2) DEFAULT NULL COMMENT '公积金个人比例(%),NULL表示继承全局参数';
+`
 
-```SQL
-INSERT INTO hr_salary_archive (company_id, employee_id, employee_name, version_no, effective_date, source_type, basic_salary, create_by, create_time)
-SELECT
-  company_id,
-  id,
-  name,
-  1,
-  IFNULL(entry_date, '1970-01-01') AS effective_date
+#### 11.3.3 hr_salary_month 新增分项字段
 
-  2 AS source_type,
-  basic_salary,
-  create_by,
-  create_time
-FROM hr_employee
-WHERE is_delete = 0
-  AND employee_status IN (1,2)
-  AND id NOT IN (SELECT employee_id FROM hr_salary_archive WHERE is_delete = 0);
-  -- 注释说明：entry_date为NULL的存量数据视为未登记入职日期，归档时由HR手动补充
-```
-### 2.13 升级SQL执行顺序（不可跳步）
-1. 新建 hr_salary_grade / hr_employee_grade_log
-2. ALTER hr_employee 新增 salary_grade_code
-3. ALTER hr_salary_archive（先DROP INDEX，再ADD COLUMN，再ADD KEY）
-4. 新建 hr_salary_rule / hr_salary_rule_apply
-5. 新建 hr_salary_batch_adjust / hr_salary_batch_adjust_item
-6. ALTER hr_salary_month 新增4个奖金字段
-7. INSERT sys_config（3条）
-8. INSERT flow_definition（2条）
-9. 执行存量员工初始化脚本（步骤2.12）
+`sql
+ALTER TABLE hr_salary_month
+  ADD COLUMN pension_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '养老个人扣除' AFTER housing_fund,
+  ADD COLUMN pension_company DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '养老单位缴纳' AFTER pension_personal,
+  ADD COLUMN medical_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '医疗个人扣除' AFTER pension_company,
+  ADD COLUMN medical_company DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '医疗单位缴纳' AFTER medical_personal,
+  ADD COLUMN unemployment_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '失业个人扣除' AFTER medical_company,
+  ADD COLUMN unemployment_company DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '失业单位缴纳' AFTER unemployment_personal,
+  ADD COLUMN work_injury_company DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '工伤单位缴纳' AFTER unemployment_company,
+  ADD COLUMN maternity_company DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '生育单位缴纳' AFTER work_injury_company,
+  ADD COLUMN long_care_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '长护险个人扣除' AFTER maternity_company,
+  ADD COLUMN long_care_company DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '长护险单位缴纳' AFTER long_care_personal,
+  ADD COLUMN housing_fund_personal DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '公积金个人扣除' AFTER long_care_company,
+  ADD COLUMN housing_fund_company DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '公积金单位缴纳' AFTER housing_fund_personal,
+  ADD COLUMN tax_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '个人所得税' AFTER housing_fund_company,
+  ADD COLUMN social_base DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '社保实际缴费基数' AFTER tax_amount,
+  ADD COLUMN housing_fund_base DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '公积金实际缴费基数' AFTER social_base,
+  ADD COLUMN base_effective_year VARCHAR(8) NULL COMMENT '基数生效年度快照' AFTER housing_fund_base;
+`
 
-## 三、核心业务流程
+### 11.4 核算计算规则
 
-### 3.1 薪资模板匹配优先级（同时支持岗位、薪酬级别、组合模式）
+#### 11.4.1 社保计算公式
 
-> 匹配顺序由高到低
+`
+实际缴费基数 = clamp(申报基数, 城市下限, 城市上限)
+  其中：clamp(x, min, max) = max(min, min(x, max))
 
-1. bind_type=3 岗位+薪酬级别组合模板
+养老个人 = 实际缴费基数 × 养老个人比例
+养老单位 = 实际缴费基数 × 养老单位比例
+医疗个人 = 实际缴费基数 × 医疗个人比例
+医疗单位 = 实际缴费基数 × 医疗单位比例
+失业个人 = 实际缴费基数 × 失业个人比例
+失业单位 = 实际缴费基数 × 失业单位比例
+工伤单位 = 实际缴费基数 × 行业基准费率（来自 sys_industry.work_injury_rate_base）
+生育单位 = 实际缴费基数 × 生育单位比例
+长护险个人 = 实际缴费基数 × 长护险个人比例（仅城市开关启用时计算）
+长护险单位 = 实际缴费基数 × 长护险单位比例
+社保个人合计 = 上述个人部分求和
+社保单位合计 = 上述单位部分求和
+`
 
-2. bind_type=2 薪酬级别模板
+#### 11.4.2 公积金计算公式
 
-3. bind_type=1 岗位模板
+`
+实际缴费基数 = clamp(申报基数, 公积金下限, 公积金上限)
+公积金个人 = 实际缴费基数 × 公积金个人比例
+公积金单位 = 实际缴费基数 × 公积金单位比例
+`
 
-4. 系统通用模板兜底
+#### 11.4.3 个税计算公式（全国统一）
 
-### 3.2 入职申请自动建档流程（整合薪酬级别）
+`
+应纳税所得额 = 应发工资 - 社保个人合计 - 公积金个人 - 5000 - 专项附加扣除
+个人所得税 = 应纳税所得额 × 适用税率 - 速算扣除数
+  （按国税累计预扣法，税率表见附录）
+实发工资 = 应发工资 - 社保个人合计 - 公积金个人 - 个人所得税
+`
 
-```Plaintext
-HR填写入职申请
-├─填写岗位（可选）
-├─填写员工薪酬级别 grade_code（启用薪级体系必填）
-↓
-系统按优先级自动匹配薪资模板
-↓
-自动预填整套薪资（基本工资、津贴、绩效基数）
-↓
-带宽校验：拟定薪资对比该薪酬级别min‑max；配置控制警告/拦截
-↓
-HR可手动修改基本工资（津贴绩效取自模板）
-↓
-提交hr_entry审批流
-↓
-审批通过
-↓
-创建hr_employee员工档案，写入salary_grade_code
-↓
-自动生成hr_salary_archive V1版本薪资档案
-  取值逻辑：一期仅基本工资允许表单填写；津贴/绩效/其他补贴从模板读取（入职申请表暂不扩展津贴绩效字段，二期迭代可扩展） > 通用模板 > 0
-  档案快照salary_grade_code保存当前员工薪级
-  sourceType自动判断：完全匹配模板=1，人工改动=2
-↓
-流程结束
+#### 11.4.4 比例优先级
 
-【分支】审批驳回 / 申请撤回：不生成员工档案，也不生成薪资档案
-```
+`
+if (模板.social_security_rate IS NOT NULL) {
+  社保个人比例 = 模板值（覆盖全局）
+} else {
+  社保个人比例 = SUM(hr_social_param_config.personal_rate)
+                WHERE city_code = 员工城市
+                  AND insurance_code IN (PENSION, MEDICAL, UNEMPLOYMENT[, LONG_CARE])
+                  AND period_start <= 当前日期
+                  AND (period_end IS NULL OR period_end >= 当前日期)
+                  AND is_active = 1
+}
+`
 
-### 3.3 单人调薪版本化流程（带宽校验）
+### 11.5 年度基数重算流程
 
-```Plaintext
-HR发起调薪，填写新薪资、调薪生效日期（支持未来生效）
-↓
-读取员工当前薪酬级别，做薪级带宽校验（警告或拦截）
-↓
-数据库行锁FOR UPDATE锁定员工当前生效薪资档案，防止并发冲突
-↓
-校验：新版本生效日期必须晚于旧版本生效日期
-↓
-旧版本档案设置effective_end_date = 新版本生效日期 - 1天（旧版本失效，记录保留）
-↓
-创建新版本档案，version+1，source_type=3调薪，prev_archive_id关联旧版本ID
-  新版本快照salary_grade_code取员工当前薪级
-↓
-记录审计日志，流程结束
-```
-> 【技术说明】MyBatis-Plus LambdaQueryWrapper不支持FOR UPDATE，
-> updateArchive方法中需用原生@Select注解或JdbcTemplate执行带行锁的查询：
-> @Select("SELECT * FROM hr_salary_archive WHERE employee_id=#{employeeId}
->   AND company_id=#{companyId} AND is_delete=0
->   AND effective_date<=#{today} AND (effective_end_date IS NULL
->   OR effective_end_date>=#{today})
->   ORDER BY version_no DESC LIMIT 1 FOR UPDATE")
-> HrSalaryArchive selectCurrentForUpdate(...);
+**触发时机**：每年7月1日自动执行，或 HR 手动触发。
 
-### 3.4 晋升调级流程（薪酬级别变更）
+`
+1. 查询所有在职员工（employee_status IN (1,2)）
+2. 对每个员工：
+   a. 查询上年度 1-12月 hr_salary_month 的应发工资总和
+      应发总额 = SUM(basic_salary + performance_salary + allowance_amount)
+   b. 统计实际发薪月份数（pay_status=1 的月份数）
+   c. 月均工资 = 应发总额 / 实际发薪月份数
+   d. 查询员工 city_code 对应的社保/公积金基数上下限
+   e. 新社保基数 = clamp(月均工资, ss_min, ss_max)
+   f. 新公积金基数 = clamp(月均工资, hf_min, hf_max)
+   g. 更新 hr_employee：
+      social_declare_base = 新社保基数
+      housing_fund_declare_base = 新公积金基数
+      base_effective_year = '当年'（如2026，有效期 2026-07 ~ 2027-06）
+3. 写审计日志：操作人、重算人数、变更明细
+`
 
-> 两件事情：①更新员工薪酬级别；②生成薪资新版本；可以合并一套审批
+**新入职员工特殊处理**：
+- 首月无历史数据，以首月税前应发工资作为临时基数
+- ase_effective_year 设为当年，次年7月参与年度重算
 
-```Plaintext
-HR发起晋升申请，填写新薪酬级别、调薪薪资、生效日期
-↓
-审批流
-↓
-审批通过
-  1、写入hr_employee_grade_log变更流水
-  2、更新hr_employee.salary_grade_code为新grade_code
-  3、带宽校验：新薪资必须落在新薪级带宽区间
-  4、执行调薪逻辑生成薪资新版本，新版本快照记录新grade_code
-↓
-历史薪资档案保留旧薪级快照，可追溯
-```
+### 11.6 sys_config 全局默认参数
 
-### 3.5 批量调薪完整业务流程（支持：单人、勾选一批、按部门、岗位、薪酬级别、全员）
+在 sys_config 表中插入集团全局默认参数（company_id=0）：
 
-```Plaintext
-HR打开【批量调薪】功能
-↓
-方式A：Excel导入；方式B：页面筛选（筛选条件：部门、岗位、薪酬级别、在职状态）
-↓
-可以选择：统一涨固定金额 / 统一涨百分比 / 逐行手工录入每个人新薪资
-↓
-页面做前置校验：员工在职、存在生效薪资档案、薪资不为负数、薪级带宽校验
-↓
-填写统一生效日期、调薪原因；保存生成批量调薪任务（主表+子表）
-↓
-读取系统配置：salary/batchAdjust/auditEnable
-  开关开启：提交批量调薪审批流
-  开关关闭：直接进入执行阶段
-↓
-审批通过后执行批量任务
-  ⚠️每个员工独立小事务；调用已有updateArchive()调薪方法；内部自带FOR UPDATE行锁
-  单条员工失败记录fail_msg，其他员工继续执行，不整体回滚
-↓
-执行完成输出报告：总条数、成功条数、失败明细，可下载
-↓
-流程结束
+| config_key | config_name | 示例值 | 用途 |
+|---|---|---|---|
+| hr.social.pension_rate_personal | 养老个人比例(%) | 8.00 | 城市无配置时的兜底值 |
+| hr.social.pension_rate_company | 养老单位比例(%) | 16.00 | |
+| hr.social.medical_rate_personal | 医疗个人比例(%) | 2.00 | |
+| hr.social.medical_rate_company | 医疗单位比例(%) | 4.50 | |
+| hr.social.unemployment_rate_personal | 失业个人比例(%) | 0.50 | |
+| hr.social.unemployment_rate_company | 失业单位比例(%) | 0.50 | |
+| hr.social.work_injury_rate_base | 工伤基准费率(%) | 0.20 | 行业浮动基数 |
+| hr.social.maternity_rate_company | 生育单位比例(%) | 0.50 | |
+| hr.housing_fund.rate_default | 公积金默认比例(%) | 7.00 | 模板为空时的默认值 |
+| hr.salary.tax.standard_deduction | 个税起征点 | 5000 | 全国统一 |
 
-重要约束：批量调薪**只会生成薪资档案新版本，不会修改薪资模板；如需新人同步新标准，需要HR手动更新薪资模板**
-```
+> **优先级顺序**：hr_social_param_config 城市精确配置 > sys_config 全局默认 > 薪资模板个人覆盖值
 
-### 3.6 月度薪资核算完整流程（含奖金）
+### 11.7 月度核算流程升级
 
-```Plaintext
+`
 选择算薪月份
 ↓
-查询在职员工列表
+查询在职员工列表（关联 city_code、industry_code）
 ↓
-循环每个员工：查询该月份生效、未逻辑删除的薪资档案
-  查询条件：effective_date ≤ 当月1号 AND (effective_end_date IS NULL OR effective_end_date ≥当月1号)
+对每个员工：
+  1. 查询生效薪资档案
+  2. 获取社保申报基数（优先 social_declare_base，其次 social_security_base）
+  3. 获取公积金申报基数（优先 housing_fund_declare_base，其次 basicSalary）
+  4. 查询城市+当前日期对应的社保/公积金参数配置
+  5. clamp 基数到上下限，计算各险种分项金额
+  6. 计算个税（应发 - 社保个人 - 公积金个人 - 5000）
+  7. 写入 hr_salary_month（分项字段）
+  8. 写入 hr_social_calc_detail（核算明细存档）
 ↓
-基线取值优先级：当月生效薪资档案 → 岗位薪资模板 → 通用模板 → 员工档案basicSalary快照
-↓
-生成hr_salary_month月度工资单基线（基本工资、津贴、社保公积金扣款）
-↓
-分支1：绩效系统自动计算月奖金 → 直接回写month_bonus，bonus_flow_instance_id留空
-分支2：手工录入专项月奖金
-  读取配置开关salary/bonus/singleAuditEnable
-  开关开启：必须提交奖金审批，审批通过才写入month_bonus并回填bonus_flow_instance_id
-  开关关闭：允许直接录入month_bonus
-↓
-分支3：年终奖发放：从hr_year_bonus读取数据，带入other_bonus，回填bonus_flow_instance_id、关联salary_month_id
-↓
-汇总计算应发工资 = 基线薪资 +月奖金 +其他奖金 -考勤、扣款
-↓
-提交月度工资单整体发放审批
-↓
-审批通过后工资单归档，支持导出银行代发文件
-```
-
-### 3.7 薪资模板审批流程
-
-```Plaintext
-HR提交模板新增/修改/停用申请（可选择绑定岗位/薪酬级别/组合模式）
-↓
-提交hr/salaryRule审批流
-↓
-子公司经理审批
-├─通过 → 更新hr_salary_rule模板数据生效，仅对后续新员工生效，存量档案不受影响
-└─驳回 → 申请标记作废，模板无变化
-```
-
-### 3.8 专项奖金业务说明
-
-1. **自动计算奖金（绩效输出）**：无需单独奖金审批；但归属的月度工资单**必须执行整体发放审批**。
-
-2. **手工浮动/一次性奖金（项目奖、评优奖、年终奖）**：
-
-    - 配置开关开启：必须走奖金审批，流程实例ID落库；驳回/撤回不生成奖金数据。
-
-    - 配置开关关闭：允许直接录入，页面提示为简化模式，审计建议开启审批开关。
-
-3. 薪资模板内`fixed_month_bonus`仅作为算薪默认参考值；当月实际发放奖金以月度工资单字段为准；修改模板不修改历史工资单。
-
-## 四、接口设计（路径全部使用`/`分层，无下划线、连字符）
-
-### 4.1 薪酬级别管理接口
-
-|接口|请求方式|说明|
-|---|---|---|
-|`/hr/salary/grade/page`|GET|薪酬级别分页列表|
-|`/hr/salary/grade/get/{gradeCode}`|GET|获取单个薪酬级别详情|
-|`/hr/salary/grade/add`|POST|新增薪酬级别|
-|`/hr/salary/grade/update`|POST|修改薪酬级别带宽信息|
-|`/hr/salary/grade/disable`|POST|停用薪酬级别|
-
-### 4.2 薪资模板接口
-
-|接口|请求方式|说明|
-|---|---|---|
-|`/hr/salary/rule/page`|GET|薪资模板分页列表|
-|`/hr/salary/rule/getByPost/{postId}`|GET|根据岗位ID获取当前生效薪资模板|
-|`/hr/salary/rule/getByGrade/{gradeCode}`|GET|根据薪酬级别获取模板|
-|`/hr/salary/rule/apply/add`|POST|提交新增薪资模板申请|
-|`/hr/salary/rule/apply/update`|POST|提交修改薪资模板申请|
-|`/hr/salary/rule/apply/disable`|POST|提交停用薪资模板申请|
-|`/hr/salary/rule/apply/page`|GET|薪资模板审批申请分页列表|
-
-### 4.3 薪资档案接口
-
-|接口|请求方式|说明|
-|---|---|---|
-|`/hr/salary/archive/page`|GET|薪资档案分页列表|
-|`/hr/salary/archive/getByEmployee/{employeeId}`|GET|查询该员工全部薪资版本历史|
-|`/hr/salary/archive/getCurrent/{employeeId}`|GET|查询员工当前正在生效的薪资版本|
-|`/hr/salary/archive/addVersion`|POST|单人调薪，生成新版本薪资档案|
-|`/hr/salary/archive/history/{employeeId}`|GET|获取薪资版本时间线数据|
-
-### 4.4 批量调薪接口
-
-|接口|请求方式|说明|
-|---|---|---|
-|`/hr/salary/batchAdjust/page`|GET|批量调薪任务分页列表|
-|`/hr/salary/batchAdjust/get/{batchId}`|GET|获取批量调薪任务以及明细|
-|`/hr/salary/batchAdjust/createByImport`|POST|Excel导入创建批量调薪任务|
-|`/hr/salary/batchAdjust/createByFilter`|POST|页面筛选条件创建批量调薪任务（部门/岗位/薪酬级别筛选）|
-|`/hr/salary/batchAdjust/submitAudit/{batchId}`|POST|提交批量调薪任务去审批|
-|`/hr/salary/batchAdjust/execute/{batchId}`|POST|执行批量调薪任务|
-|`/hr/salary/batchAdjust/downloadFail/{batchId}`|GET|下载失败明细Excel|
-
-### 4.5 月度工资单接口
-
-|接口|请求方式|说明|
-|---|---|---|
-|`/hr/salary/month/page`|GET|月度工资单分页列表|
-|`/hr/salary/month/generate`|POST|生成指定月份工资基线|
-|`/hr/salary/month/saveBonus`|POST|保存当月奖金数据|
-|`/hr/salary/month/submitAudit`|POST|提交月度工资整体发放审批|
-
-### 4.6 年度奖金接口
-
-|接口|请求方式|说明|
-|---|---|---|
-|`/hr/salary/yearBonus/page`|GET|年度奖金分页列表|
-|`/hr/salary/yearBonus/apply/add`|POST|提交年终奖新增申请|
-|`/hr/salary/yearBonus/apply/update`|POST|提交年终奖修改申请|
-|`/hr/salary/yearBonus/getByEmp/{employeeId}`|GET|获取员工历年年终奖记录|
-
-## 五、后端核心代码（关键片段）
-
-### 5.1 获取生效薪资模板（支持薪酬级别、岗位组合匹配）
-
-```Java
-/**
- * 获取生效薪资模板
- * 优先级：岗位+薪级组合模板 > 薪级模板 > 岗位模板 > 通用模板
- */
-public HrSalaryRule getActiveRule(Long companyId, Long postId, String gradeCode) {
-    //1、优先找 岗位+薪酬级别组合 bind_type=3
-    if(postId != null && gradeCode != null){
-        HrSalaryRule comboRule = salaryRuleMapper.selectOne(
-                Wrappers.lambdaQuery(HrSalaryRule.class)
-                        .eq(HrSalaryRule::getCompanyId,companyId)
-                        .eq(HrSalaryRule::getPostId,postId)
-                        .eq(HrSalaryRule::getGradeCode,gradeCode)
-                        .eq(HrSalaryRule::getBindType,3)
-                        .eq(HrSalaryRule::getStatus,1)
-                        .eq(HrSalaryRule::getIsDelete,0)
-                        .last("LIMIT 1"));
-        if(comboRule != null) return comboRule;
-    }
-    //2、匹配薪酬级别模板 bind_type=2
-    if(gradeCode != null){
-        HrSalaryRule gradeRule = salaryRuleMapper.selectOne(
-                Wrappers.lambdaQuery(HrSalaryRule.class)
-                        .eq(HrSalaryRule::getCompanyId,companyId)
-                        .eq(HrSalaryRule::getGradeCode,gradeCode)
-                        .eq(HrSalaryRule::getBindType,2)
-                        .eq(HrSalaryRule::getStatus,1)
-                        .eq(HrSalaryRule::getIsDelete,0)
-                        .last("LIMIT 1"));
-        if(gradeRule != null) return gradeRule;
-    }
-    //3、匹配岗位模板 bind_type=1
-    if(postId != null){
-        HrSalaryRule postRule = salaryRuleMapper.selectOne(
-                Wrappers.lambdaQuery(HrSalaryRule.class)
-                        .eq(HrSalaryRule::getCompanyId,companyId)
-                        .eq(HrSalaryRule::getPostId,postId)
-                        .eq(HrSalaryRule::getBindType,1)
-                        .eq(HrSalaryRule::getStatus,1)
-                        .eq(HrSalaryRule::getIsDelete,0)
-                        .last("LIMIT 1"));
-        if(postRule != null) return postRule;
-    }
-    //4、通用模板兜底
-    return salaryRuleMapper.selectOne(
-            Wrappers.lambdaQuery(HrSalaryRule.class)
-                    .eq(HrSalaryRule::getCompanyId,companyId)
-                    .isNull(HrSalaryRule::getPostId)
-                    .eq(HrSalaryRule::getIsGeneral,1)
-                    .eq(HrSalaryRule::getStatus,1)
-                    .eq(HrSalaryRule::getIsDelete,0)
-                    .last("LIMIT 1"));
-}
-```
-
-### 5.2 批量调薪执行伪代码（独立子事务，复用原有updateArchive）
-
-```Java
-public void executeBatchAdjust(Long batchId){
-    HrSalaryBatchAdjust batchTask = batchAdjustMapper.selectById(batchId);
-    List<HrSalaryBatchAdjustItem> itemList = itemMapper.selectList(Wrappers.lambdaQuery(HrSalaryBatchAdjustItem.class)
-            .eq(HrSalaryBatchAdjustItem::getBatchId,batchId).eq(HrSalaryBatchAdjustItem::getExecStatus,0));
-
-    int success = 0;
-    int fail = 0;
-    for(HrSalaryBatchAdjustItem item : itemList){
-        Boolean execResult = transactionTemplate.execute(status -> {
-            try {
-                SalaryArchiveDTO dto = new SalaryArchiveDTO();
-                dto.setEmployeeId(item.getEmployeeId());
-                dto.setNewEffectiveDate(batchTask.getAdjustEffectiveDate()); // TODO: 需在SalaryArchiveDTO中新增newEffectiveDate字段（LocalDate类型）
-                dto.setBasicSalary(item.getNewBasicSalary());
-                dto.setPerformanceSalary(item.getNewPerformanceSalary());
-                dto.setPositionAllowance(item.getNewPositionAllowance());
-                dto.setOtherAllowance(item.getNewOtherAllowance());
-                dto.setRemark(batchTask.getAdjustReason());
-                //复用原有单人调薪逻辑，自带行锁FOR UPDATE
-                HrSalaryArchive newArchive = salaryArchiveService.updateArchive(dto);
-                item.setExecStatus(1);
-                item.setOldVersionId(newArchive.getPrevArchiveId());
-                itemMapper.updateById(item);
-                return true;
-            }catch (Exception e){
-                item.setExecStatus(2);
-                item.setFailMsg(e.getMessage());
-                itemMapper.updateById(item);
-                status.setRollbackOnly();
-                return false;
-            }
-        });
-        if(Boolean.TRUE.equals(execResult)) success++;
-        else fail++;
-    }
-    //更新批量任务统计
-    batchTask.setSuccessCount(success);
-    batchTask.setFailCount(fail);
-    if(fail == 0){
-        batchTask.setStatus(2);
-    }else if(success >0){
-        batchTask.setStatus(4);
-    }
-    batchAdjustMapper.updateById(batchTask);
-}
-```
-### 5.3 入职申请自动生成薪资档案（createFromEntry）
-
-> 触发时机：hr_entry审批流FlowHandler.onPass回调时调用
-
-```Java
-/**
- * 审批通过后自动创建薪资档案
- * 优先级：入职申请表手动填写 > 岗位模板默认值（逐字段独立判断）
- */
-@Transactional(rollbackFor = Exception.class)
-public void createFromEntry(Long entryApplyId) {
-    //1. 查询入职申请表
-    HrEntryApply apply = entryApplyMapper.selectById(entryApplyId);
-    if (apply == null || !CommonConst.APPLY_STATUS_PASS.equals(apply.getStatus())) {
-        throw new BusinessException("入职申请不存在或未通过审批");
-    }
-
-    //2. 查询匹配薪资模板（companyId从上下文获取，租户隔离）
-    Long companyId = UserContext.getCompanyId();
-    HrSalaryRule rule = salaryRuleService.getActiveRule(companyId, apply.getPostId(), apply.getGradeCode());
-
-    //3. 创建薪资档案V1版本
-    HrSalaryArchive archive = new HrSalaryArchive();
-    archive.setCompanyId(companyId);
-    archive.setEmployeeId(apply.getEmployeeId());
-    archive.setEmployeeName(apply.getEmployeeName());
-    archive.setVersionNo(1);
-    archive.setEffectiveDate(apply.getEntryDate() != null ? apply.getEntryDate() : LocalDate.now());
-    archive.setSourceTypeId(1); // 模板自动带出
-    archive.setSalaryGradeCode(apply.getGradeCode()); // 薪级快照
-    archive.setAdjustReason("入职自动生成");
-
-    //4. 逐字段独立判断取值（入职申请表字段 > 模板字段 > 默认0）
-    // 注意：hr_entry_apply目前只有basicSalary字段，津贴类从模板取
-    archive.setBasicSalary(
-        apply.getBasicSalary() != null 
-            ? apply.getBasicSalary() 
-            : (rule != null ? rule.getBasicSalary() : BigDecimal.ZERO)
-    );
-    archive.setPerformanceBase(
-        rule != null ? rule.getPerformanceBase() : BigDecimal.ZERO
-    );
-    archive.setPositionAllowance(
-        rule != null ? rule.getPositionAllowance() : BigDecimal.ZERO
-    );
-    archive.setOtherAllowance(
-        rule != null ? rule.getOtherAllowance() : BigDecimal.ZERO
-    );
-
-    //5. 带宽校验（如配置开关开启）
-    if (rule != null && rule.getGradeCode() != null) {
-        HrSalaryGrade grade = salaryGradeMapper.selectOne(
-            Wrappers.lambdaQuery(HrSalaryGrade.class)
-                .eq(HrSalaryGrade::getCompanyId, companyId)
-                .eq(HrSalaryGrade::getGradeCode, rule.getGradeCode())
-                .eq(HrSalaryGrade::getIsDelete, 0)
-        );
-        if (grade != null) {
-            validateBandwidth(archive.getBasicSalary(), grade);
-        }
-    }
-
-    //6. 保存薪资档案
-    salaryArchiveMapper.insert(archive);
-    
-    log.info("入职自动生成薪资档案成功 employeeId={} versionNo=1 archiveId={}", 
-             archive.getEmployeeId(), archive.getId());
-}
-
-/**
- * 带宽校验辅助方法
- */
-private void validateBandwidth(BigDecimal salary, HrSalaryGrade grade) {
-    String warnOnlyConfig = sysConfigService.getValue("salary/grade/warnOnly");
-    boolean warnOnly = "1".equals(warnOnlyConfig);
-    
-    if (salary.compareTo(grade.getSalaryMin()) < 0 
-        || salary.compareTo(grade.getSalaryMax()) > 0) {
-        if (!warnOnly) {
-            throw new BusinessException(
-                String.format("薪资%.2f超出薪酬级别[%s]带宽[%.2f, %.2f]", 
-                    salary, grade.getGradeCode(), grade.getSalaryMin(), grade.getSalaryMax())
-            );
-        }
-        log.warn("薪资带宽警告 employeeSalary={} gradeCode={}", salary, grade.getGradeCode());
-    }
-}
-```
-
-## 六、前端页面清单（新增页面）
-
-1. **入职申请页 ****`transfer/index.vue`**：增加薪酬级别选择；根据岗位+薪级自动匹配模板；带宽校验提示；仅基本工资允许编辑。
-
-2. **薪酬级别管理页面 ****`salary/grade/index.vue`**：维护薪级编码、带宽min/mid/max，启用停用。
-
-3. **薪资模板管理页面 ****`salary/rule/index.vue`**：新增bind_type绑定类型选择，可以绑定岗位/薪酬级别/组合。
-
-4. **薪资档案页面 ****`salary/archive/index.vue`**：列表展示版本、生效日期、来源、薪酬级别快照；调薪弹窗带宽校验提示。
-
-5. **批量调薪页面 ****`salary/batchAdjust/index.vue`**：
-
-    - 两种创建方式：Excel导入；页面筛选（部门/岗位/薪酬级别/在职）；
-
-    - 支持统一涨薪比例/固定金额；预览新旧薪资；提交审批或直接执行；查看任务结果、下载失败明细。
-
-6. **月度工资页面 ****`salary/month/index.vue`**：生成工资基线、维护奖金、提交整体发放审批。
-
-7. **年度奖金页面 ****`salary/yearBonus/index.vue`**：年终奖维护、发起审批申请。
-
-## 七、关键业务约束（重点，避免踩坑）
-
-1. **薪酬级别hr_salary_grade只是标签+带宽校验规则**
-
-    - 修改薪酬级别带宽min/max，**不会自动更新任何在职员工薪资档案**。
-
-    - 如果需要给某薪酬级别员工普调工资，走【批量调薪】功能生成新版本薪资档案。
-
-2. **薪资模板和薪酬级别关系**
-
-    - 模板只是新人入职的默认样板；模板绑定薪酬级别，只影响新入职；存量员工不受模板修改影响。
-
-3. **批量调薪约束**
-
-    - 批量调薪**不会修改薪资模板**；普调完成后，如果希望后续新人使用新标准，需要HR手动更新薪资模板。
-
-    - 每个员工独立小事务；个别失败不影响其他人；依靠原有调薪内部悲观行锁防止并发冲突。
-
-4. **晋升（薪酬级别变更）**
-
-    - 修改员工的`salary_grade_code`属于员工属性变更；**必须配套生成新版本薪资档案**，不能只改字段不改薪资。
-
-    - 薪资档案保存薪级快照，历史审计不受员工现在改薪级的干扰。
-
-5. **带宽校验开关**：`salary/grade/warnOnly`；1只弹窗警告，0直接拦截保存，适配不同阶段管理诉求。
-
-6. **多租户隔离：companyId全部从UserContext上下文获取，不信任前端入参。**
-
-7. **奖金隔离：薪资档案只保存固定薪资基线；月奖金、年终奖保存在独立业务表，不存入薪资档案版本。**
-
-## 八、上线实施步骤
-
-|步骤|内容|验证点|
-|---|---|---|
-|1|数据库全量备份，执行全部升级SQL脚本|新增表、字段、索引、示例薪级数据全部创建成功；存量员工迁移数据无报错|
-|2|CommonConst常量补充：`FLOW_DEF_SALARY_RULE`、`FLOW_DEF_SALARY_BATCH_ADJUST`、`MODULE_HR_SALARY`等常量|编译无报错，符合项目规范|
-|3|开发薪酬级别全套模块、批量调薪主子表业务、批量调薪流程处理器|单元测试通过；批量任务幂等校验|
-|4|改造原有服务：入职生成档案时写入薪级快照；单人调薪增加薪级带宽校验|入职、单人调薪端到端测试|
-|5|原有薪资模板模块扩展bind_type、grade_code字段；审批申请表同步扩展字段|薪资模板新增修改审批完整测试|
-|6|前端页面开发：薪酬级别、批量调薪页面；入职页面增加薪酬级别选择；带宽校验提示交互|页面交互完整；Excel导入导出可用|
-|7|全链路端到端测试：薪级‑模板匹配、入职、单人调薪、批量调薪、晋升调级、月度算薪、奖金审批|全部业务链路跑通|
-|8|存量业务回归测试，旧入职流程、旧算薪不受改动影响|回归全部通过|
-|9|生产部署上线||
-
-## 九、测试用例（新增重点用例）
-
-|编号|场景|预期结果|
-|---|---|---|
-|T11|入职填写岗位+薪酬级别P5，存在【岗位+薪级】组合模板|优先匹配组合模板，预填薪资，档案快照保存P5|
-|T12|新员工薪资超出薪级带宽；配置warnOnly=1|弹窗警告，仍然允许保存；sourceType=2人工录入|
-|T13|新员工薪资超出薪级带宽；warnOnly=0|直接拦截，无法提交入职申请|
-|T14|批量调薪，筛选全部P5薪酬级别在职员工，统一涨8%|批量任务生成；每个P5员工生成薪资新版本；旧版本保留；失败记录明细；模板不自动变更|
-|T15|员工晋升P5→P6，做晋升审批|员工主档案grade_code更新；生成薪资新版本；档案快照记录P6；薪级变更流水写入（开启该表时）|
-|T16|修改薪酬级别P5带宽，min/max上调|存量P5员工薪资档案完全不变，只改变后续校验规则|
-|T17|批量调薪开关开启，不提交审批直接执行|不允许执行，必须走审批通过才可以生成薪资版本|
-|T18|批量调薪中某员工已经离职|标记该条失败，其他正常员工完成调薪|
-
-## 十、方案独立落地摘要
-
-本方案为**全新独立完整的中小企业薪酬薪资解决方案**，无需依赖任何旧版薪资体系、无需承接历史版本逻辑，可独立部署、全新落地。方案自主涵盖薪酬级别带宽配置、多类型薪资模板绑定、版本化薪资档案管理、多维度批量调薪、月度全自动算薪、专项/年度奖金管控、全流程审批审计等全套核心能力。整体采用系统增量开发模式，无强制历史版本绑定，适配50-500人中小企业从零搭建标准化、可追溯、可审计的薪酬体系，所有业务流程、数据库脚本、接口、页面、测试用例均为独立配套，可直接作为落地实施标准方案使用。
-
-> v6版本在原有薪资模板、版本化薪资档案、奖金管理基础之上，新增轻量化薪酬级别（薪级带宽），支持岗位、薪酬级别、岗位+薪酬级别组合三种模板绑定模式；
-支持多种筛选维度批量调薪：单人、勾选部分员工、按部门、岗位、薪酬级别、全员普调；批量调薪底层复用单人调薪逻辑，全部生成薪资新版本，历史记录完整可审计；
-薪酬级别仅作为员工标签和薪资带宽校验规则，**修改级别带宽或者薪资模板，不会自动改动存量员工工资；在职员工薪资变更，一律生成薪资档案新版本，保证审计留痕。**
-
+审批通过后归档，推送到财务
+`
+
+### 11.8 升级 SQL 执行顺序
+
+`
+1. upgrade_v2.7_dict_tables.sql           → 新建 sys_city / sys_insurance_type / sys_industry
+2. upgrade_v2.7_social_param_tables.sql   → 新建 hr_social_param_config / hr_housing_fund_config / hr_social_calc_detail
+3. upgrade_v2.7_employee_extend.sql       → ALTER hr_employee 新增5个字段
+4. upgrade_v2.7_salary_rule_alter.sql     → ALTER hr_salary_rule 比例字段改为可空
+5. upgrade_v2.7_salary_month_extend.sql   → ALTER hr_salary_month 新增分项字段
+6. upgrade_v2.7_init_data.sql             → 插入城市/险种/行业初始字典数据
+7. upgrade_v2.7_init_config.sql           → 插入 sys_config 全局默认参数
+`
+
+### 11.9 风险提示
+
+1. **存量员工 city_code 为空**：需 HR 逐个补充，否则无法查询到对应城市费率配置
+2. **基数重算首年**：2026年7月前入职员工无上年度工资数据，首年基数以当前 social_security_base 为准
+3. **长护险试点**：仅配置了 LONG_CARE 参数的城市才会计算长护险，未配置城市自动跳过
+4. **费率历史存档**：修改 hr_social_param_config 必须走"关停旧记录+新增记录"模式，禁止直接 UPDATE
+5. **向后兼容**：social_security_rate 字段允许 NULL，存量模板比例值不受影响，仅新模板可选择不填（继承全局）
+
+### 11.10 前端页面新增
+
+| 页面 | 路径 | 说明 |
+|------|------|------|
+| 城市字典管理 | /hr/city/index | 城市增删改查 |
+| 险种字典管理 | /hr/insuranceType/index | 险种增删改查 |
+| 行业字典管理 | /hr/industry/index | 行业增删改查+工伤基准费率 |
+| 社保参数配置 | /hr/socialParam/index | 按城市+险种配置费率和基数上下限 |
+| 公积金参数配置 | /hr/housingFundConfig/index | 按城市配置公积金比例和上下限 |
+| 员工档案扩展 | /hr/employee/index | 新增城市、行业、申报基数字段 |
+| 年度基数重算 | /hr/socialCalc/annualRecalc | 手动触发年度基数重算 |
+
+> 以上页面后端接口统一在 HrSocialParamController 和 HrSocialCalcController 中实现。

@@ -517,12 +517,29 @@ public class FinanceServiceImpl implements FinanceService {
         log.info("根据流水ID查询缴费单明细，flowId={}", flowId);
         BizFinanceFlow flow = financeFlowMapper.selectById(flowId);
         if (flow == null) { return Collections.emptyList(); }
+
+        // 优先通过 pay_bill_id 直查（聚合缴费路径写入，直接关联缴费单）
+        if (flow.getPayBillId() != null) {
+            LambdaQueryWrapper<BizPayOrderItem> wrapper = new LambdaQueryWrapper<BizPayOrderItem>()
+                    .eq(BizPayOrderItem::getPayBillId, flow.getPayBillId())
+                    .orderByAsc(BizPayOrderItem::getCreateTime);
+            List<BizPayOrderItem> items = payOrderItemMapper.selectList(wrapper);
+            return convertToVOList(items);
+        }
+
+        // 兜底：通过 bill_id → pay_order.source_id 间接查找（兼容老路径）
         BizPayOrder payOrder = payOrderMapper.selectBySourceId(Long.valueOf(flow.getBillId()));
         if (payOrder == null) { return Collections.emptyList(); }
         LambdaQueryWrapper<BizPayOrderItem> wrapper = new LambdaQueryWrapper<BizPayOrderItem>()
                 .eq(BizPayOrderItem::getPayBillId, payOrder.getId())
                 .orderByAsc(BizPayOrderItem::getCreateTime);
         List<BizPayOrderItem> items = payOrderItemMapper.selectList(wrapper);
+        return convertToVOList(items);
+    }
+
+    /** 抽取公共转换逻辑，避免重复代码 */
+    private List<PayOrderItemVO> convertToVOList(List<BizPayOrderItem> items) {
+        if (items == null || items.isEmpty()) { return Collections.emptyList(); }
         return items.stream().map(item -> {
             PayOrderItemVO vo = new PayOrderItemVO();
             vo.setId(item.getId());

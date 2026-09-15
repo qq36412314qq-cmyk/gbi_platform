@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author gbi
  */
 @SpringBootApplication
-@MapperScan({"com.gbi.platform.mapper", "com.gbi.platform.hr.mapper"})
+@MapperScan({"com.gbi.platform.mapper", "com.gbi.platform.mapper.hr"})
 public class GbiPlatformApplication {
 
     public static void main(String[] args) {

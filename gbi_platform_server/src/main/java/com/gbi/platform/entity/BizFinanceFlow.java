@@ -40,6 +40,9 @@ public class BizFinanceFlow implements Serializable {
     /** 关联应收应付计划ID（biz_recv_pay_plan，核销时写入，对账底座） */
     private Long planId;
 
+    /** 关联缴费单ID（聚合支付时写入，用于快速定位缴费单明细） */
+    private Long payBillId;
+
     /** 商户ID */
     private Long merchantId;
 

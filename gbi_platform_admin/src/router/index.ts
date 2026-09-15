@@ -87,6 +87,42 @@ export const constantRoutes: RouteRecordRaw[] = [
         name: 'PlatformPermissionAudit',
         component: () => import('@/views/platform/permissionAudit/index.vue'),
         meta: { title: '权限复核', icon: 'Key', permission: 'permission:audit:list', isCache: true }
+      },
+      {
+        path: 'city',
+        name: 'PlatformCity',
+        component: () => import('@/views/hr/city/index.vue'),
+        meta: { title: '城市字典', icon: 'Location', permission: 'hr:city:list', isCache: true }
+      },
+      {
+        path: 'insuranceType',
+        name: 'PlatformInsuranceType',
+        component: () => import('@/views/hr/insuranceType/index.vue'),
+        meta: { title: '险种字典', icon: 'Tickets', permission: 'hr:insurance:list', isCache: true }
+      },
+      {
+        path: 'industry',
+        name: 'PlatformIndustry',
+        component: () => import('@/views/hr/industry/index.vue'),
+        meta: { title: '行业字典', icon: 'Briefcase', permission: 'hr:industry:list', isCache: true }
+      },
+      {
+        path: 'socialParam',
+        name: 'PlatformSocialParam',
+        component: () => import('@/views/hr/socialParam/index.vue'),
+        meta: { title: '社保参数配置', icon: 'Setting', permission: 'hr:social:param:list', isCache: true }
+      },
+      {
+        path: 'housingFundConfig',
+        name: 'PlatformHousingFundConfig',
+        component: () => import('@/views/hr/housingFundConfig/index.vue'),
+        meta: { title: '公积金参数配置', icon: 'Coin', permission: 'hr:housing:fund:list', isCache: true }
+      },
+      {
+        path: 'deviceAuth',
+        name: 'PlatformDeviceAuth',
+        component: () => import('@/views/platform/deviceAuth/index.vue'),
+        meta: { title: '设备授权管理', icon: 'Lock', permission: 'device:auth:list', isCache: true }
       }
     ]
   },
@@ -299,16 +335,28 @@ export const constantRoutes: RouteRecordRaw[] = [
     children: [
       { path: 'org', name: 'HrOrg', component: () => import('@/views/hr/org/index.vue'),
         meta: { title: '组织岗位', icon: 'OfficeBuilding', permission: 'hr:org:list', isCache: true } },
-      { path: 'employee', name: 'HrEmployee', component: () => import('@/views/hr/employee/index.vue'),
-        meta: { title: '员工档案', icon: 'User', permission: 'hr:employee:list', isCache: true } },
       { path: 'transfer', name: 'HrTransfer', component: () => import('@/views/hr/transfer/index.vue'),
         meta: { title: '人事异动', icon: 'SwitchButton', permission: 'hr:entry:list', isCache: true } },
+      { path: 'employee', name: 'HrEmployee', component: () => import('@/views/hr/employee/index.vue'),
+        meta: { title: '员工档案', icon: 'User', permission: 'hr:employee:list', isCache: true } },
       { path: 'attendance', name: 'HrAttendance', component: () => import('@/views/hr/attendance/index.vue'),
         meta: { title: '考勤管理', icon: 'Calendar', permission: 'hr:attendance:list', isCache: true } },
       { path: 'salary', name: 'HrSalary', component: () => import('@/views/hr/salary/index.vue'),
         meta: { title: '薪酬管理', icon: 'Money', permission: 'hr:salary:month:list', isCache: true } },
+      { path: 'salary/grade', name: 'HrSalaryGrade', component: () => import('@/views/hr/salary/grade.vue'),
+        meta: { title: '薪酬级别', icon: 'Rank', permission: 'hr:salary:grade:list', isCache: true } },
+      { path: 'salary/rule', name: 'HrSalaryRule', component: () => import('@/views/hr/salary/rule.vue'),
+        meta: { title: '薪资模板', icon: 'EditPen', permission: 'hr:salary:rule:list', isCache: true } },
+      { path: 'salary/batchAdjust', name: 'HrSalaryBatchAdjust', component: () => import('@/views/hr/salary/batchAdjust.vue'),
+        meta: { title: '批量调薪', icon: 'Sort', permission: 'hr:salary:batch:list', isCache: true } },
+      { path: 'salary/yearBonus', name: 'HrSalaryYearBonus', component: () => import('@/views/hr/salary/yearBonus.vue'),
+        meta: { title: '年终奖管理', icon: 'Present', permission: 'hr:salary:yearBonus:list', isCache: true } },
       { path: 'social', name: 'HrSocial', component: () => import('@/views/hr/social/index.vue'),
         meta: { title: '社保公积金', icon: 'Document', permission: 'hr:social:list', isCache: true } },
+      { path: 'socialCalc', name: 'HrSocialCalc', component: () => import('@/views/hr/socialCalc/index.vue'),
+        meta: { title: '社保核算明细', icon: 'Document', permission: 'hr:social:calc:list', isCache: true } },
+      { path: 'annualRecalc', name: 'HrAnnualRecalc', component: () => import('@/views/hr/annualRecalc/index.vue'),
+        meta: { title: '年度基数重算', icon: 'Refresh', permission: 'hr:recalc:trigger', isCache: true } },
     ]
   },
   {

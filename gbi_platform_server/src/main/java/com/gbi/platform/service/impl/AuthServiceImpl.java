@@ -20,6 +20,7 @@ import com.gbi.platform.mapper.SysRoleMenuRelMapper;
 import com.gbi.platform.mapper.SysUserMapper;
 import com.gbi.platform.mapper.SysUserRoleRelMapper;
 import com.gbi.platform.service.AuthService;
+import com.gbi.platform.service.ConfigService;
 import com.gbi.platform.util.AuditLogUtil;
 import com.gbi.platform.vo.LoginVO;
 import com.gbi.platform.vo.UserInfoVO;
@@ -60,6 +61,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final AuditLogUtil auditLogUtil;
 
+
     @Override
     public LoginVO login(LoginDTO dto) {
         // 查询用户（无登录上下文，多租户拦截器自动忽略 company_id 过滤）
@@ -72,6 +74,7 @@ public class AuthServiceImpl implements AuthService {
         if (!Objects.equals(user.getStatus(), CommonConst.STATUS_ENABLED)) {
             throw new BizException("账号已禁用，请联系管理员");
         }
+        
         LoginVO vo = new LoginVO();
         vo.setToken(jwtUtil.createToken(user.getId()));
         // 登录审计

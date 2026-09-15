@@ -101,7 +101,6 @@
           <el-table v-loading="resignLoading" :data="resignRecords" border stripe>
             <el-table-column prop="employeeName" label="姓名" width="100" align="center" />
             <el-table-column prop="resignDate" label="离职日期" width="110" align="center" />
-            <el-table-column prop="resignTypeText" label="离职类型" width="100" align="center" />
             <el-table-column prop="statusText" label="状态" width="90" align="center">
               <template #default="{ row }"><el-tag size="small" :type="transferStatusType(row.status)">{{ row.statusText || '-' }}</el-tag></template>
             </el-table-column>
@@ -116,7 +115,7 @@
     </el-tabs>
 
     <!-- 入职申请对话框 -->
-    <el-dialog v-model="entryDialogVisible" title="入职申请" width="650px" :close-on-click-modal="false">
+    <el-dialog v-model="entryDialogVisible" title="入职申请" width="900px" :close-on-click-modal="false">
       <el-form ref="entryFormRef" :model="entryForm" :rules="entryRules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -179,6 +178,103 @@
           </el-col>
         </el-row>
         <el-form-item label="备注"><el-input v-model="entryForm.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
+
+        <!-- 工作经历 -->
+        <el-divider content-position="left">工作经历</el-divider>
+        <div style="margin-bottom: 8px">
+          <el-button type="primary" size="small" @click="addWorkExpRow">+ 新增工作经历</el-button>
+        </div>
+        <el-table :data="entryForm.workExps || []" border size="small" style="width: 100%">
+          <el-table-column label="公司名称" min-width="150">
+            <template #default="{ $index }">
+              <el-input v-model="entryForm.workExps[$index].companyName" placeholder="请输入" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="职位" width="120">
+            <template #default="{ $index }">
+              <el-input v-model="entryForm.workExps[$index].position" placeholder="请输入" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="部门" width="120">
+            <template #default="{ $index }">
+              <el-input v-model="entryForm.workExps[$index].department" placeholder="请输入" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="入职时间" width="110">
+            <template #default="{ $index }">
+              <el-date-picker v-model="entryForm.workExps[$index].startDate" type="date" value-format="YYYY-MM-DD" style="width:100%" size="small" placeholder="请选择" />
+            </template>
+          </el-table-column>
+          <el-table-column label="离职时间" width="110">
+            <template #default="{ $index }">
+              <el-date-picker v-model="entryForm.workExps[$index].endDate" type="date" value-format="YYYY-MM-DD" style="width:100%" size="small" placeholder="请选择" :disabled="entryForm.workExps[$index].isCurrent === 1" />
+            </template>
+          </el-table-column>
+          <el-table-column label="是否在职" width="90">
+            <template #default="{ $index }">
+              <el-radio-group v-model="entryForm.workExps[$index].isCurrent" size="small">
+                <el-radio :value="1">在职</el-radio>
+                <el-radio :value="0">离职</el-radio>
+              </el-radio-group>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="60" align="center">
+            <template #default="{ $index }">
+              <el-button type="danger" link size="small" @click="removeWorkExpRow($index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- 学业经历 -->
+        <el-divider content-position="left">学业经历</el-divider>
+        <div style="margin-bottom: 8px">
+          <el-button type="primary" size="small" @click="addEduExpRow">+ 新增学业经历</el-button>
+        </div>
+        <el-table :data="entryForm.eduExps || []" border size="small" style="width: 100%">
+          <el-table-column label="学校名称" min-width="150">
+            <template #default="{ $index }">
+              <el-input v-model="entryForm.eduExps[$index].schoolName" placeholder="请输入" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="学历" width="100">
+            <template #default="{ $index }">
+              <el-input v-model="entryForm.eduExps[$index].degree" placeholder="如：本科" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="专业" width="120">
+            <template #default="{ $index }">
+              <el-input v-model="entryForm.eduExps[$index].major" placeholder="请输入" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="教育形式" width="100">
+            <template #default="{ $index }">
+              <el-input v-model="entryForm.eduExps[$index].educationLevel" placeholder="如：全日制" size="small" />
+            </template>
+          </el-table-column>
+          <el-table-column label="入学时间" width="110">
+            <template #default="{ $index }">
+              <el-date-picker v-model="entryForm.eduExps[$index].startDate" type="date" value-format="YYYY-MM-DD" style="width:100%" size="small" placeholder="请选择" />
+            </template>
+          </el-table-column>
+          <el-table-column label="毕业时间" width="110">
+            <template #default="{ $index }">
+              <el-date-picker v-model="entryForm.eduExps[$index].graduationDate" type="date" value-format="YYYY-MM-DD" style="width:100%" size="small" placeholder="请选择" :disabled="entryForm.eduExps[$index].isGraduated === 1" />
+            </template>
+          </el-table-column>
+          <el-table-column label="是否毕业" width="90">
+            <template #default="{ $index }">
+              <el-radio-group v-model="entryForm.eduExps[$index].isGraduated" size="small">
+                <el-radio :value="1">已毕业</el-radio>
+                <el-radio :value="0">在读</el-radio>
+              </el-radio-group>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="60" align="center">
+            <template #default="{ $index }">
+              <el-button type="danger" link size="small" @click="removeEduExpRow($index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-form>
       <template #footer>
         <el-button @click="entryDialogVisible=false">取消</el-button>
@@ -187,8 +283,8 @@
     </el-dialog>
 
     <!-- 查看入职申请对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="入职申请详情" width="600px">
-      <el-descriptions :column="2" border v-if="viewRecord">
+    <el-dialog v-model="viewDialogVisible" title="入职申请详情" width="700px">
+      <el-descriptions v-if="viewRecord" :column="2" border>
         <el-descriptions-item label="工号">{{ viewRecord.employeeNo }}</el-descriptions-item>
         <el-descriptions-item label="姓名">{{ viewRecord.name }}</el-descriptions-item>
         <el-descriptions-item label="入职日期">{{ viewRecord.entryDate }}</el-descriptions-item>
@@ -247,7 +343,7 @@ const { records: entryRecords, total: entryTotal, loading: entryLoading, loadDat
 const entryDialogVisible = ref(false)
 const entrySubmitLoading = ref(false)
 const entryFormRef = ref()
-const entryForm = reactive<api.EntryApplyDTO>({ employeeNo: '', name: '', entryDate: '', employmentType: 1 })
+const entryForm = reactive<api.EntryApplyDTO>({ employeeNo: '', name: '', entryDate: '', employmentType: 1, workExps: [], eduExps: [] })
 const entryRules = {
   employeeNo: [{ required: true, message: '工号不能为空' }],
   name: [{ required: true, message: '姓名不能为空' }],
@@ -256,16 +352,63 @@ const entryRules = {
 
 const openAdd = (tab: string) => {
   if (tab === 'entry') {
-    Object.assign(entryForm, { employeeNo: '', name: '', entryDate: '', employmentType: 1 })
+    Object.assign(entryForm, { employeeNo: '', name: '', entryDate: '', employmentType: 1, workExps: [], eduExps: [] })
     entryDialogVisible.value = true
   }
 }
 
+// 工作经历行操作
+const addWorkExpRow = () => {
+  if (!entryForm.workExps) entryForm.workExps = []
+  entryForm.workExps.push({ companyName: '', startDate: '' })
+}
+const removeWorkExpRow = (index: number) => {
+  entryForm.workExps!.splice(index, 1)
+}
+
+// 学业经历行操作
+const addEduExpRow = () => {
+  if (!entryForm.eduExps) entryForm.eduExps = []
+  entryForm.eduExps.push({ schoolName: '', startDate: '' })
+}
+const removeEduExpRow = (index: number) => {
+  entryForm.eduExps!.splice(index, 1)
+}
+
 const handleSubmitEntry = async () => {
   await entryFormRef.value.validate()
+  // 将workExps和eduExps序列化为JSON字符串写入experienceData字段
+  const submitData = {
+    ...entryForm,
+    experienceData: JSON.stringify({
+      workExps: (entryForm.workExps || []).map((w: any) => ({
+        companyName: w.companyName || '',
+        position: w.position || '',
+        department: w.department || '',
+        startDate: w.startDate || '',
+        endDate: w.endDate || null,
+        isCurrent: w.isCurrent ?? 0,
+        reasonForLeaving: w.reasonForLeaving || '',
+        remark: w.remark || ''
+      })),
+      eduExps: (entryForm.eduExps || []).map((e: any) => ({
+        schoolName: e.schoolName || '',
+        degree: e.degree || '',
+        major: e.major || '',
+        educationLevel: e.educationLevel || '',
+        startDate: e.startDate || '',
+        graduationDate: e.graduationDate || null,
+        isGraduated: e.isGraduated ?? 0,
+        certificateNo: e.certificateNo || '',
+        remark: e.remark || ''
+      }))
+    })
+  } as any
+  delete submitData.workExps
+  delete submitData.eduExps
   entrySubmitLoading.value = true
   try {
-    await api.submitEntryApi(entryForm)
+    await api.submitEntryApi(submitData)
     ElMessage.success('提交成功')
     entryDialogVisible.value = false
     loadEntryData()

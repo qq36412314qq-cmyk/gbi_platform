@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- 日志根目录：使用绝对路径，避免启动目录变化导致日志错位 -->
-    <property name="LOG_DIR" value="D:/Office/Project/Java/gbi_platform/gbi_platform_server/logs"/>
+    <property name="LOG_DIR" value="${LOG_DIR:-./logs}"/>
     <property name="APP_NAME" value="gbi_platform_server"/>
 
     <!-- 控制台输出 -->
@@ -63,3 +63,4 @@
         <appender-ref ref="FILE_ERROR"/>
     </root>
 </configuration>
+

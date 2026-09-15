@@ -3,6 +3,7 @@ package com.gbi.platform.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.gbi.platform.common.constant.CommonConst;
 import com.gbi.platform.common.exception.BizException;
+import com.gbi.platform.common.result.ResultCode;
 import com.gbi.platform.common.security.LoginUser;
 import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.dto.PayBillCreateDTO;
@@ -21,6 +22,7 @@ import com.gbi.platform.entity.StallContract;
 import com.gbi.platform.entity.StallTenant;
 import com.gbi.platform.mapper.StallContractMapper;
 import com.gbi.platform.entity.WaterElecBill;
+import com.gbi.platform.entity.WaterElecPayRecord;
 import com.gbi.platform.mapper.BizFeeBillMapper;
 import com.gbi.platform.mapper.BizFinanceFlowMapper;
 import com.gbi.platform.mapper.BizPayOrderItemMapper;
@@ -33,6 +35,7 @@ import com.gbi.platform.mapper.StallCategoryMapper;
 import com.gbi.platform.mapper.StallInfoMapper;
 import com.gbi.platform.mapper.StallTenantMapper;
 import com.gbi.platform.mapper.WaterElecBillMapper;
+import com.gbi.platform.mapper.WaterElecPayRecordMapper;
 import com.gbi.platform.service.PropertyPayBillService;
 import com.gbi.platform.service.RecvPayPlanService;
 import com.gbi.platform.util.AuditLogUtil;
@@ -65,6 +68,7 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
     private final BizFeeBillMapper bizFeeBillMapper;
     private final PropertyFeeBillMapper propertyFeeBillMapper;
     private final WaterElecBillMapper waterElecBillMapper;
+    private final WaterElecPayRecordMapper payRecordMapper;
     private final BizFinanceFlowMapper financeFlowMapper;
     private final StallInfoMapper stallInfoMapper;
     private final StallTenantMapper stallTenantMapper;
@@ -150,6 +154,15 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
         LoginUser loginUser = UserContext.getLoginUser();
         Long companyId = loginUser.getCompanyId();
 
+        // 0. 幂等检查：同公司同 requestId 不可重复提交
+        Long dupCount = payRecordMapper.selectCount(
+                new LambdaQueryWrapper<WaterElecPayRecord>()
+                        .eq(WaterElecPayRecord::getCompanyId, companyId)
+                        .eq(WaterElecPayRecord::getRequestId, dto.getRequestId()));
+        if (dupCount != null && dupCount > 0) {
+            throw new BizException(ResultCode.IDEMPOTENT_REPEAT.getCode(), ResultCode.IDEMPOTENT_REPEAT.getMsg());
+        }
+
         // 1. 查询缴费单
         BizPayOrder payOrder = payOrderMapper.selectById(dto.getPayBillId());
         if (payOrder == null) {
@@ -178,7 +191,7 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
 
         // 4. 逐条明细处理
         for (BizPayOrderItem item : items) {
-            // 4a. 更新统一账单状态（按 sourceBillId + bizType + companyId 唯一匹配）
+            // 4a. 更新统一账单状态
             BizFeeBill bizBill = bizFeeBillMapper.selectOne(
                     new LambdaQueryWrapper<BizFeeBill>()
                             .eq(BizFeeBill::getSourceBillId, item.getBillId())
@@ -192,7 +205,7 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
                 bizFeeBillMapper.updateById(billUpdate);
             }
 
-            // 4b. 更新源账单状态
+            // 4b. 更新源账单 + 写缴费记录 + 写财务流水
             if (CommonConst.BIZ_TYPE_PROPERTY_FEE.equals(item.getBizType())) {
                 PropertyFeeBill srcBill = propertyFeeBillMapper.selectById(item.getBillId());
                 if (srcBill != null) {
@@ -202,7 +215,12 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
                     update.setPayTime(LocalDateTime.now());
                     propertyFeeBillMapper.updateById(update);
 
-                    // 应收应付核销
+                    // 写缴费记录（合并缴费链路补齐）
+                    WaterElecPayRecord payRecord = buildMergePayRecord(companyId, dto, loginUser,
+                            CommonConst.BIZ_TYPE_PROPERTY_FEE, srcBill, item);
+                    payRecordMapper.insert(payRecord);
+
+                    // 写财务流水
                     BizFinanceFlow flow = buildFinanceFlow(companyId, loginUser, payOrder, item, dto);
                     financeFlowMapper.insert(flow);
                     recvPayPlanService.writeOffByBillId(companyId, item.getBillId(), flow,
@@ -217,7 +235,12 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
                     update.setPayTime(LocalDateTime.now());
                     waterElecBillMapper.updateById(update);
 
-                    // 应收应付核销
+                    // 写缴费记录（合并缴费链路补齐）
+                    WaterElecPayRecord payRecord = buildMergePayRecord(companyId, dto, loginUser,
+                            CommonConst.BIZ_TYPE_WATER_ELEC, srcBill, item);
+                    payRecordMapper.insert(payRecord);
+
+                    // 写财务流水
                     BizFinanceFlow flow = buildFinanceFlow(companyId, loginUser, payOrder, item, dto);
                     financeFlowMapper.insert(flow);
                     if (srcBill.getPlanId() != null) {
@@ -271,6 +294,7 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
         flow.setStatus(1);
         flow.setFlowStatus(CommonConst.FINANCE_FLOW_STATUS_NORMAL);
         flow.setRemark(dto.getRemark() != null ? dto.getRemark() : "合并缴费");
+        flow.setPayBillId(payOrder.getId());
         flow.setCreateBy(loginUser.getUserId());
         return flow;
     }
@@ -337,5 +361,56 @@ public class PropertyPayBillServiceImpl implements PropertyPayBillService {
         }
         // 降级：根据业务类型返回默认名称
         return CommonConst.BIZ_TYPE_PROPERTY_FEE.equals(bizType) ? "物业费" : "水电费";
+    }
+
+    /**
+     * 构建合并缴费的缴费记录（补齐合并缴费链路缺失的 water_elec_pay_record 写入）
+     * 复用统一缴费链路的铺位快照填充逻辑
+     */
+    private WaterElecPayRecord buildMergePayRecord(Long companyId, PayBillPayDTO dto, LoginUser loginUser,
+                                                  String bizType, Object bill, BizPayOrderItem item) {
+        WaterElecPayRecord record = new WaterElecPayRecord();
+        record.setCompanyId(companyId);
+        // 合并缴费时各明细项需独立 request_id，避免 uk_company_request 冲突
+        record.setRequestId(dto.getRequestId() + "-" + item.getBillId());
+        record.setPayType(dto.getPayType());
+        record.setRecordType(CommonConst.PAY_RECORD_TYPE_PAY);
+        record.setRefundStatus(CommonConst.REFUND_STATUS_NONE);
+        record.setRemark("合并缴费-" + item.getRuleName());
+        record.setCreateBy(loginUser.getUserId());
+
+        Long stallId = null;
+        Long merchantId = null;
+        BigDecimal payAmount = item.getAmount();
+
+        if (CommonConst.BIZ_TYPE_PROPERTY_FEE.equals(bizType)) {
+            PropertyFeeBill feeBill = (PropertyFeeBill) bill;
+            record.setBillId(feeBill.getId());
+            stallId = feeBill.getStallId();
+            merchantId = feeBill.getMerchantId();
+        } else if (CommonConst.BIZ_TYPE_WATER_ELEC.equals(bizType)) {
+            WaterElecBill waterBill = (WaterElecBill) bill;
+            record.setBillId(waterBill.getId());
+            stallId = waterBill.getStallId();
+            merchantId = waterBill.getMerchantId();
+        }
+        record.setStallId(stallId);
+        record.setMerchantId(merchantId);
+        record.setPayAmount(payAmount);
+
+        // 铺位快照
+        if (stallId != null) {
+            StallInfo stall = stallInfoMapper.selectById(stallId);
+            record.setStallNumber(stall == null ? null : stall.getStallNumber());
+            record.setStallName(stall == null ? null : stall.getStallName());
+            record.setStallMarketName(stall == null ? null : getMarketNameById(stall.getMarketId()));
+            record.setCategoryName(stall == null || stall.getStallCategoryId() == null ? null
+                    : getCategoryNameById(stall.getStallCategoryId()));
+        }
+        if (merchantId != null) {
+            StallTenant tenant = stallTenantMapper.selectById(merchantId);
+            record.setMerchantName(tenant == null ? null : tenant.getTenantName());
+        }
+        return record;
     }
 }

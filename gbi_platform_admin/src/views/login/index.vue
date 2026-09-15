@@ -3,6 +3,7 @@
     <div class="g-login-card">
       <div class="g-login-title">集团业务一体化管控平台</div>
       <div class="g-login-subtitle">Group Business Integration Platform</div>
+
       <el-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent>
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="请输入登录账号" :prefix-icon="User" clearable />
@@ -29,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
@@ -44,12 +45,16 @@ const themeStore = useThemeStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const agentError = ref('')
 
 const form = reactive({
   username: 'admin',
-  password: ''
+  password: '',
+  motherboardSn: '',
+  cpuId: '',
+  diskSn: ''
 })
-console.log('form', form)
+
 const rules: FormRules = {
   username: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
   password: [
@@ -60,54 +65,31 @@ const rules: FormRules = {
 
 /** 登录：成功后拉取主题，跳转来源页 */
 async function handleLogin(): Promise<void> {
-  console.debug('[login] 0/4 开始登录流程, form =', JSON.stringify(form))
-  if (!formRef.value) {
-    console.error('[login] formRef.value 未初始化')
-    return
-  }
-  // 注意：validate 传 async 回调时返回 void，回调内异常会成为 unhandled rejection
-  // （页面"闪一下、无提示、不跳转"的常见原因），因此改用 Promise 形式
-  let valid = false
-  try {
-    valid = await formRef.value.validate()
-    console.debug('[login] 0/4 表单校验通过 =', valid)
-  } catch (err) {
-    console.warn('[login] 0/4 表单校验失败 =', err)
-    return
-  }
-  if (!valid) {
-    console.warn('[login] 0/4 表单校验不通过，中止')
-    return
-  }
+  if (!formRef.value) return
+
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) return
+
   loading.value = true
   try {
-    await userStore.login({ ...form })
-    console.debug('[login] 1/4 登录接口成功, token =', (userStore.token || '').slice(0, 20) + '...')
+    await userStore.login(form)
 
-    const info = await userStore.fetchUserInfo()
-    console.debug('[login] 2/4 用户信息成功, realName =', info.realName, 'permissions =', JSON.stringify(info.permissions))
+    await userStore.fetchUserInfo()
 
     try {
       const themeConfig = await getThemeApi()
-      console.debug('[login] 3/4 主题接口成功, themeConfig =', JSON.stringify(themeConfig))
       themeStore.applyTheme(themeConfig as never)
-      console.debug('[login] 3/4 主题已应用 =', JSON.stringify(themeConfig))
-    } catch (themeErr) {
-      console.warn('[login] 3/4 主题获取失败, 使用默认主题, error =', themeErr)
+    } catch {
       themeStore.applyTheme()
     }
 
     ElMessage.success('登录成功')
     const redirect = (route.query.redirect as string) || '/dashboard'
-    console.debug('[login] 4/4 准备跳转 =', redirect)
     await router.replace(redirect)
-    console.debug('[login] 4/4 跳转完成, 当前路由 =', router.currentRoute.value.fullPath)
   } catch (err) {
-    console.error('[login] 登录流程异常 =', err)
     ElMessage.error((err as Error)?.message || '登录失败，请稍后重试')
   } finally {
     loading.value = false
-    console.debug('[login] 流程结束, loading = false')
   }
 }
 </script>
@@ -152,5 +134,14 @@ async function handleLogin(): Promise<void> {
   font-size: var(--font-size-xs);
   color: var(--color-text-placeholder);
   text-align: center;
+}
+
+.g-agent-alert {
+  margin-bottom: 20px;
+}
+
+.g-agent-extra {
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }
 </style>

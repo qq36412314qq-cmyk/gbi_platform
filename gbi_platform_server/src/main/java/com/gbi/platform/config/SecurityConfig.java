@@ -38,7 +38,10 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/upload/**",
             "/error",
-            "/finance/discount/**"
+            "/finance/discount/**",
+            "/sys/device/hardware/sign",
+            "/sys/device/auth/register",
+            "/sys/device/hardware/info"
     };
 
     private final JwtAuthFilter jwtAuthFilter;

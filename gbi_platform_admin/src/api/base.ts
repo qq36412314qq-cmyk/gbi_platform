@@ -9,6 +9,7 @@ import type { PageResult } from '@/utils/request'
 export interface LoginDTO {
   username: string
   password: string
+  hardwareInfo?: any
 }
 
 /** 登录返回 */
@@ -29,7 +30,7 @@ export interface UserInfoVO {
 }
 
 /** 登录 */
-export function loginApi(data: LoginDTO): Promise<LoginVO> {
+export function loginApi(data: LoginDTO & { hardwareInfo?: any }): Promise<LoginVO> {
   console.log(data)
   return post<LoginVO>('/base/login', data)
 }

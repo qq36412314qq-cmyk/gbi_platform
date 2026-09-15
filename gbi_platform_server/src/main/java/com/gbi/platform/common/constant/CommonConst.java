@@ -81,6 +81,20 @@ public final class CommonConst {
     public static final String MODULE_HR_SALARY = "hr_salary";
     public static final String MODULE_HR_SOCIAL = "hr_social";
 
+    /* ------------------------------ 社保参数配置审计模块 ------------------------------ */
+    public static final String MODULE_HR_SOCIAL_PARAM = "hr_social_param";
+    public static final String MODULE_HR_SOCIAL_CALC = "hr_social_calc";
+    public static final String MODULE_HR_WORK_EXP = "hr_work_exp";
+    public static final String MODULE_HR_EDU_EXP = "hr_edu_exp";
+
+    /* ------------------------------ 社保相关操作类型 ------------------------------ */
+    public static final String OPER_TYPE_PARAM_ADD = "参数新增";
+    public static final String OPER_TYPE_PARAM_UPDATE = "参数变更";
+    public static final String OPER_TYPE_PARAM_ACTIVATE = "参数激活";
+    public static final String OPER_TYPE_PARAM_DEACTIVATE = "参数停用";
+    public static final String OPER_TYPE_RECALC_BASE = "基数重算";
+    public static final String OPER_TYPE_CALC_MONTH = "月度核算";
+
     /* ------------------------------ 流程定义编码 ------------------------------ */
     public static final String FLOW_DEF_CONTRACT = "contract";
     public static final String FLOW_DEF_CONTRACT_DISCOUNT = "contract_discount";

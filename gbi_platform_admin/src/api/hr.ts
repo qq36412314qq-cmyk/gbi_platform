@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 人力资源模块接口
  */
 import { get, post } from '@/utils/request'
@@ -87,6 +87,100 @@ export function exportEmployeeApi(ids: number[]): Promise<EmployeeVO[]> {
   return post<EmployeeVO[]>('/hr/employee/export', ids)
 }
 
+/* ==================== 工作经历 ==================== */
+export interface WorkExpVO {
+  id: number
+  companyId: number
+  employeeId: number
+  companyName: string
+  position?: string
+  department?: string
+  startDate: string
+  endDate?: string
+  isCurrent: number
+  isCurrentText?: string
+  reasonForLeaving?: string
+  remark?: string
+  createTime: string
+}
+
+export interface WorkExpDTO {
+  id?: number
+  employeeId?: number
+  companyName: string
+  position?: string
+  department?: string
+  startDate: string
+  endDate?: string
+  isCurrent?: number
+  reasonForLeaving?: string
+  remark?: string
+}
+
+export function getWorkExpsApi(employeeId: number): Promise<WorkExpVO[]> {
+  return get<WorkExpVO[]>(`/hr/employee/${employeeId}/workExps`)
+}
+
+export function addWorkExpApi(data: WorkExpDTO): Promise<void> {
+  return post<void>('/hr/employee/workExp/add', data)
+}
+
+export function updateWorkExpApi(data: WorkExpDTO): Promise<void> {
+  return post<void>('/hr/employee/workExp/update', data)
+}
+
+export function deleteWorkExpApi(id: number): Promise<void> {
+  return post<void>(`/hr/employee/workExp/delete/${id}`)
+}
+
+/* ==================== 学业经历 ==================== */
+export interface EduExpVO {
+  id: number
+  companyId: number
+  employeeId: number
+  schoolName: string
+  degree?: string
+  major?: string
+  educationLevel?: string
+  startDate: string
+  graduationDate?: string
+  isGraduated: number
+  isGraduatedText?: string
+  certificateNo?: string
+  remark?: string
+  createTime: string
+}
+
+export interface EduExpDTO {
+  id?: number
+  employeeId?: number
+  schoolName: string
+  degree?: string
+  major?: string
+  educationLevel?: string
+  startDate: string
+  graduationDate?: string
+  isGraduated?: number
+  certificateNo?: string
+  remark?: string
+}
+
+export function getEduExpsApi(employeeId: number): Promise<EduExpVO[]> {
+  return get<EduExpVO[]>(`/hr/employee/${employeeId}/eduExps`)
+}
+
+export function addEduExpApi(data: EduExpDTO): Promise<void> {
+  return post<void>('/hr/employee/eduExp/add', data)
+}
+
+export function updateEduExpApi(data: EduExpDTO): Promise<void> {
+  return post<void>('/hr/employee/eduExp/update', data)
+}
+
+export function deleteEduExpApi(id: number): Promise<void> {
+  return post<void>(`/hr/employee/eduExp/delete/${id}`)
+}
+
 
 /* ==================== 下拉选项接口 ==================== */
 export interface OrgFlatOption { id: number; orgName: string }
@@ -172,6 +266,7 @@ export interface EntryApplyVO {
   statusText?: string
   remark?: string
   employmentTypeText?: string
+  experienceData?: string
   createTime: string
 }
 
@@ -190,6 +285,8 @@ export interface EntryApplyDTO {
   bankAccount?: string
   autoCreateUser?: number
   remark?: string
+  workExps?: WorkExpDTO[]
+  eduExps?: EduExpDTO[]
 }
 
 export function getEntryPageApi(params: EntryApplyQueryDTO): Promise<PageResult<EntryApplyVO>> {
@@ -370,7 +467,7 @@ export function syncAttendanceApi(attendanceMonth?: string): Promise<number> {
 }
 
 export function exportAttendanceApi(params: { employeeId?: number; attendanceMonth?: string }): Promise<AttendanceVO[]> {
-  return post<AttendanceVO[]>('/hr/attendance/export', null, { params })
+  return get<AttendanceVO[]>('/hr/attendance/export', { params })
 }
 
 /* ==================== 薪资档案 ==================== */
@@ -385,6 +482,14 @@ export interface SalaryArchiveVO {
   companyId: number
   employeeId: number
   employeeName: string
+  gradeCode?: string
+  gradeName?: string
+  ruleId?: number
+  ruleName?: string
+  versionNo?: number
+  sourceType?: number
+  effectiveDate?: string
+  isCurrent?: number
   basicSalary: number
   performanceSalary: number
   positionAllowance: number
@@ -398,12 +503,14 @@ export interface SalaryArchiveVO {
 export interface SalaryArchiveDTO {
   id?: number
   employeeId: number
+  ruleId?: number
   basicSalary?: number
   performanceSalary?: number
   positionAllowance?: number
   otherAllowance?: number
   socialSecurityPersonal?: number
   housingFundPersonal?: number
+  effectiveDate?: string
   remark?: string
 }
 

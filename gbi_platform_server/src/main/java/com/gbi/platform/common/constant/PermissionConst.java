@@ -167,6 +167,14 @@ public final class PermissionConst {
     public static final String HR_RESIGN_LIST = "hr:resign:list";
     public static final String HR_RESIGN_ADD = "hr:resign:add";
     public static final String HR_ATTENDANCE_LIST = "hr:attendance:list";
+    public static final String HR_WORK_EXP_LIST = "hr:workExp:list";
+    public static final String HR_WORK_EXP_ADD = "hr:workExp:add";
+    public static final String HR_WORK_EXP_EDIT = "hr:workExp:edit";
+    public static final String HR_WORK_EXP_DELETE = "hr:workExp:delete";
+    public static final String HR_EDU_EXP_LIST = "hr:eduExp:list";
+    public static final String HR_EDU_EXP_ADD = "hr:eduExp:add";
+    public static final String HR_EDU_EXP_EDIT = "hr:eduExp:edit";
+    public static final String HR_EDU_EXP_DELETE = "hr:eduExp:delete";
     public static final String HR_ATTENDANCE_SYNC = "hr:attendance:sync";
     public static final String HR_ATTENDANCE_EXPORT = "hr:attendance:export";
     public static final String HR_SALARY_ARCHIVE_LIST = "hr:salary:archive:list";
@@ -176,10 +184,68 @@ public final class PermissionConst {
     public static final String HR_SALARY_MONTH_GENERATE = "hr:salary:month:generate";
     public static final String HR_SALARY_MONTH_PAY = "hr:salary:month:pay";
     public static final String HR_SALARY_MONTH_EXPORT = "hr:salary:month:export";
+    /* 薪酬体系升级 v2.3 */
+    public static final String HR_SALARY_GRADE_LIST = "hr:salary:grade:list";
+    public static final String HR_SALARY_GRADE_ADD = "hr:salary:grade:add";
+    public static final String HR_SALARY_GRADE_EDIT = "hr:salary:grade:edit";
+    public static final String HR_SALARY_GRADE_DISABLE = "hr:salary:grade:disable";
+    public static final String HR_SALARY_RULE_LIST = "hr:salary:rule:list";
+    public static final String HR_SALARY_RULE_ADD = "hr:salary:rule:add";
+    public static final String HR_SALARY_RULE_EDIT = "hr:salary:rule:edit";
+    public static final String HR_SALARY_RULE_DISABLE = "hr:salary:rule:disable";
+    public static final String HR_SALARY_RULE_SUBMIT = "hr:salary:rule:submit";
+    public static final String HR_SALARY_BATCH_LIST = "hr:salary:batch:list";
+    public static final String HR_SALARY_BATCH_ADD = "hr:salary:batch:add";
+    public static final String HR_SALARY_BATCH_SUBMIT = "hr:salary:batch:submit";
+    public static final String HR_SALARY_YEAR_BONUS_LIST = "hr:salary:yearBonus:list";
+    public static final String HR_SALARY_YEAR_BONUS_ADD = "hr:salary:yearBonus:add";
+    public static final String HR_SALARY_YEAR_BONUS_EDIT = "hr:salary:yearBonus:edit";
+    public static final String HR_SALARY_YEAR_BONUS_SUBMIT = "hr:salary:yearBonus:submit";
     public static final String HR_SOCIAL_LIST = "hr:social:list";
     public static final String HR_SOCIAL_ADD = "hr:social:add";
     public static final String HR_SOCIAL_EDIT = "hr:social:edit";
     public static final String HR_SOCIAL_DELETE = "hr:social:delete";
+
+    /* ------------------------------ 城市字典 ------------------------------ */
+    public static final String HR_CITY_LIST = "hr:city:list";
+    public static final String HR_CITY_ADD = "hr:city:add";
+    public static final String HR_CITY_EDIT = "hr:city:edit";
+    public static final String HR_CITY_DELETE = "hr:city:delete";
+
+    /* ------------------------------ 险种字典 ------------------------------ */
+    public static final String HR_INSURANCE_LIST = "hr:insurance:list";
+    public static final String HR_INSURANCE_ADD = "hr:insurance:add";
+    public static final String HR_INSURANCE_EDIT = "hr:insurance:edit";
+    public static final String HR_INSURANCE_DELETE = "hr:insurance:delete";
+
+    /* ------------------------------ 行业字典 ------------------------------ */
+    public static final String HR_INDUSTRY_LIST = "hr:industry:list";
+    public static final String HR_INDUSTRY_ADD = "hr:industry:add";
+    public static final String HR_INDUSTRY_EDIT = "hr:industry:edit";
+    public static final String HR_INDUSTRY_DELETE = "hr:industry:delete";
+
+    /* ------------------------------ 社保参数配置 ------------------------------ */
+    public static final String HR_SOCIAL_PARAM_LIST = "hr:social:param:list";
+    public static final String HR_SOCIAL_PARAM_ADD = "hr:social:param:add";
+    public static final String HR_SOCIAL_PARAM_EDIT = "hr:social:param:edit";
+    public static final String HR_SOCIAL_PARAM_ACTIVATE = "hr:social:param:activate";
+    public static final String HR_SOCIAL_PARAM_DEACTIVATE = "hr:social:param:deactivate";
+    public static final String HR_SOCIAL_PARAM_DELETE = "hr:social:param:delete";
+
+    /* ------------------------------ 公积金参数配置 ------------------------------ */
+    public static final String HR_HOUSING_FUND_LIST = "hr:housing:fund:list";
+    public static final String HR_HOUSING_FUND_ADD = "hr:housing:fund:add";
+    public static final String HR_HOUSING_FUND_EDIT = "hr:housing:fund:edit";
+    public static final String HR_HOUSING_FUND_ACTIVATE = "hr:housing:fund:activate";
+    public static final String HR_HOUSING_FUND_DELETE = "hr:housing:fund:delete";
+
+    /* ------------------------------ 社保核算明细 ------------------------------ */
+    public static final String HR_SOCIAL_CALC_LIST = "hr:social:calc:list";
+    public static final String HR_SOCIAL_CALC_EXPORT = "hr:social:calc:export";
+
+    /* ------------------------------ 年度基数重算 ------------------------------ */
+    public static final String HR_RECALC_TRIGGER = "hr:recalc:trigger";
+    public static final String HR_RECALC_EXECUTE = "hr:recalc:execute";
 
     /* ------------------------------ 租户管理 ------------------------------ */
     public static final String TENANT_LIST = "tenant:list";
@@ -250,5 +316,11 @@ public final class PermissionConst {
     public static final String LEASE_CONTRACT_LIST = "lease:contract:list";
     public static final String LEASE_CONTRACT_ADD = "lease:contract:add";
     public static final String LEASE_CONTRACT_TERMINATE = "lease:contract:terminate";
+
+    /* ------------------------------ 客户端设备校验 ------------------------------ */
+    public static final String DEVICE_AUTH_LIST = "device:auth:list";
+    public static final String DEVICE_AUTH_ADD = "device:auth:add";
+    public static final String DEVICE_AUTH_DELETE = "device:auth:delete";
+    public static final String DEVICE_AUTH_TOGGLE = "device:auth:toggle";
 
 }

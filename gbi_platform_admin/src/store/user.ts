@@ -10,6 +10,7 @@ import { loginApi, getInfoApi, logoutApi } from '@/api/base'
 export interface LoginParams {
   username: string
   password: string
+  hardwareInfo?: any
 }
 
 export interface UserInfo {

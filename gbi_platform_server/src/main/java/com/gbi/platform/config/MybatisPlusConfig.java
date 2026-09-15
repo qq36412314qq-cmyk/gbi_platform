@@ -35,7 +35,8 @@ public class MybatisPlusConfig {
             "sys_config",
             "sys_ding_sync_record", "biz_kingdee_push", "finance_pay_flow",
             "flow_definition", "biz_discount_policy",
-            "hr_attendance_record", "hr_salary_archive", "hr_salary_month", "hr_social_security"
+            "hr_attendance_record", "hr_salary_archive", "hr_salary_month", "hr_social_security",
+            "sys_city", "sys_industry", "sys_insurance_type"
     );
 
     @Bean

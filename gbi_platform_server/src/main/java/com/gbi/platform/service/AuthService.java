@@ -37,4 +37,5 @@ public interface AuthService {
      * @return 登录用户，用户不存在或已禁用返回 null
      */
     LoginUser buildLoginUser(Long userId);
+
 }

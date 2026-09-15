@@ -1,0 +1,2 @@
+$body = '{"username":"admin","password":"123456","hardwareInfo":{"motherboardSn":"241248319101089","cpuId":"BFEBFBFF000C0662","diskSn":"0000_0000_0000_0000_A428_B70C_48C9_0002.","timestamp":1234567890,"nonce":"testx"}}'
+Invoke-RestMethod -Uri 'http://localhost:8080/base/login' -Method POST -ContentType 'application/json; charset=utf-8' -Body $body

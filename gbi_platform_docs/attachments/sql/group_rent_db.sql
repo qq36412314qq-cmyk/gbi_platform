@@ -11,7 +11,7 @@
  Target Server Version : 80012 (8.0.12)
  File Encoding         : 65001
 
- Date: 05/09/2026 17:23:27
+ Date: 15/09/2026 11:06:51
 */
 
 SET NAMES utf8mb4;
@@ -56,13 +56,15 @@ CREATE TABLE `biz_flow_seq`  (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_company_date`(`company_id` ASC, `seq_date` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '财务流水单号顺序号计数器（公司+日维度，防并发重号）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 63 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '财务流水单号顺序号计数器（公司+日维度，防并发重号）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of biz_flow_seq
 -- ----------------------------
 INSERT INTO `biz_flow_seq` VALUES (13, 0, '2026-09-04', 3, '2026-09-04 22:21:14');
-INSERT INTO `biz_flow_seq` VALUES (20, 0, '2026-09-05', 5, '2026-09-05 07:49:38');
+INSERT INTO `biz_flow_seq` VALUES (20, 0, '2026-09-05', 17, '2026-09-05 21:04:03');
+INSERT INTO `biz_flow_seq` VALUES (39, 0, '2026-09-06', 11, '2026-09-06 15:35:25');
+INSERT INTO `biz_flow_seq` VALUES (49, 0, '2026-09-15', 11, '2026-09-15 10:44:17');
 
 -- ----------------------------
 -- Table structure for biz_kingdee_push
@@ -96,20 +98,31 @@ CREATE TABLE `finance_discount_apply`  (
   `apply_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '申请编号',
   `policy_id` bigint(20) NOT NULL COMMENT '优惠策略ID',
   `policy_snapshot` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '策略快照JSON（审批后计算依据，固化不回溯）',
-  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源类型 contract',
+  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源类型 contract/property_bill/water_elec_bill/other',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'rent' COMMENT '业务类型快照 rent/property_fee/water_elec/kindergarten',
   `source_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源单据ID（合同ID）',
+  `source_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源单据编号（冗余便于列表展示）',
   `contract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '合同编号（冗余便于列表展示）',
-  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '铺位ID',
+  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '摊位ID',
   `tenant_id` bigint(20) NULL DEFAULT NULL COMMENT '租户ID',
+  `start_month` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '优惠起始月份 yyyy-MM',
+  `end_month` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '优惠结束月份 yyyy-MM',
+  `total_months` int(11) NOT NULL DEFAULT 0 COMMENT '优惠总月数',
+  `original_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '优惠基数金额快照',
+  `real_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '实际应收金额快照',
   `waive_months` int(11) NOT NULL DEFAULT 0 COMMENT '申请免租期月数',
   `discount_rate` decimal(5, 2) NOT NULL DEFAULT 100.00 COMMENT '申请折扣率%',
   `deduct_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '申请减免金额',
+  `fixed_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '定额优惠金额快照',
+  `tier_config` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '阶梯配置快照JSON',
+  `discount_type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '优惠类型 1免租期 2折扣率 3减免金额 4组合 5定额 6阶梯',
   `discount_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '优惠总额（免租折算+折扣+减免）',
   `need_audit` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否需审批 超集团阈值自动置1',
   `flow_instance_id` bigint(20) NULL DEFAULT NULL COMMENT '关联审批实例ID',
   `apply_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '申请状态 0草稿 1审批中 2通过 3驳回 4作废',
   `apply_user_id` bigint(20) NULL DEFAULT NULL COMMENT '申请人用户ID',
   `audit_time` datetime NULL DEFAULT NULL COMMENT '审批完成时间',
+  `audit_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '审批意见',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -120,13 +133,46 @@ CREATE TABLE `finance_discount_apply`  (
   UNIQUE INDEX `uk_apply_no`(`apply_no` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_flow_instance_id`(`flow_instance_id` ASC) USING BTREE,
-  INDEX `idx_source`(`source_type` ASC, `source_id` ASC) USING BTREE
+  INDEX `idx_source`(`source_type` ASC, `source_id` ASC) USING BTREE,
+  INDEX `idx_biz_type_month`(`company_id` ASC, `biz_type` ASC, `start_month` ASC, `end_month` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '优惠申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_discount_apply
 -- ----------------------------
-INSERT INTO `finance_discount_apply` VALUES (1, 0, 'DA-0-20260820-886681', 1, '{\"discountRate\":\"100.00\",\"deductAmount\":\"0.00\",\"waiveMonths\":1}', 'contract', '6', 'HT202608201628048145', 1, 1, 1, 100.00, 0.00, 2000.00, 0, NULL, 2, 1, '2026-08-20 16:28:04', '', 1, '2026-08-20 16:28:04', 1, '2026-08-20 16:28:04', 0);
+INSERT INTO `finance_discount_apply` VALUES (1, 0, 'DA-0-20260820-886681', 1, '{\"discountRate\":\"100.00\",\"deductAmount\":\"0.00\",\"waiveMonths\":1}', 'contract', 'rent', '6', NULL, 'HT202608201628048145', 1, 1, NULL, NULL, 0, 0.00, 0.00, 1, 100.00, 0.00, 0.00, NULL, 0, 2000.00, 0, NULL, 2, 1, '2026-08-20 16:28:04', NULL, '', 1, '2026-08-20 16:28:04', 1, '2026-08-20 16:28:04', 0);
+
+-- ----------------------------
+-- Table structure for finance_discount_log
+-- ----------------------------
+DROP TABLE IF EXISTS `finance_discount_log`;
+CREATE TABLE `finance_discount_log`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
+  `apply_id` bigint(20) NULL DEFAULT NULL COMMENT '关联优惠申请ID',
+  `policy_id` bigint(20) NULL DEFAULT NULL COMMENT '关联优惠策略ID',
+  `bill_id` bigint(20) NULL DEFAULT NULL COMMENT '关联账单ID',
+  `source_bill_id` bigint(20) NULL DEFAULT NULL COMMENT '源账单ID',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '业务类型',
+  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '铺位ID',
+  `bill_month` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '账单月份',
+  `discount_type` tinyint(4) NOT NULL COMMENT '优惠类型',
+  `original_amount` decimal(12, 2) NOT NULL COMMENT '原价金额',
+  `discount_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '优惠金额',
+  `real_amount` decimal(12, 2) NOT NULL COMMENT '实收金额',
+  `calc_rule` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '计算规则说明JSON',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作人用户ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_log_apply`(`apply_id` ASC) USING BTREE,
+  INDEX `idx_log_bill`(`bill_id` ASC) USING BTREE,
+  INDEX `idx_log_source`(`source_bill_id` ASC) USING BTREE,
+  INDEX `idx_log_stall_month`(`stall_id` ASC, `bill_month` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '优惠执行日志表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of finance_discount_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for finance_discount_policy
@@ -136,14 +182,21 @@ CREATE TABLE `finance_discount_policy`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID，0=集团模板',
   `policy_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '策略名称',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'rent' COMMENT '业务类型 rent=租赁费 property_fee=物业费 water_elec=水电费 kindergarten=幼儿园费',
   `discount_type` tinyint(4) NOT NULL COMMENT '优惠类型 1免租期 2折扣率 3减免金额 4组合',
   `waive_months` int(11) NOT NULL DEFAULT 0 COMMENT '免租期月数（type=1/4）',
   `discount_rate` decimal(5, 2) NOT NULL DEFAULT 100.00 COMMENT '折扣率%（100=无折扣，type=2/4）',
   `deduct_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '减免金额（type=3/4）',
-  `scope_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '适用范围 1按合同 2按铺位',
+  `fixed_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '定额优惠金额（每月固定减免，type=5）',
+  `tier_config` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '阶梯配置JSON [{\"min_amount\":0,\"discount_rate\":100}]',
+  `scope_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '适用范围 1按合同 2按铺位 3按租户 4按市场 5按分类',
+  `scope_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '适用范围ID列表JSON [\"1\",\"2\",\"3\"]',
   `start_time` date NULL DEFAULT NULL COMMENT '策略生效时间',
   `end_time` date NULL DEFAULT NULL COMMENT '策略失效时间，NULL永久',
+  `max_apply_months` int(11) NULL DEFAULT NULL COMMENT '最多申请月数限制，NULL表示不限',
+  `auto_approve` tinyint(4) NOT NULL DEFAULT 1 COMMENT '自动审批 0需审批 1自动生效',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0停用 1启用',
+  `sort_order` int(11) NOT NULL DEFAULT 0 COMMENT '排序权重',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -152,13 +205,51 @@ CREATE TABLE `finance_discount_policy`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_policy_name_company`(`policy_name` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
-  INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
+  INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_biz_type_status`(`company_id` ASC, `biz_type` ASC, `status` ASC) USING BTREE,
+  INDEX `idx_scope`(`biz_type` ASC, `scope_type` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '优惠策略表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_discount_policy
 -- ----------------------------
-INSERT INTO `finance_discount_policy` VALUES (1, 0, '开业免租1个月', 1, 1, 100.00, 0.00, 1, NULL, NULL, 1, '集团模板：开业免租1个月（免租期优惠）', 1, '2026-08-20 14:38:31', NULL, NULL, 0);
+INSERT INTO `finance_discount_policy` VALUES (1, 0, '开业免租1个月', 'rent', 1, 1, 100.00, 0.00, 0.00, NULL, 1, NULL, NULL, NULL, NULL, 1, 1, 0, '集团模板：开业免租1个月（免租期优惠）', 1, '2026-08-20 14:38:31', NULL, NULL, 0);
+
+-- ----------------------------
+-- Table structure for finance_discount_threshold
+-- ----------------------------
+DROP TABLE IF EXISTS `finance_discount_threshold`;
+CREATE TABLE `finance_discount_threshold`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID，0=集团统一',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '业务类型',
+  `threshold_type` tinyint(4) NOT NULL COMMENT '阈值类型 1免租期上限 2折扣率下限 3减免金额上限 4定额上限 5占比上限',
+  `threshold_value` decimal(12, 2) NOT NULL COMMENT '阈值数值',
+  `require_audit` tinyint(4) NOT NULL DEFAULT 1 COMMENT '是否需审批 0否 1是',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0停用 1启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人用户ID',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_threshold`(`company_id` ASC, `biz_type` ASC, `threshold_type` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '优惠审批阈值配置表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of finance_discount_threshold
+-- ----------------------------
+INSERT INTO `finance_discount_threshold` VALUES (1, 0, 'rent', 1, 3.00, 1, 1, '租赁合同免租期上限3个月', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (2, 0, 'rent', 2, 80.00, 1, 1, '租赁合同折扣率下限80%', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (3, 0, 'rent', 3, 5000.00, 1, 1, '租赁合同减免金额上限5000元', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (4, 0, 'rent', 5, 30.00, 1, 1, '租赁合同优惠占比上限30%', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (5, 0, 'property_fee', 3, 2000.00, 1, 1, '物业费减免金额上限2000元', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (6, 0, 'property_fee', 5, 20.00, 1, 1, '物业费优惠占比上限20%', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (7, 0, 'water_elec', 3, 1000.00, 1, 1, '水电费减免金额上限1000元', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (8, 0, 'water_elec', 5, 15.00, 1, 1, '水电费优惠占比上限15%', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (9, 0, 'kindergarten', 3, 3000.00, 1, 1, '幼儿园费减免金额上限3000元', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
+INSERT INTO `finance_discount_threshold` VALUES (10, 0, 'kindergarten', 5, 25.00, 1, 1, '幼儿园费优惠占比上限25%', 0, '2026-09-06 12:23:32', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for finance_fee_item
@@ -184,7 +275,7 @@ CREATE TABLE `finance_fee_item`  (
 -- ----------------------------
 -- Records of finance_fee_item
 -- ----------------------------
-INSERT INTO `finance_fee_item` VALUES (1, 0, '租金', 1, '元/月', '集团模板：铺位租金收费', 1, '2026-08-19 12:24:43', NULL, '2026-08-19 13:53:24', 0);
+INSERT INTO `finance_fee_item` VALUES (1, 0, '租金', 1, '元/月', '集团模板：摊位租金收费', 1, '2026-08-19 12:24:43', 1, '2026-09-10 19:07:57', 0);
 INSERT INTO `finance_fee_item` VALUES (2, 0, '物业费', 2, '元/月', '集团模板：物业管理服务费', 1, '2026-08-19 12:24:43', NULL, '2026-08-19 13:53:24', 0);
 INSERT INTO `finance_fee_item` VALUES (3, 0, '水费', 3, '元/吨', '集团模板：用水收费', 1, '2026-08-19 12:24:43', NULL, '2026-08-19 13:53:24', 0);
 INSERT INTO `finance_fee_item` VALUES (4, 0, '电费', 4, '元/度', '集团模板：用电收费', 1, '2026-08-19 12:24:43', NULL, '2026-08-19 13:53:24', 0);
@@ -199,7 +290,7 @@ CREATE TABLE `finance_fee_pay_bill`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'property_fee' COMMENT '业务类型 property_fee=物业费 water_elec=水电费 rent=租赁费 kindergarten=幼儿园费',
-  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID（可空，账单可无商户绑定）',
   `bill_month` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '账单周期标识（月yyyy-MM / 季yyyy-Qn / 年yyyy / 一次性once）',
   `rule_id` bigint(20) NOT NULL COMMENT '生成账单的规则ID（biz_fee_rule，锁定后仅记录不回溯）',
@@ -215,31 +306,49 @@ CREATE TABLE `finance_fee_pay_bill`  (
   `locked_flag` tinyint(4) NOT NULL DEFAULT 1 COMMENT '账单锁定 1锁定（生成即锁定，规则变更不回溯）',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '账单备注',
   `source_bill_id` bigint(20) NULL DEFAULT NULL COMMENT '源记录单ID（water_elec_bill.id / property_fee_bill.id，用于幂等和追溯）',
+  `policy_id` bigint(20) NULL DEFAULT NULL COMMENT '关联优惠策略ID',
+  `apply_id` bigint(20) NULL DEFAULT NULL COMMENT '关联优惠申请ID',
+  `discount_type` tinyint(4) NULL DEFAULT NULL COMMENT '优惠类型快照',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人用户ID',
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除（缴费完成禁止删除）',
   PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_stall_rule_source`(`company_id` ASC, `stall_id` ASC, `rule_id` ASC, `source_bill_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_stall_id`(`stall_id` ASC) USING BTREE,
   INDEX `idx_rule_id`(`rule_id` ASC) USING BTREE,
   INDEX `idx_company_biztype_status`(`company_id` ASC, `biz_type` ASC, `pay_status` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_source_bill_id`(`source_bill_id` ASC) USING BTREE,
   INDEX `idx_pay_bill_id`(`pay_bill_id` ASC) USING BTREE,
-  UNIQUE INDEX `uk_stall_rule_source`(`company_id` ASC, `stall_id` ASC, `rule_id` ASC, `source_bill_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 82 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一账单表（未支付订单，聚合支付载体，含各业务来源账单）' ROW_FORMAT = Dynamic;
+  INDEX `idx_fee_bill_policy`(`policy_id` ASC) USING BTREE,
+  INDEX `idx_fee_bill_apply`(`apply_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 95 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一账单表（未支付订单，聚合支付载体，含各业务来源账单）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_fee_pay_bill
 -- ----------------------------
-INSERT INTO `finance_fee_pay_bill` VALUES (75, 0, 'water_elec', 1, NULL, '2026-09', 4, 476, 11, 2, 60.00, 0.00, 0.00, 60.00, 2, '2026-09-05 00:37:27', 1, NULL, 53, 1, '2026-09-04 22:20:52', 1, '2026-09-05 00:37:27', 0);
-INSERT INTO `finance_fee_pay_bill` VALUES (76, 0, 'water_elec', 1, NULL, '2026-09', 4, 477, 12, 2, 90.00, 0.00, 0.00, 90.00, 2, '2026-09-05 07:49:22', 1, NULL, 48, 1, '2026-09-05 00:30:55', 1, '2026-09-05 07:49:22', 0);
-INSERT INTO `finance_fee_pay_bill` VALUES (77, 0, 'property_fee', 1, NULL, '2026-10', 5, 478, 12, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 07:49:22', 1, NULL, 45, 1, '2026-09-05 07:48:20', 1, '2026-09-05 07:49:22', 0);
-INSERT INTO `finance_fee_pay_bill` VALUES (78, 0, 'property_fee', 1, NULL, '2026-09', 5, 479, 12, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 07:49:22', 1, NULL, 44, 1, '2026-09-05 07:48:23', 1, '2026-09-05 07:49:22', 0);
-INSERT INTO `finance_fee_pay_bill` VALUES (79, 0, 'property_fee', 1, NULL, '2026-11', 5, NULL, 13, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 07:49:39', 1, NULL, 46, 1, '2026-09-05 07:48:48', 1, '2026-09-05 07:49:39', 0);
-INSERT INTO `finance_fee_pay_bill` VALUES (80, 0, 'property_fee', 1, NULL, '2026-12', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 0, NULL, 1, NULL, 47, 1, '2026-09-05 07:48:59', 1, '2026-09-05 07:48:59', 0);
-INSERT INTO `finance_fee_pay_bill` VALUES (81, 0, 'water_elec', 1, NULL, '2026-09', 4, 482, NULL, 2, 60.00, 0.00, 0.00, 60.00, 0, NULL, 1, NULL, 55, 1, '2026-09-05 09:41:44', 1, '2026-09-05 09:41:44', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (75, 0, 'water_elec', 1, NULL, '2026-09', 4, 490, 11, 2, 60.00, 0.00, 0.00, 60.00, 2, '2026-09-05 00:37:27', 1, NULL, 53, NULL, NULL, NULL, 1, '2026-09-04 22:20:52', 1, '2026-09-06 11:13:47', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (76, 0, 'water_elec', 1, NULL, '2026-09', 4, 477, 12, 2, 90.00, 0.00, 0.00, 90.00, 2, '2026-09-05 07:49:22', 1, NULL, 48, NULL, NULL, NULL, 1, '2026-09-05 00:30:55', 1, '2026-09-05 07:49:22', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (77, 0, 'property_fee', 1, NULL, '2026-10', 5, 478, 12, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 07:49:22', 1, NULL, 45, NULL, NULL, NULL, 1, '2026-09-05 07:48:20', 1, '2026-09-05 07:49:22', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (78, 0, 'property_fee', 1, NULL, '2026-09', 5, 479, 12, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 07:49:22', 1, NULL, 44, NULL, NULL, NULL, 1, '2026-09-05 07:48:23', 1, '2026-09-05 07:49:22', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (79, 0, 'property_fee', 1, NULL, '2026-11', 5, NULL, 13, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 07:49:39', 1, NULL, 46, NULL, NULL, NULL, 1, '2026-09-05 07:48:48', 1, '2026-09-05 07:49:39', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (80, 0, 'property_fee', 1, NULL, '2026-12', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-06 10:54:16', 1, NULL, 47, NULL, NULL, NULL, 1, '2026-09-05 07:48:59', 1, '2026-09-06 10:54:16', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (81, 0, 'water_elec', 1, NULL, '2026-09', 4, 482, NULL, 2, 60.00, 0.00, 0.00, 60.00, 2, '2026-09-06 11:10:07', 1, NULL, 55, NULL, NULL, NULL, 1, '2026-09-05 09:41:44', 1, '2026-09-06 11:10:07', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (82, 0, 'property_fee', 1, NULL, '2027-01', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 20:01:27', 1, NULL, 48, NULL, NULL, NULL, 1, '2026-09-05 19:00:03', 1, '2026-09-05 20:01:27', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (83, 0, 'property_fee', 1, NULL, '2027-02', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-06 10:54:16', 1, NULL, 49, NULL, NULL, NULL, 1, '2026-09-05 19:00:03', 1, '2026-09-06 10:54:16', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (84, 0, 'property_fee', 1, NULL, '2027-03', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-06 10:47:36', 1, NULL, 50, NULL, NULL, NULL, 1, '2026-09-05 19:09:34', 1, '2026-09-06 10:47:36', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (85, 0, 'property_fee', 1, NULL, '2027-04', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 19:43:30', 1, NULL, 51, NULL, NULL, NULL, 1, '2026-09-05 19:09:34', 1, '2026-09-05 19:43:30', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (86, 0, 'property_fee', 1, NULL, '2027-05', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-05 21:04:04', 1, NULL, 52, NULL, NULL, NULL, 1, '2026-09-05 19:52:47', 1, '2026-09-05 21:04:04', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (87, 0, 'property_fee', 1, NULL, '2027-06', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-06 11:13:28', 1, NULL, 53, NULL, NULL, NULL, 1, '2026-09-06 11:13:22', 1, '2026-09-06 11:13:28', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (88, 0, 'water_elec', 1, NULL, '2026-09', 4, 491, NULL, 2, 60.00, 0.00, 0.00, 60.00, 2, '2026-09-06 11:13:57', 1, NULL, 56, NULL, NULL, NULL, 1, '2026-09-06 11:13:52', 1, '2026-09-06 11:13:57', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (89, 0, 'property_fee', 1, NULL, '2027-07', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-06 15:35:26', 1, NULL, 54, NULL, NULL, NULL, 1, '2026-09-06 15:35:05', 1, '2026-09-06 15:35:26', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (90, 0, 'property_fee', 1, NULL, '2027-08', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-06 15:35:26', 1, NULL, 55, NULL, NULL, NULL, 1, '2026-09-06 15:35:05', 1, '2026-09-06 15:35:26', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (91, 0, 'property_fee', 1, NULL, '2027-09', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-15 09:49:24', 1, NULL, 56, NULL, NULL, NULL, 1, '2026-09-10 19:28:59', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (92, 0, 'water_elec', 1, NULL, '2026-09', 4, 501, NULL, 2, 60.00, 0.00, 0.00, 60.00, 2, '2026-09-15 09:49:24', 1, NULL, 62, NULL, NULL, NULL, 1, '2026-09-15 09:48:58', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (93, 0, 'water_elec', 1, NULL, '2026-09', 4, 502, NULL, 2, 60.00, 0.00, 0.00, 60.00, 2, '2026-09-15 10:44:18', 1, NULL, 61, NULL, NULL, NULL, 1, '2026-09-15 10:18:48', 1, '2026-09-15 10:44:18', 0);
+INSERT INTO `finance_fee_pay_bill` VALUES (94, 0, 'property_fee', 1, NULL, '2027-10', 5, NULL, NULL, 2, 25.00, 0.00, 0.00, 25.00, 2, '2026-09-15 10:44:18', 1, NULL, 57, NULL, NULL, NULL, 1, '2026-09-15 10:19:03', 1, '2026-09-15 10:44:18', 0);
 
 -- ----------------------------
 -- Table structure for finance_fee_rule
@@ -270,12 +379,12 @@ CREATE TABLE `finance_fee_rule`  (
 -- ----------------------------
 -- Records of finance_fee_rule
 -- ----------------------------
-INSERT INTO `finance_fee_rule` VALUES (1, 0, '租金', 1, 1, 1000.00, 2, 0.50, 1, '', 1, '2026-08-19 13:00:08', 1, '2026-08-19 13:00:08', 0);
-INSERT INTO `finance_fee_rule` VALUES (2, 0, '电费', 4, 1, 0.50, 0, 0.50, 1, '', 1, '2026-08-19 13:00:34', 1, '2026-08-19 13:13:38', 0);
+INSERT INTO `finance_fee_rule` VALUES (1, 0, '租金444', 1, 1, 1000.00, 2, 0.50, 1, '', 1, '2026-08-19 13:00:08', 1, '2026-09-05 21:22:18', 0);
+INSERT INTO `finance_fee_rule` VALUES (2, 0, '电费333', 4, 1, 0.50, 0, 0.50, 1, '', 1, '2026-08-19 13:00:34', 1, '2026-09-05 21:22:13', 0);
 INSERT INTO `finance_fee_rule` VALUES (3, 0, '租金1', 1, 1, 2000.00, 1, 0.50, 1, '', 1, '2026-08-19 13:01:30', 1, '2026-08-20 15:08:55', 0);
-INSERT INTO `finance_fee_rule` VALUES (4, 0, '水费', 3, 1, 6.00, 0, 0.50, 1, '', 1, '2026-08-19 14:15:33', 1, '2026-08-19 14:15:33', 0);
-INSERT INTO `finance_fee_rule` VALUES (5, 0, '物业费', 2, 2, 0.50, 2, 0.00, 1, '', 1, '2026-08-21 19:04:26', 1, '2026-08-21 19:04:26', 0);
-INSERT INTO `finance_fee_rule` VALUES (6, 0, '押金', 5, 1, 1000.00, 0, 0.00, 1, '', 1, '2026-08-24 07:24:25', 1, '2026-08-24 07:24:25', 0);
+INSERT INTO `finance_fee_rule` VALUES (4, 0, '水费222', 3, 1, 6.00, 0, 0.50, 1, '', 1, '2026-08-19 14:15:33', 1, '2026-09-05 21:22:09', 0);
+INSERT INTO `finance_fee_rule` VALUES (5, 0, '物业费1111', 2, 2, 0.50, 2, 0.00, 1, '', 1, '2026-08-21 19:04:26', 1, '2026-09-05 21:22:02', 0);
+INSERT INTO `finance_fee_rule` VALUES (6, 0, '押金666', 5, 1, 1000.00, 0, 0.00, 1, '', 1, '2026-08-24 07:24:25', 1, '2026-09-05 21:22:27', 0);
 
 -- ----------------------------
 -- Table structure for finance_fee_rule_stall_rel
@@ -285,8 +394,8 @@ CREATE TABLE `finance_fee_rule_stall_rel`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `rule_id` bigint(20) NOT NULL COMMENT '收费规则ID（biz_fee_rule）',
-  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID（stall_info）',
-  `override_flag` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否特殊覆盖 0普通绑定 1单铺位覆盖（预留）',
+  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID（stall_info）',
+  `override_flag` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否特殊覆盖 0普通绑定 1单摊位覆盖（预留）',
   `override_price` decimal(12, 2) NULL DEFAULT NULL COMMENT '覆盖单价（预留，override_flag=1时生效）',
   `override_config_json` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '覆盖配置JSON（预留，后端过滤脚本后入库）',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
@@ -298,7 +407,7 @@ CREATE TABLE `finance_fee_rule_stall_rel`  (
   UNIQUE INDEX `uk_rule_stall`(`rule_id` ASC, `stall_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_stall_id`(`stall_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 48 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '收费规则-铺位关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 48 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '收费规则-摊位关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_fee_rule_stall_rel
@@ -366,14 +475,35 @@ CREATE TABLE `finance_pay_flow`  (
   INDEX `idx_flow_status`(`flow_status` ASC) USING BTREE,
   INDEX `idx_merchant_id`(`merchant_id` ASC) USING BTREE,
   INDEX `idx_pay_bill_id`(`pay_bill_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 54 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '全域财务资金流水表（唯一资金台账）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 83 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '全域财务资金流水表（唯一资金台账）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_pay_flow
 -- ----------------------------
-INSERT INTO `finance_pay_flow` VALUES (51, 0, 'water_elec', NULL, '53', 470, 11, NULL, NULL, 1, '001', '铺位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 60.00, 0.00, 60.00, 3, 1, 1, 6, NULL, NULL, NULL, 'YO0020260905000002', '统一缴费', 1, '2026-09-05 00:37:27', 1, '{\"applyId\":1,\"discountRate\":\"100.00\",\"policyId\":1,\"auditTime\":\"2026-08-20T16:28:04\",\"applyNo\":\"DA-0-20260820-886681\",\"deductAmount\":\"0.00\",\"waiveMonths\":1,\"discountAmount\":\"2000.00\",\"applyStatus\":2}');
-INSERT INTO `finance_pay_flow` VALUES (52, 0, 'pay_bill', NULL, '76', 477, 12, 'PY0020260905000004', NULL, 1, '001', '铺位名称', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 140.00, 0.00, 140.00, 3, 1, 1, 1, NULL, NULL, NULL, 'PAY1788565757322-arxia3qg', NULL, 1, '2026-09-05 07:49:21', NULL, NULL);
-INSERT INTO `finance_pay_flow` VALUES (53, 0, 'property_fee', NULL, '46', 480, 13, NULL, NULL, 1, '001', '铺位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 6, NULL, NULL, NULL, 'YO0020260905000004', '统一缴费', 1, '2026-09-05 07:49:38', 1, '{\"applyId\":1,\"discountRate\":\"100.00\",\"policyId\":1,\"auditTime\":\"2026-08-20T16:28:04\",\"applyNo\":\"DA-0-20260820-886681\",\"deductAmount\":\"0.00\",\"waiveMonths\":1,\"discountAmount\":\"2000.00\",\"applyStatus\":2}');
+INSERT INTO `finance_pay_flow` VALUES (51, 0, 'water_elec', NULL, '53', 470, 11, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 60.00, 0.00, 60.00, 3, 1, 1, 6, NULL, NULL, NULL, 'YO0020260905000002', '统一缴费', 1, '2026-09-05 00:37:27', 1, '{\"applyId\":1,\"discountRate\":\"100.00\",\"policyId\":1,\"auditTime\":\"2026-08-20T16:28:04\",\"applyNo\":\"DA-0-20260820-886681\",\"deductAmount\":\"0.00\",\"waiveMonths\":1,\"discountAmount\":\"2000.00\",\"applyStatus\":2}');
+INSERT INTO `finance_pay_flow` VALUES (52, 0, 'pay_bill', NULL, '76', 477, 12, 'PY0020260905000004', NULL, 1, '001', '摊位名称', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 140.00, 0.00, 140.00, 3, 1, 1, 1, NULL, NULL, NULL, 'PAY1788565757322-arxia3qg', NULL, 1, '2026-09-05 07:49:21', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (53, 0, 'property_fee', NULL, '46', 480, 13, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 6, NULL, NULL, NULL, 'YO0020260905000004', '统一缴费', 1, '2026-09-05 07:49:38', 1, '{\"applyId\":1,\"discountRate\":\"100.00\",\"policyId\":1,\"auditTime\":\"2026-08-20T16:28:04\",\"applyNo\":\"DA-0-20260820-886681\",\"deductAmount\":\"0.00\",\"waiveMonths\":1,\"discountAmount\":\"2000.00\",\"applyStatus\":2}');
+INSERT INTO `finance_pay_flow` VALUES (58, 0, 'property_fee', NULL, '51', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260905000010', '统一缴费', 1, '2026-09-05 19:43:29', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (59, 0, 'property_fee', NULL, '49', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 3, NULL, NULL, NULL, 'YO0020260905000012', '合并缴费', 1, '2026-09-05 19:44:06', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (60, 0, 'property_fee', NULL, '50', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 3, NULL, NULL, NULL, 'YO0020260905000013', '合并缴费', 1, '2026-09-05 19:44:07', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (61, 0, 'property_fee', NULL, '52', 487, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 3, NULL, NULL, NULL, 'YO0020260905000014', '统一缴费', 1, '2026-09-05 19:56:33', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (62, 0, 'property_fee', NULL, '48', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260905000015', '统一缴费', 1, '2026-09-05 20:01:26', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (63, 0, 'property_fee', NULL, '52', 487, NULL, NULL, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, -25.00, 3, 2, 1, 1, NULL, NULL, NULL, 'YO0020260905000014-R', '冲红反向流水（原缴费单ID=22）', 1, '2026-09-05 20:16:32', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (64, 0, 'property_fee', NULL, '49', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, -25.00, 3, 2, 1, 1, NULL, NULL, NULL, 'YO0020260905000012_R', '冲红反向流水（原缴费单ID=21）', 1, '2026-09-05 20:23:18', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (65, 0, 'property_fee', NULL, '50', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, -25.00, 3, 2, 1, 1, NULL, NULL, NULL, 'YO0020260905000013_R', '冲红反向流水（原缴费单ID=21）', 1, '2026-09-05 20:23:18', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (66, 0, 'property_fee', NULL, '52', 487, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260905000017', '统一缴费', 1, '2026-09-05 21:04:03', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (67, 0, 'property_fee', NULL, '50', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260906000002', '统一缴费', 1, '2026-09-06 10:47:36', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (68, 0, 'property_fee', NULL, '47', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260906000004', '合并缴费', 1, '2026-09-06 10:54:16', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (69, 0, 'property_fee', NULL, '49', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260906000005', '合并缴费', 1, '2026-09-06 10:54:16', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (70, 0, 'water_elec', NULL, '55', NULL, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 60.00, 0.00, 60.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260906000006', '统一缴费', 1, '2026-09-06 11:10:07', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (71, 0, 'property_fee', NULL, '53', 488, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260906000007', '统一缴费', 1, '2026-09-06 11:13:27', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (72, 0, 'water_elec', NULL, '56', 489, NULL, NULL, NULL, 1, '001', '摊位名称', '默认市场', '车位', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 60.00, 0.00, 60.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260906000008', '统一缴费', 1, '2026-09-06 11:13:57', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (73, 0, 'property_fee', NULL, '54', 492, NULL, NULL, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260906000010', '合并缴费', 1, '2026-09-06 15:35:25', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (74, 0, 'property_fee', NULL, '55', 493, NULL, NULL, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260906000011', '合并缴费', 1, '2026-09-06 15:35:25', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (75, 0, 'property_fee', NULL, '56', 498, NULL, NULL, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260915000003', '合并缴费', 1, '2026-09-15 09:49:24', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (76, 0, 'water_elec', NULL, '62', 500, NULL, NULL, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 60.00, 0.00, 60.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260915000004', '合并缴费', 1, '2026-09-15 09:49:24', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (81, 0, 'water_elec', NULL, '61', 499, 36, NULL, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 60.00, 0.00, 60.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260915000010', '合并缴费', 1, '2026-09-15 10:44:17', NULL, NULL);
+INSERT INTO `finance_pay_flow` VALUES (82, 0, 'property_fee', NULL, '57', 503, 36, NULL, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', NULL, NULL, NULL, NULL, NULL, NULL, 25.00, 0.00, 25.00, 3, 1, 1, 1, NULL, NULL, NULL, 'YO0020260915000011', '合并缴费', 1, '2026-09-15 10:44:17', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for finance_pay_order
@@ -385,7 +515,7 @@ CREATE TABLE `finance_pay_order`  (
   `pay_bill_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '缴费单编号（PY+公司编码+日期+序号）',
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '来源类型 contract=租赁合同 fee_bill=收费账单',
   `source_id` bigint(20) NOT NULL COMMENT '来源单据ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID',
   `total_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '缴费单总金额',
   `paid_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '已缴金额',
@@ -403,14 +533,33 @@ CREATE TABLE `finance_pay_order`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_stall_id`(`stall_id` ASC) USING BTREE,
   INDEX `idx_source`(`source_type` ASC, `source_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '缴费单主表（聚合支付载体）' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 37 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '缴费单主表（聚合支付载体）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of finance_pay_order
 -- ----------------------------
-INSERT INTO `finance_pay_order` VALUES (11, 0, 'PY0020260905000003', 'fee_bill', 75, 1, 1, 60.00, 60.00, 0.00, 2, '2026-09-05 00:37:27', NULL, 1, '2026-09-05 00:37:27', 1, '2026-09-05 00:37:27', 0);
-INSERT INTO `finance_pay_order` VALUES (12, 0, 'PY0020260905000004', 'fee_bill', 76, 1, NULL, 140.00, 140.00, 0.00, 2, '2026-09-05 07:49:22', '', 1, '2026-09-05 07:49:22', 1, '2026-09-05 07:49:22', 0);
+INSERT INTO `finance_pay_order` VALUES (11, 0, 'PY0020260905000003', 'fee_bill', 75, 1, 1, 60.00, 60.00, 0.00, 1, '2026-09-05 00:37:27', '1111', 1, '2026-09-05 00:37:27', 1, '2026-09-05 18:09:11', 0);
+INSERT INTO `finance_pay_order` VALUES (12, 0, 'PY0020260905000004', 'fee_bill', 56, 1, NULL, 140.00, 140.00, 0.00, 2, '2026-09-05 07:49:22', '', 1, '2026-09-05 07:49:22', 1, '2026-09-15 10:13:52', 0);
 INSERT INTO `finance_pay_order` VALUES (13, 0, 'PY0020260905000005', 'fee_bill', 79, 1, 1, 25.00, 25.00, 0.00, 2, '2026-09-05 07:49:39', NULL, 1, '2026-09-05 07:49:39', 1, '2026-09-05 07:49:39', 0);
+INSERT INTO `finance_pay_order` VALUES (14, 0, 'PY_TEST2026090500001', 'fee_bill', 80, 1, 1, 100.00, 0.00, 100.00, 0, NULL, '测试待缴数据', 1, '2026-09-05 18:04:29', NULL, NULL, 0);
+INSERT INTO `finance_pay_order` VALUES (17, 0, 'YO0020260905000007', 'fee_bill', 50, 1, 1, 25.00, 25.00, 0.00, 2, '2026-09-06 10:47:36', '', 1, '2026-09-05 19:31:07', 1, '2026-09-06 10:47:36', 0);
+INSERT INTO `finance_pay_order` VALUES (20, 0, 'YO0020260905000010', 'fee_bill', 51, 1, 1, 25.00, 25.00, 0.00, 2, '2026-09-05 19:43:30', '', 1, '2026-09-05 19:43:30', 1, '2026-09-05 19:43:30', 0);
+INSERT INTO `finance_pay_order` VALUES (21, 0, 'YO0020260905000011', 'fee_bill', 49, 1, NULL, 50.00, 50.00, 0.00, 4, '2026-09-05 19:44:07', '1232【已冲红：11】', 1, '2026-09-05 19:44:06', 1, '2026-09-05 20:23:18', 0);
+INSERT INTO `finance_pay_order` VALUES (22, 0, 'YO0020260905000014', 'fee_bill', 52, 1, 1, 25.00, 25.00, 0.00, 2, '2026-09-05 21:04:04', '【已冲红：14】', 1, '2026-09-05 19:56:34', 1, '2026-09-05 21:04:04', 0);
+INSERT INTO `finance_pay_order` VALUES (23, 0, 'YO0020260905000015', 'fee_bill', 48, 1, 1, 25.00, 25.00, 0.00, 4, '2026-09-05 20:01:27', '【已冲红：233345】', 1, '2026-09-05 20:01:27', 1, '2026-09-05 20:01:59', 0);
+INSERT INTO `finance_pay_order` VALUES (24, 0, 'YO0020260905000016', 'fee_bill', 52, 1, 1, 25.00, 0.00, 25.00, 0, NULL, '冲红单（原缴费单ID=22）', 1, '2026-09-05 20:16:33', 1, '2026-09-05 20:16:33', 0);
+INSERT INTO `finance_pay_order` VALUES (25, 0, 'YO0020260905000011_R', 'fee_bill', 49, 1, NULL, 50.00, 0.00, 50.00, 4, NULL, '冲红单（原缴费单ID=21）', 1, '2026-09-05 20:23:18', 1, '2026-09-06 10:53:18', 0);
+INSERT INTO `finance_pay_order` VALUES (26, 0, 'YO0020260906000003', 'fee_bill', 47, 1, NULL, 50.00, 50.00, 0.00, 2, '2026-09-06 10:54:16', '', 1, '2026-09-06 10:54:16', 1, '2026-09-06 10:54:16', 0);
+INSERT INTO `finance_pay_order` VALUES (27, 0, 'YO0020260906000006', 'fee_bill', 55, 1, 1, 60.00, 60.00, 0.00, 2, '2026-09-06 11:10:07', '', 1, '2026-09-06 11:10:07', 1, '2026-09-06 11:10:07', 0);
+INSERT INTO `finance_pay_order` VALUES (28, 0, 'YO0020260906000007', 'fee_bill', 53, 1, 1, 25.00, 25.00, 0.00, 2, '2026-09-06 11:13:28', '', 1, '2026-09-06 11:13:28', 1, '2026-09-06 11:13:28', 0);
+INSERT INTO `finance_pay_order` VALUES (29, 0, 'YO0020260906000008', 'fee_bill', 56, 1, 0, 60.00, 60.00, 0.00, 2, '2026-09-06 11:13:57', '', 1, '2026-09-06 11:13:57', 1, '2026-09-06 11:13:57', 0);
+INSERT INTO `finance_pay_order` VALUES (30, 0, 'YO0020260906000009', 'fee_bill', 54, 1, 1, 50.00, 50.00, 0.00, 2, '2026-09-06 15:35:26', '234', 1, '2026-09-06 15:35:26', 1, '2026-09-06 15:35:26', 0);
+INSERT INTO `finance_pay_order` VALUES (31, 0, 'YO0020260915000002', 'fee_bill', 76, 1, 1, 85.00, 85.00, 0.00, 2, '2026-09-15 09:49:24', '2231', 1, '2026-09-15 09:49:23', 1, '2026-09-15 10:13:58', 0);
+INSERT INTO `finance_pay_order` VALUES (32, 0, 'YO0020260915000005', 'fee_bill', 61, 1, 1, 85.00, 0.00, 85.00, 0, NULL, '111', 1, '2026-09-15 10:19:14', 1, '2026-09-15 10:19:14', 0);
+INSERT INTO `finance_pay_order` VALUES (33, 0, 'YO0020260915000006', 'fee_bill', 61, 1, 1, 85.00, 0.00, 85.00, 0, NULL, '', 1, '2026-09-15 10:24:32', 1, '2026-09-15 10:24:32', 0);
+INSERT INTO `finance_pay_order` VALUES (34, 0, 'YO0020260915000007', 'fee_bill', 61, 1, 1, 85.00, 0.00, 85.00, 0, NULL, '', 1, '2026-09-15 10:25:00', 1, '2026-09-15 10:25:00', 0);
+INSERT INTO `finance_pay_order` VALUES (35, 0, 'YO0020260915000008', 'fee_bill', 61, 1, 1, 85.00, 0.00, 85.00, 0, NULL, '', 1, '2026-09-15 10:29:22', 1, '2026-09-15 10:29:22', 0);
+INSERT INTO `finance_pay_order` VALUES (36, 0, 'YO0020260915000009', 'fee_bill', 61, 1, 1, 85.00, 85.00, 0.00, 2, '2026-09-15 10:44:18', '', 1, '2026-09-15 10:44:18', 1, '2026-09-15 10:44:18', 0);
 
 -- ----------------------------
 -- Table structure for finance_pay_order_item
@@ -419,7 +568,7 @@ DROP TABLE IF EXISTS `finance_pay_order_item`;
 CREATE TABLE `finance_pay_order_item`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `pay_bill_id` bigint(20) NOT NULL COMMENT '缴费单ID',
-  `bill_id` bigint(20) NOT NULL COMMENT '关联账单ID（biz_fee_bill.id）',
+  `bill_id` bigint(20) NOT NULL COMMENT '关联账单ID（property_fee_bill.id、property_water_elec_bill.id）',
   `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '业务类型 rent/deposit/property_fee/water_elec',
   `rule_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '收费规则名称快照',
   `fee_item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '收费项名称快照',
@@ -433,7 +582,7 @@ CREATE TABLE `finance_pay_order_item`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_pay_bill_id`(`pay_bill_id` ASC) USING BTREE,
   INDEX `idx_bill_id`(`bill_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '缴费单明细表（快照固化）' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 50 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '缴费单明细表（快照固化）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of finance_pay_order_item
@@ -443,6 +592,33 @@ INSERT INTO `finance_pay_order_item` VALUES (14, 12, 76, 'water_elec', '水费',
 INSERT INTO `finance_pay_order_item` VALUES (15, 12, 77, 'property_fee', '物业费', '物业费', '2026-10', 25.00, 0.00, 25.00, 0.00, 1, '2026-09-05 07:49:21');
 INSERT INTO `finance_pay_order_item` VALUES (16, 12, 78, 'property_fee', '物业费', '物业费', '2026-09', 25.00, 0.00, 25.00, 0.00, 1, '2026-09-05 07:49:21');
 INSERT INTO `finance_pay_order_item` VALUES (17, 13, 79, 'property_fee', '物业费', '物业费', '2026-11', 25.00, 0.00, 25.00, 0.00, 1, '2026-09-05 07:49:38');
+INSERT INTO `finance_pay_order_item` VALUES (23, 20, 51, 'property_fee', '物业费', '物业费', '2027-04', 25.00, 0.00, 25.00, 0.00, 1, '2026-09-05 19:43:30');
+INSERT INTO `finance_pay_order_item` VALUES (24, 21, 49, 'property_fee', '物业费', '物业费', '2027-02', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-05 19:44:06');
+INSERT INTO `finance_pay_order_item` VALUES (25, 21, 50, 'property_fee', '物业费', '物业费', '2027-03', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-05 19:44:06');
+INSERT INTO `finance_pay_order_item` VALUES (26, 22, 52, 'property_fee', '物业费', '物业费', '2027-05', 25.00, 0.00, 25.00, 0.00, 1, '2026-09-05 19:56:34');
+INSERT INTO `finance_pay_order_item` VALUES (27, 23, 48, 'property_fee', '物业费', '物业费', '2027-01', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-05 20:01:27');
+INSERT INTO `finance_pay_order_item` VALUES (28, 24, 52, 'property_fee', '物业费', '物业费', '2027-05', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-05 20:16:33');
+INSERT INTO `finance_pay_order_item` VALUES (29, 25, 49, 'property_fee', '物业费', '物业费', '2027-02', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-05 20:23:18');
+INSERT INTO `finance_pay_order_item` VALUES (30, 25, 50, 'property_fee', '物业费', '物业费', '2027-03', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-05 20:23:18');
+INSERT INTO `finance_pay_order_item` VALUES (31, 26, 47, 'property_fee', '物业费1111', '物业费', '2026-12', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-06 10:54:16');
+INSERT INTO `finance_pay_order_item` VALUES (32, 26, 49, 'property_fee', '物业费1111', '物业费', '2027-02', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-06 10:54:16');
+INSERT INTO `finance_pay_order_item` VALUES (33, 27, 55, 'water_elec', '水电费', '水电费', '2026-09', 60.00, 0.00, 60.00, 0.00, 1, '2026-09-06 11:10:07');
+INSERT INTO `finance_pay_order_item` VALUES (34, 28, 53, 'property_fee', '物业费1111', '物业费', '2027-06', 25.00, 0.00, 25.00, 0.00, 1, '2026-09-06 11:13:28');
+INSERT INTO `finance_pay_order_item` VALUES (35, 29, 56, 'water_elec', '水电费', '水电费', '2026-09', 60.00, 0.00, 60.00, 0.00, 1, '2026-09-06 11:13:57');
+INSERT INTO `finance_pay_order_item` VALUES (36, 30, 54, 'property_fee', '物业费1111', '物业费', '2027-07', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-06 15:35:26');
+INSERT INTO `finance_pay_order_item` VALUES (37, 30, 55, 'property_fee', '物业费1111', '物业费', '2027-08', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-06 15:35:26');
+INSERT INTO `finance_pay_order_item` VALUES (38, 31, 56, 'property_fee', '物业费1111', '物业费', '2027-09', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-15 09:49:24');
+INSERT INTO `finance_pay_order_item` VALUES (39, 31, 62, 'water_elec', '水费222', '水费', '2026-09', 60.00, 0.00, 0.00, 60.00, 1, '2026-09-15 09:49:24');
+INSERT INTO `finance_pay_order_item` VALUES (40, 32, 61, 'water_elec', '水费222', '水费', '2026-09', 60.00, 0.00, 0.00, 60.00, 1, '2026-09-15 10:19:14');
+INSERT INTO `finance_pay_order_item` VALUES (41, 32, 57, 'property_fee', '物业费1111', '物业费', '2027-10', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-15 10:19:14');
+INSERT INTO `finance_pay_order_item` VALUES (42, 33, 61, 'water_elec', '水费222', '水费', '2026-09', 60.00, 0.00, 0.00, 60.00, 1, '2026-09-15 10:24:32');
+INSERT INTO `finance_pay_order_item` VALUES (43, 33, 57, 'property_fee', '物业费1111', '物业费', '2027-10', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-15 10:24:32');
+INSERT INTO `finance_pay_order_item` VALUES (44, 34, 61, 'water_elec', '水费222', '水费', '2026-09', 60.00, 0.00, 0.00, 60.00, 1, '2026-09-15 10:25:00');
+INSERT INTO `finance_pay_order_item` VALUES (45, 34, 57, 'property_fee', '物业费1111', '物业费', '2027-10', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-15 10:25:00');
+INSERT INTO `finance_pay_order_item` VALUES (46, 35, 61, 'water_elec', '水费222', '水费', '2026-09', 60.00, 0.00, 0.00, 60.00, 1, '2026-09-15 10:29:22');
+INSERT INTO `finance_pay_order_item` VALUES (47, 35, 57, 'property_fee', '物业费1111', '物业费', '2027-10', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-15 10:29:22');
+INSERT INTO `finance_pay_order_item` VALUES (48, 36, 61, 'water_elec', '水费222', '水费', '2026-09', 60.00, 0.00, 0.00, 60.00, 1, '2026-09-15 10:44:18');
+INSERT INTO `finance_pay_order_item` VALUES (49, 36, 57, 'property_fee', '物业费1111', '物业费', '2027-10', 25.00, 0.00, 0.00, 25.00, 1, '2026-09-15 10:44:18');
 
 -- ----------------------------
 -- Table structure for finance_pay_plan_rel
@@ -464,28 +640,24 @@ CREATE TABLE `finance_pay_plan_rel`  (
   UNIQUE INDEX `uk_bill_plan`(`bill_type` ASC, `bill_id` ASC, `plan_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_plan_id`(`plan_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 124 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '账单-应收应付计划关联表（多计划合并账单）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 149 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '账单-应收应付计划关联表（多计划合并账单）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_pay_plan_rel
 -- ----------------------------
-INSERT INTO `finance_pay_plan_rel` VALUES (99, 0, 'water_elec', 48, 462, 90.00, 1, '2026-09-04 07:53:19', 1, '2026-09-04 07:53:19', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (100, 0, 'property_fee', 44, 463, 25.00, 1, '2026-09-04 07:53:34', 1, '2026-09-04 07:53:34', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (101, 0, 'water_elec', 66, 464, 90.00, 1, '2026-09-04 07:53:56', 1, '2026-09-04 07:53:56', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (110, 0, 'property_fee', 45, 469, 25.00, 1, '2026-09-04 14:55:33', 1, '2026-09-04 14:55:33', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (111, 0, 'water_elec', 53, 470, 60.00, 1, '2026-09-04 15:04:10', 1, '2026-09-04 15:04:10', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (112, 0, 'water_elec', 54, 471, 30.00, 1, '2026-09-04 17:50:06', 1, '2026-09-04 17:50:06', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (113, 0, 'water_elec', 55, 472, 60.00, 1, '2026-09-04 18:31:12', 1, '2026-09-04 18:31:12', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (114, 0, 'water_elec', 72, 473, 60.00, 1, '2026-09-04 22:14:46', 1, '2026-09-04 22:14:46', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (115, 0, 'water_elec', 73, 474, 30.00, 1, '2026-09-04 22:14:46', 1, '2026-09-04 22:14:46', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (116, 0, 'water_elec', 74, 475, 60.00, 1, '2026-09-04 22:14:46', 1, '2026-09-04 22:14:46', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (117, 0, 'water_elec', 75, 476, 60.00, 1, '2026-09-04 22:20:52', 1, '2026-09-04 22:20:52', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (118, 0, 'water_elec', 76, 477, 90.00, 1, '2026-09-05 00:30:55', 1, '2026-09-05 00:30:55', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (119, 0, 'property_fee', 77, 478, 25.00, 1, '2026-09-05 07:48:20', 1, '2026-09-05 07:48:20', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (120, 0, 'property_fee', 78, 479, 25.00, 1, '2026-09-05 07:48:23', 1, '2026-09-05 07:48:23', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (121, 0, 'property_fee', 46, 480, 25.00, 1, '2026-09-05 07:48:48', 1, '2026-09-05 07:48:48', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (122, 0, 'property_fee', 47, 481, 25.00, 1, '2026-09-05 07:48:59', 1, '2026-09-05 07:48:59', 0);
-INSERT INTO `finance_pay_plan_rel` VALUES (123, 0, 'water_elec', 81, 482, 60.00, 1, '2026-09-05 09:41:44', 1, '2026-09-05 09:41:44', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (128, 0, 'property_fee', 52, 487, 25.00, 1, '2026-09-05 19:52:47', 1, '2026-09-05 19:52:47', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (129, 0, 'property_fee', 53, 488, 25.00, 1, '2026-09-06 11:13:22', 1, '2026-09-06 11:13:22', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (130, 0, 'water_elec', 56, 489, 60.00, 1, '2026-09-06 11:13:47', 1, '2026-09-06 11:13:47', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (131, 0, 'water_elec', 75, 490, 60.00, 1, '2026-09-06 11:13:47', 1, '2026-09-06 11:13:47', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (132, 0, 'water_elec', 88, 491, 60.00, 1, '2026-09-06 11:13:52', 1, '2026-09-06 11:13:52', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (133, 0, 'property_fee', 54, 492, 25.00, 1, '2026-09-06 15:35:05', 1, '2026-09-06 15:35:05', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (134, 0, 'property_fee', 55, 493, 25.00, 1, '2026-09-06 15:35:05', 1, '2026-09-06 15:35:05', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (143, 0, 'property_fee', 56, 498, 25.00, 1, '2026-09-10 19:28:59', 1, '2026-09-10 19:28:59', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (144, 0, 'water_elec', 61, 499, 60.00, 1, '2026-09-10 19:35:47', 1, '2026-09-10 19:35:47', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (145, 0, 'water_elec', 62, 500, 60.00, 1, '2026-09-15 09:48:53', 1, '2026-09-15 09:48:53', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (146, 0, 'water_elec', 92, 501, 60.00, 1, '2026-09-15 09:48:58', 1, '2026-09-15 09:48:58', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (147, 0, 'water_elec', 93, 502, 60.00, 1, '2026-09-15 10:18:49', 1, '2026-09-15 10:18:49', 0);
+INSERT INTO `finance_pay_plan_rel` VALUES (148, 0, 'property_fee', 57, 503, 25.00, 1, '2026-09-15 10:19:03', 1, '2026-09-15 10:19:03', 0);
 
 -- ----------------------------
 -- Table structure for finance_recv_pay_plan
@@ -500,7 +672,7 @@ CREATE TABLE `finance_recv_pay_plan`  (
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源单据类型 contract/reimburse/purchase/bill',
   `source_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '来源单据ID（合同/报销单/采购单）',
   `market_id` bigint(20) NULL DEFAULT NULL COMMENT '市场ID',
-  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '铺位ID',
+  `stall_id` bigint(20) NULL DEFAULT NULL COMMENT '摊位ID',
   `tenant_id` bigint(20) NULL DEFAULT NULL COMMENT '租户ID',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID',
   `period_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '期次标识 月度yyyy-MM 季度yyyy-Qn 年度yyyy 一次性once',
@@ -531,28 +703,24 @@ CREATE TABLE `finance_recv_pay_plan`  (
   INDEX `idx_due_date`(`due_date` ASC) USING BTREE,
   INDEX `idx_stall_id`(`stall_id` ASC) USING BTREE,
   INDEX `idx_orig_plan_id`(`orig_plan_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 483 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '应收应付计划主表（全系统唯一台账）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 504 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '应收应付计划主表（全系统唯一台账）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_recv_pay_plan
 -- ----------------------------
-INSERT INTO `finance_recv_pay_plan` VALUES (462, 0, 'AR-WATER_ELEC-0-20260904-102984', 1, 'water_elec', 'bill', '48', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 90.00, 0.00, 0.00, 90.00, 90.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 07:53:19', 1, '2026-09-04 22:21:00', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (463, 0, 'AR-PROPERTY-0-20260904-191141', 1, 'property', 'bill', '44', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 25.00, 0.00, 0.00, 25.00, 25.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 07:53:34', 1, '2026-09-04 22:21:14', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (464, 0, 'AR-FEE_BILL-0-20260904-384730', 1, 'fee_bill', 'bill', '66', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 90.00, 0.00, 0.00, 90.00, 0.00, 90.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 07:53:56', 1, '2026-09-04 07:53:56', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (469, 0, 'AR-PROPERTY-0-20260904-613251', 1, 'property', 'bill', '45', NULL, 1, 1, NULL, '2026-10', 1, '2026-10-01', 25.00, 0.00, 0.00, 25.00, 0.00, 25.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 14:55:33', 1, '2026-09-04 14:55:33', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (470, 0, 'AR-WATER_ELEC-0-20260904-602027', 1, 'water_elec', 'bill', '53', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 60.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 15:04:10', 1, '2026-09-05 00:37:27', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (471, 0, 'AR-WATER_ELEC-0-20260904-515958', 1, 'water_elec', 'bill', '54', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 30.00, 0.00, 0.00, 30.00, 0.00, 30.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 17:50:06', 1, '2026-09-04 17:50:06', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (472, 0, 'AR-WATER_ELEC-0-20260904-265193', 1, 'water_elec', 'bill', '55', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 18:31:12', 1, '2026-09-04 18:31:12', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (473, 0, 'AR-FEE_BILL-0-20260904-309681', 1, 'fee_bill', 'bill', '72', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 22:14:46', 1, '2026-09-04 22:14:46', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (474, 0, 'AR-FEE_BILL-0-20260904-180637', 1, 'fee_bill', 'bill', '73', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 30.00, 0.00, 0.00, 30.00, 0.00, 30.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 22:14:46', 1, '2026-09-04 22:14:46', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (475, 0, 'AR-FEE_BILL-0-20260904-926482', 1, 'fee_bill', 'bill', '74', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 22:14:46', 1, '2026-09-04 22:14:46', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (476, 0, 'AR-FEE_BILL-0-20260904-577957', 1, 'fee_bill', 'bill', '75', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-04 22:20:52', 1, '2026-09-04 22:20:52', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (477, 0, 'AR-FEE_BILL-0-20260905-979772', 1, 'fee_bill', 'bill', '76', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 90.00, 0.00, 0.00, 90.00, 140.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-05 00:30:55', 1, '2026-09-05 07:49:21', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (478, 0, 'AR-FEE_BILL-0-20260905-003732', 1, 'fee_bill', 'bill', '77', NULL, 1, 1, NULL, '2026-10', 1, '2026-10-01', 25.00, 0.00, 0.00, 25.00, 0.00, 25.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-05 07:48:20', 1, '2026-09-05 07:48:20', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (479, 0, 'AR-FEE_BILL-0-20260905-745569', 1, 'fee_bill', 'bill', '78', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 25.00, 0.00, 0.00, 25.00, 0.00, 25.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-05 07:48:23', 1, '2026-09-05 07:48:23', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (480, 0, 'AR-PROPERTY-0-20260905-664322', 1, 'property', 'bill', '46', NULL, 1, 1, NULL, '2026-11', 1, '2026-11-01', 25.00, 0.00, 0.00, 25.00, 25.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-05 07:48:48', 1, '2026-09-05 07:49:38', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (481, 0, 'AR-PROPERTY-0-20260905-319866', 1, 'property', 'bill', '47', NULL, 1, 1, NULL, '2026-12', 1, '2026-12-01', 25.00, 0.00, 0.00, 25.00, 0.00, 25.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-05 07:48:59', 1, '2026-09-05 07:48:59', 0);
-INSERT INTO `finance_recv_pay_plan` VALUES (482, 0, 'AR-FEE_BILL-0-20260905-221542', 1, 'fee_bill', 'bill', '81', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-05 09:41:44', 1, '2026-09-05 09:41:44', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (487, 0, 'AR-PROPERTY-0-20260905-852303', 1, 'property', 'bill', '52', NULL, 1, 1, NULL, '2027-05', 1, '2027-05-01', 25.00, 0.00, 0.00, 25.00, 25.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-05 19:52:47', 1, '2026-09-05 21:04:03', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (488, 0, 'AR-PROPERTY-0-20260906-010402', 1, 'property', 'bill', '53', NULL, 1, 1, NULL, '2027-06', 1, '2027-06-01', 25.00, 0.00, 0.00, 25.00, 25.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-06 11:13:22', 1, '2026-09-06 11:13:27', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (489, 0, 'AR-WATER_ELEC-0-20260906-959177', 1, 'water_elec', 'bill', '56', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 85.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-06 11:13:47', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (490, 0, 'AR-FEE_BILL-0-20260906-195687', 1, 'fee_bill', 'bill', '75', NULL, 1, 1, NULL, '2026-09', 2, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-06 11:13:47', 1, '2026-09-06 11:13:47', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (491, 0, 'AR-FEE_BILL-0-20260906-264454', 1, 'fee_bill', 'bill', '88', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-06 11:13:52', 1, '2026-09-06 11:13:52', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (492, 0, 'AR-PROPERTY-0-20260906-600608', 1, 'property', 'bill', '54', NULL, 1, 1, NULL, '2027-07', 1, '2027-07-01', 25.00, 0.00, 0.00, 25.00, 25.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-06 15:35:05', 1, '2026-09-06 15:35:25', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (493, 0, 'AR-PROPERTY-0-20260906-521651', 1, 'property', 'bill', '55', NULL, 1, 1, NULL, '2027-08', 1, '2027-08-01', 25.00, 0.00, 0.00, 25.00, 25.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-06 15:35:05', 1, '2026-09-06 15:35:25', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (498, 0, 'AR-PROPERTY-0-20260910-222122', 1, 'property', 'bill', '56', NULL, 1, NULL, 1, '2027-09', 1, '2027-09-01', 25.00, 0.00, 0.00, 25.00, 25.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-10 19:28:59', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (499, 0, 'AR-WATER_ELEC-0-20260910-592264', 1, 'water_elec', 'bill', '61', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 60.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-10 19:35:47', 1, '2026-09-15 10:44:17', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (500, 0, 'AR-WATER_ELEC-0-20260915-396087', 1, 'water_elec', 'bill', '62', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 60.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-15 09:48:53', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (501, 0, 'AR-FEE_BILL-0-20260915-842004', 1, 'fee_bill', 'bill', '92', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-15 09:48:58', 1, '2026-09-15 09:48:58', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (502, 0, 'AR-FEE_BILL-0-20260915-454970', 1, 'fee_bill', 'bill', '93', NULL, 1, 1, NULL, '2026-09', 1, '2026-09-01', 60.00, 0.00, 0.00, 60.00, 0.00, 60.00, 0, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-15 10:18:49', 1, '2026-09-15 10:18:49', 0);
+INSERT INTO `finance_recv_pay_plan` VALUES (503, 0, 'AR-PROPERTY-0-20260915-024990', 1, 'property', 'bill', '57', NULL, 1, NULL, 1, '2027-10', 1, '2027-10-01', 25.00, 0.00, 0.00, 25.00, 25.00, 0.00, 1, 0, NULL, 0, NULL, NULL, NULL, 1, '2026-09-15 10:19:03', 1, '2026-09-15 10:44:17', 0);
 
 -- ----------------------------
 -- Table structure for finance_writeoff
@@ -578,7 +746,7 @@ CREATE TABLE `finance_writeoff`  (
   INDEX `idx_plan_id`(`plan_id` ASC) USING BTREE,
   INDEX `idx_flow_id`(`finance_flow_id` ASC) USING BTREE,
   INDEX `idx_bill`(`bill_type` ASC, `bill_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '财务核销记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 35 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '财务核销记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_writeoff
@@ -588,6 +756,20 @@ INSERT INTO `finance_writeoff` VALUES (11, 0, 45, 463, 'property', 44, 25.00, 1,
 INSERT INTO `finance_writeoff` VALUES (12, 0, 51, 470, 'water_elec', 53, 60.00, 1, '水电费缴费核销', 1, '2026-09-05 00:37:27', 1, '2026-09-05 00:37:27', 0);
 INSERT INTO `finance_writeoff` VALUES (13, 0, 52, 477, 'fee_bill', 76, 140.00, 1, '缴费单聚合缴费核销', 1, '2026-09-05 07:49:22', 1, '2026-09-05 07:49:22', 0);
 INSERT INTO `finance_writeoff` VALUES (14, 0, 53, 480, 'property', 46, 25.00, 1, '物业费缴费核销', 1, '2026-09-05 07:49:39', 1, '2026-09-05 07:49:39', 0);
+INSERT INTO `finance_writeoff` VALUES (15, 0, 54, 486, 'property', 51, 25.00, 1, '物业费缴费核销', 1, '2026-09-05 19:13:33', 1, '2026-09-05 19:13:33', 0);
+INSERT INTO `finance_writeoff` VALUES (18, 0, 57, 485, 'property', 50, 25.00, 1, '物业费缴费核销', 1, '2026-09-05 19:31:07', 1, '2026-09-05 19:31:07', 0);
+INSERT INTO `finance_writeoff` VALUES (19, 0, 61, 487, 'property', 52, 25.00, 1, '物业费缴费核销', 1, '2026-09-05 19:56:34', 1, '2026-09-05 19:56:34', 0);
+INSERT INTO `finance_writeoff` VALUES (20, 0, 63, 487, 'property_fee', 52, -25.00, 3, '冲红核销（原缴费单ID=22）', 1, '2026-09-05 20:16:33', 1, '2026-09-05 20:16:33', 0);
+INSERT INTO `finance_writeoff` VALUES (21, 0, 66, 487, 'property', 52, 25.00, 1, '物业费缴费核销', 1, '2026-09-05 21:04:03', 1, '2026-09-05 21:04:03', 0);
+INSERT INTO `finance_writeoff` VALUES (22, 0, 71, 488, 'property', 53, 25.00, 1, '物业费缴费核销', 1, '2026-09-06 11:13:28', 1, '2026-09-06 11:13:28', 0);
+INSERT INTO `finance_writeoff` VALUES (23, 0, 72, 489, 'water_elec', 56, 60.00, 1, '水电费缴费核销', 1, '2026-09-06 11:13:57', 1, '2026-09-06 11:13:57', 0);
+INSERT INTO `finance_writeoff` VALUES (24, 0, 73, 492, 'property', 54, 25.00, 1, '合并缴费-物业费核销', 1, '2026-09-06 15:35:26', 1, '2026-09-06 15:35:26', 0);
+INSERT INTO `finance_writeoff` VALUES (25, 0, 74, 493, 'property', 55, 25.00, 1, '合并缴费-物业费核销', 1, '2026-09-06 15:35:26', 1, '2026-09-06 15:35:26', 0);
+INSERT INTO `finance_writeoff` VALUES (26, 0, 75, 489, 'water_elec', 56, 25.00, 1, '合并缴费-物业费核销', 1, '2026-09-15 09:49:24', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `finance_writeoff` VALUES (27, 0, 75, 498, 'property', 56, 25.00, 1, '合并缴费-物业费核销', 1, '2026-09-15 09:49:24', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `finance_writeoff` VALUES (28, 0, 76, 500, 'water_elec', 62, 60.00, 1, '合并缴费-水电费核销', 1, '2026-09-15 09:49:24', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `finance_writeoff` VALUES (33, 0, 81, 499, 'water_elec', 61, 60.00, 1, '合并缴费-水电费核销', 1, '2026-09-15 10:44:18', 1, '2026-09-15 10:44:18', 0);
+INSERT INTO `finance_writeoff` VALUES (34, 0, 82, 503, 'property', 57, 25.00, 1, '合并缴费-物业费核销', 1, '2026-09-15 10:44:18', 1, '2026-09-15 10:44:18', 0);
 
 -- ----------------------------
 -- Table structure for flow_definition
@@ -610,7 +792,7 @@ CREATE TABLE `flow_definition`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_def_code`(`def_code` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程定义表（集团全局模板）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程定义表（集团全局模板）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flow_definition
@@ -624,6 +806,12 @@ INSERT INTO `flow_definition` VALUES (6, 0, '大额报销审批', 'reimburse_lar
 INSERT INTO `flow_definition` VALUES (7, 0, '采购审批', 'purchase', 'purchase', '[{\"nodeName\":\"子公司经理审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"sub_manager\"}]', 0, '二期启用：采购单自身审批，通过后生成应付计划(direction=2)', 1, '2026-08-20 14:36:07', NULL, NULL, 0);
 INSERT INTO `flow_definition` VALUES (8, 0, '大额采购审批', 'purchase_large', 'purchase', '[{\"nodeName\":\"子公司经理审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"sub_manager\"},{\"nodeName\":\"财务复核\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"finance_admin\"}]', 0, '二期启用：采购金额超 purchase.amount_limit 自动选用', 1, '2026-08-20 14:36:07', NULL, NULL, 0);
 INSERT INTO `flow_definition` VALUES (9, 0, '财务流水冲红审批', 'finance_red_flush', 'finance_red_flush', '[{\"nodeName\":\"冲红审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"super_admin\"}]', 1, '财务流水冲红申请审批流程', 0, '2026-08-27 17:01:57', NULL, '2026-08-27 17:03:16', 0);
+INSERT INTO `flow_definition` VALUES (10, 0, '入职申请审批', 'hr_entry', 'hr_entry', '[{\"nodeName\":\"子公司经理审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"sub_manager\"}]', 1, NULL, 1, '2026-09-10 23:25:03', NULL, NULL, 0);
+INSERT INTO `flow_definition` VALUES (11, 0, '转正申请审批', 'hr_regular', 'hr_regular', '[{\"nodeName\":\"子公司经理审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"sub_manager\"}]', 1, NULL, 1, '2026-09-10 23:25:03', NULL, NULL, 0);
+INSERT INTO `flow_definition` VALUES (12, 0, '调岗申请审批', 'hr_transfer', 'hr_transfer', '[{\"nodeName\":\"子公司经理审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"sub_manager\"}]', 1, NULL, 1, '2026-09-10 23:25:03', NULL, NULL, 0);
+INSERT INTO `flow_definition` VALUES (13, 0, '离职申请审批', 'hr_resign', 'hr_resign', '[{\"nodeName\":\"子公司经理审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"sub_manager\"}]', 1, NULL, 1, '2026-09-10 23:25:03', NULL, NULL, 0);
+INSERT INTO `flow_definition` VALUES (14, 0, '调薪审批', 'salary_archive_adjust', 'hr_salary_archive', '[{\"nodeName\":\"部门负责人审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"dept_manager\"},{\"nodeName\":\"HR审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"hr_manager\"}]', 1, '单人调薪/晋升调级审批', 1, '2026-09-11 14:49:13', NULL, NULL, 0);
+INSERT INTO `flow_definition` VALUES (15, 0, '年终奖审批', 'salary_year_bonus', 'hr_year_bonus', '[{\"nodeName\":\"部门负责人审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"dept_manager\"},{\"nodeName\":\"财务复核\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"finance_manager\"}]', 1, '年终奖审批', 1, '2026-09-11 14:49:13', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for flow_instance
@@ -657,11 +845,15 @@ CREATE TABLE `flow_instance`  (
   INDEX `idx_def_id`(`def_id` ASC) USING BTREE,
   INDEX `idx_source`(`source_type` ASC, `source_id` ASC) USING BTREE,
   INDEX `idx_apply_user_id`(`apply_user_id` ASC, `instance_status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程实例表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程实例表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flow_instance
 -- ----------------------------
+INSERT INTO `flow_instance` VALUES (15, 0, 'FL202609101954424146', 1, '租赁合同审批', 'contract', 'leave_apply', '2', 'admin 申请年假 1天', 1, '集团超级管理员', 0, '子公司经理审批', '[1]', '2026-09-10 19:54:43', NULL, 1, '2026-09-10 19:54:43', 1, '2026-09-10 19:54:43', 0);
+INSERT INTO `flow_instance` VALUES (16, 0, 'FL202609102202216818', 1, '租赁合同审批', 'contract', 'work_report', '1', 'admin 提交日报：2026-09-10', 1, '集团超级管理员', 0, '子公司经理审批', '[1]', '2026-09-10 22:02:22', NULL, 1, '2026-09-10 22:02:22', 1, '2026-09-10 22:02:22', 0);
+INSERT INTO `flow_instance` VALUES (17, 0, 'FL202609102334357648', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '10', '2号员工 入职申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-10 23:34:35', '2026-09-10 23:34:54', 1, '2026-09-10 23:34:35', 1, '2026-09-10 23:34:35', 0);
+INSERT INTO `flow_instance` VALUES (18, 0, 'FL202609102336341046', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '11', '3号员工 入职申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-10 23:36:34', '2026-09-10 23:36:41', 1, '2026-09-10 23:36:34', 1, '2026-09-10 23:36:34', 0);
 
 -- ----------------------------
 -- Table structure for flow_record
@@ -683,7 +875,7 @@ CREATE TABLE `flow_record`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_instance_id`(`instance_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程流转记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程流转记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flow_record
@@ -695,6 +887,12 @@ INSERT INTO `flow_record` VALUES (12, 0, 12, '冲红审批', 'submit', 1, '集�
 INSERT INTO `flow_record` VALUES (13, 0, 12, '冲红审批', 'pass', 1, '集团超级管理员', 'approved', 1, '2026-08-27 17:56:30', 1, '2026-08-27 17:56:30', 0);
 INSERT INTO `flow_record` VALUES (14, 0, 13, '冲红审批', 'submit', 1, '集团超级管理员', '冲红申请-流水ID:13', 1, '2026-08-27 20:05:01', 1, '2026-08-27 20:05:01', 0);
 INSERT INTO `flow_record` VALUES (15, 0, 13, '冲红审批', 'pass', 1, '集团超级管理员', '', 1, '2026-08-27 20:05:31', 1, '2026-08-27 20:05:31', 0);
+INSERT INTO `flow_record` VALUES (16, 0, 15, '子公司经理审批', 'submit', 1, '集团超级管理员', 'admin 申请年假 1天', 1, '2026-09-10 19:54:43', 1, '2026-09-10 19:54:43', 0);
+INSERT INTO `flow_record` VALUES (17, 0, 16, '子公司经理审批', 'submit', 1, '集团超级管理员', 'admin 提交日报：2026-09-10', 1, '2026-09-10 22:02:22', 1, '2026-09-10 22:02:22', 0);
+INSERT INTO `flow_record` VALUES (18, 0, 17, '子公司经理审批', 'submit', 1, '集团超级管理员', '2号员工 入职申请', 1, '2026-09-10 23:34:35', 1, '2026-09-10 23:34:35', 0);
+INSERT INTO `flow_record` VALUES (19, 0, 17, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-10 23:34:54', 1, '2026-09-10 23:34:54', 0);
+INSERT INTO `flow_record` VALUES (20, 0, 18, '子公司经理审批', 'submit', 1, '集团超级管理员', '3号员工 入职申请', 1, '2026-09-10 23:36:34', 1, '2026-09-10 23:36:34', 0);
+INSERT INTO `flow_record` VALUES (21, 0, 18, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-10 23:36:41', 1, '2026-09-10 23:36:41', 0);
 
 -- ----------------------------
 -- Table structure for flow_task
@@ -722,7 +920,7 @@ CREATE TABLE `flow_task`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_handler_status`(`handler_id` ASC, `task_status` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_instance_id`(`instance_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批任务表（待办/已办）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批任务表（待办/已办）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flow_task
@@ -730,6 +928,10 @@ CREATE TABLE `flow_task`  (
 INSERT INTO `flow_task` VALUES (4, 0, 5, '冲红审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-08-27 17:17:08', NULL, 1, '2026-08-27 17:14:34', 1, '2026-08-27 17:14:34', 0);
 INSERT INTO `flow_task` VALUES (11, 0, 12, '冲红审批', 1, 1, '集团超级管理员', 1, 1, 'approved', '2026-08-27 17:56:30', NULL, 1, '2026-08-27 17:55:59', 1, '2026-08-27 17:55:59', 0);
 INSERT INTO `flow_task` VALUES (12, 0, 13, '冲红审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-08-27 20:05:31', NULL, 1, '2026-08-27 20:05:01', 1, '2026-08-27 20:05:01', 0);
+INSERT INTO `flow_task` VALUES (13, 0, 15, '子公司经理审批', 1, 1, '集团超级管理员', 0, NULL, NULL, NULL, NULL, 1, '2026-09-10 19:54:43', 1, '2026-09-10 19:54:43', 0);
+INSERT INTO `flow_task` VALUES (14, 0, 16, '子公司经理审批', 1, 1, '集团超级管理员', 0, NULL, NULL, NULL, NULL, 1, '2026-09-10 22:02:22', 1, '2026-09-10 22:02:22', 0);
+INSERT INTO `flow_task` VALUES (15, 0, 17, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-10 23:34:54', NULL, 1, '2026-09-10 23:34:35', 1, '2026-09-10 23:34:35', 0);
+INSERT INTO `flow_task` VALUES (16, 0, 18, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-10 23:36:41', NULL, 1, '2026-09-10 23:36:34', 1, '2026-09-10 23:36:34', 0);
 
 -- ----------------------------
 -- Table structure for hr_attendance_record
@@ -776,6 +978,8 @@ DROP TABLE IF EXISTS `hr_employee`;
 CREATE TABLE `hr_employee`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID，0=集团总部',
+  `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '工作城市编码，关联sys_city.city_code',
+  `industry_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '所属行业编码，关联sys_industry.industry_code',
   `user_id` bigint(20) NULL DEFAULT NULL COMMENT '关联 sys_user.id，离职后可置NULL',
   `employee_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '员工工号（公司内唯一）',
   `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '姓名',
@@ -792,6 +996,10 @@ CREATE TABLE `hr_employee`  (
   `org_id` bigint(20) NULL DEFAULT NULL COMMENT '所属组织ID（sys_org）',
   `post_id` bigint(20) NULL DEFAULT NULL COMMENT '岗位ID（hr_post）',
   `post_level` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '岗位职级快照（冗余避免关联查询）',
+  `social_declare_base` decimal(12, 2) NULL DEFAULT NULL COMMENT '社保申报基数（年度锁定）',
+  `housing_fund_declare_base` decimal(12, 2) NULL DEFAULT NULL COMMENT '公积金申报基数（年度锁定）',
+  `base_effective_year` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '基数生效年度，如2026，从2026-07至2027-06有效',
+  `salary_grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '关联薪酬级别编码',
   `org_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '组织名称快照（冗余避免关联查询）',
   `supervisor_id` bigint(20) NULL DEFAULT NULL COMMENT '直属上级用户ID（sys_user.id，用于审批链）',
   `bank_account` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '工资卡号（密文）',
@@ -807,13 +1015,17 @@ CREATE TABLE `hr_employee`  (
   UNIQUE INDEX `uk_employee_no_company`(`employee_no` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
-  INDEX `idx_employee_status`(`employee_status` ASC, `company_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工主档案表' ROW_FORMAT = Dynamic;
+  INDEX `idx_employee_status`(`employee_status` ASC, `company_id` ASC) USING BTREE,
+  INDEX `idx_grade_code`(`salary_grade_code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工主档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_employee
 -- ----------------------------
-INSERT INTO `hr_employee` VALUES (1, 0, NULL, '00001', '员工名', NULL, '13112312312', '123@qqw.com', 1, NULL, '2026-08-26', NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 5000.00, '备注', 1, '2026-08-26 07:29:54', 1, '2026-08-26 07:29:54', 0);
+INSERT INTO `hr_employee` VALUES (1, 0, NULL, NULL, NULL, '00001', '员工名', NULL, '13112312312', '123@qqw.com', 1, NULL, '2026-08-26', NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 5000.00, '备注', 1, '2026-08-26 07:29:54', 1, '2026-08-26 07:29:54', 0);
+INSERT INTO `hr_employee` VALUES (2, 0, NULL, NULL, NULL, '123', '123123', NULL, '12312312312', NULL, 1, NULL, '2026-09-10', NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-09-10 22:03:04', 1, '2026-09-10 22:03:17', 1);
+INSERT INTO `hr_employee` VALUES (3, 0, NULL, NULL, NULL, '0002', '2号员工', '370284199001011116', '13112312312', NULL, 1, '2026-09-10', '2026-09-10', NULL, NULL, 1, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '123456133', NULL, 4000.00, '备注', 1, '2026-09-10 23:34:54', 1, '2026-09-10 23:34:54', 0);
+INSERT INTO `hr_employee` VALUES (4, 0, NULL, NULL, NULL, '0003', '3号员工', '370282199001011115', '1312311231', NULL, 1, '2026-09-10', '2026-09-10', NULL, NULL, 2, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '33231213', NULL, 5000.00, '备注', 1, '2026-09-10 23:36:41', 1, '2026-09-10 23:36:41', 0);
 
 -- ----------------------------
 -- Table structure for hr_employee_file
@@ -832,10 +1044,39 @@ CREATE TABLE `hr_employee_file`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工附件表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工附件表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_employee_file
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_employee_grade_log
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_employee_grade_log`;
+CREATE TABLE `hr_employee_grade_log`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL DEFAULT 0,
+  `employee_id` bigint(20) NOT NULL,
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `from_grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `to_grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `change_type` tinyint(4) NOT NULL DEFAULT 1,
+  `change_reason` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `flow_instance_id` bigint(20) NULL DEFAULT NULL,
+  `effective_date` date NOT NULL,
+  `basic_salary_before` decimal(12, 2) NULL DEFAULT NULL,
+  `basic_salary_after` decimal(12, 2) NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_employee`(`employee_id` ASC, `create_time` ASC) USING BTREE,
+  INDEX `idx_company`(`company_id` ASC) USING BTREE,
+  INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '薪酬级别变更流水表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_employee_grade_log
 -- ----------------------------
 
 -- ----------------------------
@@ -867,14 +1108,49 @@ CREATE TABLE `hr_entry_apply`  (
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `is_delete` tinyint(4) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_company_employee_no`(`company_id` ASC, `employee_no` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_no`(`employee_no` ASC) USING BTREE,
   INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '入职申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '入职申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_entry_apply
 -- ----------------------------
+INSERT INTO `hr_entry_apply` VALUES (10, 0, '0002', '2号员工', '370284199001011116', '13112312312', 1, '2026-09-10', '2026-09-10', 1, 1, 1, 4000.00, '123456133', 0, 17, 2, '备注', 1, '2026-09-10 23:34:35', 1, '2026-09-10 23:34:35', 0);
+INSERT INTO `hr_entry_apply` VALUES (11, 0, '0003', '3号员工', '370282199001011115', '1312311231', 1, '2026-09-10', '2026-09-10', 2, 1, 1, 5000.00, '33231213', 0, 18, 2, '备注', 1, '2026-09-10 23:36:34', 1, '2026-09-10 23:36:34', 0);
+
+-- ----------------------------
+-- Table structure for hr_housing_fund_config
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_housing_fund_config`;
+CREATE TABLE `hr_housing_fund_config`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL DEFAULT 0,
+  `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `period_start` date NOT NULL,
+  `period_end` date NULL DEFAULT NULL,
+  `base_min` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `base_max` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `employee_rate` decimal(5, 2) NOT NULL DEFAULT 0.00 COMMENT '员工个人比例(%)',
+  `company_rate` decimal(5, 2) NOT NULL DEFAULT 0.00 COMMENT '单位比例(%)',
+  `is_active` tinyint(4) NOT NULL DEFAULT 1,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_city_period`(`city_code` ASC, `period_start` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_company_city`(`company_id` ASC, `city_code` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '公积金参数配置表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_housing_fund_config
+-- ----------------------------
+INSERT INTO `hr_housing_fund_config` VALUES (1, 0, 'QD', '2026-01-01', '2026-12-31', 2300.00, 22863.00, 12.00, 12.00, 1, '青岛企业职工住房公积金（个人12%+单位12%）', 0, '2026-09-14 00:17:19', 1, '2026-09-14 00:17:19', 0);
+INSERT INTO `hr_housing_fund_config` VALUES (2, 0, 'QD', '2027-01-01', NULL, 2300.00, 22863.00, 12.00, 12.00, 0, '青岛企业职工住房公积金（次年预留）', 0, '2026-09-14 00:17:19', 1, '2026-09-14 00:17:19', 0);
 
 -- ----------------------------
 -- Table structure for hr_leave_record
@@ -896,7 +1172,7 @@ CREATE TABLE `hr_leave_record`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_leave_apply_id`(`leave_apply_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'HR请假记录（同步自OA请假申请）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'HR请假记录（同步自OA请假申请）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_leave_record
@@ -923,12 +1199,13 @@ CREATE TABLE `hr_post`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_post_code_company`(`post_code` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_post
 -- ----------------------------
 INSERT INTO `hr_post` VALUES (1, 0, '测试岗位', '0001', 'P0', NULL, 1, '', 1, '2026-08-26 07:29:04', 1, '2026-08-26 07:29:04', 0);
+INSERT INTO `hr_post` VALUES (2, 0, '31232', '123123', '23', NULL, 1, '', 1, '2026-09-10 22:02:43', 1, '2026-09-10 22:02:52', 1);
 
 -- ----------------------------
 -- Table structure for hr_regular_apply
@@ -951,7 +1228,7 @@ CREATE TABLE `hr_regular_apply`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '转正申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '转正申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_regular_apply
@@ -981,7 +1258,7 @@ CREATE TABLE `hr_resign_apply`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '离职申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '离职申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_resign_apply
@@ -994,6 +1271,15 @@ DROP TABLE IF EXISTS `hr_salary_archive`;
 CREATE TABLE `hr_salary_archive`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0,
+  `version_no` int(11) NOT NULL DEFAULT 1,
+  `source_type` tinyint(4) NOT NULL DEFAULT 1,
+  `source_id` bigint(20) NULL DEFAULT NULL,
+  `grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `grade_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `rule_id` bigint(20) NULL DEFAULT NULL,
+  `rule_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `effective_date` date NOT NULL,
+  `is_current` tinyint(4) NOT NULL DEFAULT 1,
   `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
   `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '姓名快照',
   `basic_salary` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '基本工资',
@@ -1011,12 +1297,111 @@ CREATE TABLE `hr_salary_archive`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_employee`(`employee_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
-  INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工薪资档案表' ROW_FORMAT = Dynamic;
+  INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
+  INDEX `idx_employee_current`(`employee_id` ASC, `is_current` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_employee_version`(`employee_id` ASC, `version_no` ASC) USING BTREE,
+  INDEX `idx_company_grade`(`company_id` ASC, `grade_code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工薪资档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_salary_archive
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_salary_batch_adjust
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_salary_batch_adjust`;
+CREATE TABLE `hr_salary_batch_adjust`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL DEFAULT 0,
+  `adjust_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `adjust_mode` tinyint(4) NOT NULL DEFAULT 1,
+  `adjust_value` decimal(12, 4) NOT NULL DEFAULT 0.0000,
+  `target_grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `effective_date` date NOT NULL,
+  `total_count` int(11) NOT NULL DEFAULT 0,
+  `success_count` int(11) NOT NULL DEFAULT 0,
+  `fail_count` int(11) NOT NULL DEFAULT 0,
+  `status` tinyint(4) NOT NULL DEFAULT 0,
+  `flow_instance_id` bigint(20) NULL DEFAULT NULL,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_company_status`(`company_id` ASC, `status` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '批量调薪任务表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_salary_batch_adjust
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_salary_batch_adjust_item
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_salary_batch_adjust_item`;
+CREATE TABLE `hr_salary_batch_adjust_item`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `batch_id` bigint(20) NOT NULL,
+  `employee_id` bigint(20) NOT NULL,
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `stall_id` bigint(20) NULL DEFAULT NULL,
+  `basic_salary_before` decimal(12, 2) NULL DEFAULT NULL,
+  `basic_salary_after` decimal(12, 2) NULL DEFAULT NULL,
+  `grade_code_before` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `grade_code_after` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `adjust_value` decimal(12, 4) NOT NULL DEFAULT 0.0000,
+  `adjust_mode` tinyint(4) NOT NULL DEFAULT 1,
+  `result_status` tinyint(4) NOT NULL DEFAULT 0,
+  `result_msg` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_batch`(`batch_id` ASC) USING BTREE,
+  INDEX `idx_employee`(`employee_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '批量调薪明细表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_salary_batch_adjust_item
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_salary_grade
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_salary_grade`;
+CREATE TABLE `hr_salary_grade`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
+  `grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '薪酬级别编码 如P1/P2/...',
+  `grade_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '薪酬级别名称',
+  `grade_level` int(11) NOT NULL DEFAULT 0 COMMENT '级别层级 1最低',
+  `band_min` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '带宽下限',
+  `band_mid` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '带宽中位',
+  `band_max` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '带宽上限',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '1启用 0停用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_company_grade`(`company_id` ASC, `grade_code` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_company_status`(`company_id` ASC, `status` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '薪酬级别表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_salary_grade
+-- ----------------------------
+INSERT INTO `hr_salary_grade` VALUES (1, 0, 'P1', '初级专员', 1, 3000.00, 3500.00, 4000.00, 1, NULL, 1, '2026-09-11 14:49:13', NULL, '2026-09-11 14:49:13', 0);
+INSERT INTO `hr_salary_grade` VALUES (2, 0, 'P2', '专员', 2, 4000.00, 5000.00, 6000.00, 1, NULL, 1, '2026-09-11 14:49:13', NULL, '2026-09-11 14:49:13', 0);
+INSERT INTO `hr_salary_grade` VALUES (3, 0, 'P3', '高级专员', 3, 6000.00, 7500.00, 9000.00, 1, NULL, 1, '2026-09-11 14:49:13', NULL, '2026-09-11 14:49:13', 0);
+INSERT INTO `hr_salary_grade` VALUES (4, 0, 'P4', '主管', 4, 9000.00, 11000.00, 13000.00, 1, NULL, 1, '2026-09-11 14:49:13', NULL, '2026-09-11 14:49:13', 0);
+INSERT INTO `hr_salary_grade` VALUES (5, 0, 'P5', '经理', 5, 13000.00, 16000.00, 19000.00, 1, NULL, 1, '2026-09-11 14:49:13', NULL, '2026-09-11 14:49:13', 0);
+INSERT INTO `hr_salary_grade` VALUES (6, 0, 'P6', '高级经理', 6, 19000.00, 23000.00, 28000.00, 1, NULL, 1, '2026-09-11 14:49:13', NULL, '2026-09-11 14:49:13', 0);
+INSERT INTO `hr_salary_grade` VALUES (7, 0, 'M1', '总经理', 7, 28000.00, 35000.00, 42000.00, 1, NULL, 1, '2026-09-11 14:49:13', NULL, '2026-09-11 14:49:13', 0);
 
 -- ----------------------------
 -- Table structure for hr_salary_month
@@ -1030,6 +1415,11 @@ CREATE TABLE `hr_salary_month`  (
   `salary_month` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '核算月份 yyyy-MM',
   `basic_salary` decimal(12, 2) NOT NULL COMMENT '基本工资快照',
   `performance_salary` decimal(12, 2) NOT NULL COMMENT '绩效工资快照',
+  `performance_bonus` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `year_bonus` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `other_bonus` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `leave_deduction` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `salary_grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `allowance_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '补贴合计快照',
   `social_security` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '社保扣款快照',
   `housing_fund` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金扣款快照',
@@ -1047,16 +1437,157 @@ CREATE TABLE `hr_salary_month`  (
   `update_by` bigint(20) NULL DEFAULT NULL,
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  `pension_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '养老个人扣除',
+  `pension_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '养老单位缴纳',
+  `medical_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '医疗个人扣除',
+  `medical_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '医疗单位缴纳',
+  `unemployment_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '失业个人扣除',
+  `unemployment_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '失业单位缴纳',
+  `work_injury_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '工伤单位缴纳',
+  `maternity_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '生育单位缴纳',
+  `long_care_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '长护险个人扣除',
+  `long_care_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '长护险单位缴纳',
+  `housing_fund_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金个人扣除',
+  `housing_fund_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金单位缴纳',
+  `social_base` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '社保实际缴费基数',
+  `housing_fund_base` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金实际缴费基数',
+  `base_effective_year` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '基数生效年度快照',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_employee_month`(`employee_id` ASC, `salary_month` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_salary_month`(`salary_month` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '月度薪资核算单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '月度薪资核算单' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_salary_month
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_salary_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_salary_rule`;
+CREATE TABLE `hr_salary_rule`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL DEFAULT 0,
+  `rule_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `bind_type` tinyint(4) NOT NULL DEFAULT 1,
+  `post_id` bigint(20) NULL DEFAULT NULL,
+  `grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `basic_salary` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `performance_base` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `position_allowance` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `other_allowance` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `fixed_month_bonus` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `social_security_rate` decimal(5, 2) NULL DEFAULT NULL COMMENT '社保个人比例(%),NULL表示继承全局参数',
+  `housing_fund_rate` decimal(5, 2) NULL DEFAULT NULL COMMENT '公积金个人比例(%),NULL表示继承全局参数',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `flow_instance_id` bigint(20) NULL DEFAULT NULL,
+  `apply_status` tinyint(4) NOT NULL DEFAULT 1,
+  `status` tinyint(4) NOT NULL DEFAULT 1,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_company_status`(`company_id` ASC, `status` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_post`(`post_id` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_grade`(`grade_code` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE,
+  INDEX `idx_apply_status`(`company_id` ASC, `apply_status` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '薪资规则模板表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_salary_rule
+-- ----------------------------
+INSERT INTO `hr_salary_rule` VALUES (1, 0, 'P1岗位薪资模板', 3, NULL, 'P1', 5000.00, 100.00, 500.00, 5.00, 0.00, 50.00, 50.00, '测试', NULL, 1, 1, 1, '2026-09-12 09:30:31', 1, '2026-09-12 09:30:31', 0);
+
+-- ----------------------------
+-- Table structure for hr_social_calc_detail
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_social_calc_detail`;
+CREATE TABLE `hr_social_calc_detail`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL,
+  `employee_id` bigint(20) NOT NULL,
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '员工姓名快照',
+  `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '城市快照',
+  `salary_month` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '薪资月份，如2026-09',
+  `base_effective_year` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '基数生效年度快照',
+  `social_base` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '社保实际缴费基数',
+  `housing_fund_base` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金实际缴费基数',
+  `pension_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `pension_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `pension_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '养老个人比例快照',
+  `pension_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '养老单位比例快照',
+  `medical_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `medical_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `medical_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000,
+  `medical_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000,
+  `unemployment_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `unemployment_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `unemployment_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000,
+  `unemployment_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000,
+  `work_injury_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `work_injury_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '工伤费率快照',
+  `maternity_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `maternity_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000,
+  `long_care_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `long_care_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `long_care_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000,
+  `long_care_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000,
+  `housing_fund_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `housing_fund_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `housing_fund_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '公积金比例快照',
+  `rounding_diff` decimal(12, 4) NOT NULL DEFAULT 0.0000 COMMENT '计算尾差',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_company_month`(`company_id` ASC, `salary_month` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_employee_month`(`employee_id` ASC, `salary_month` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社保公积金核算明细表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_social_calc_detail
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_social_param_config
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_social_param_config`;
+CREATE TABLE `hr_social_param_config`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团全局',
+  `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '城市编码',
+  `insurance_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '险种编码',
+  `industry_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '行业编码，仅工伤保险等按行业浮动险种填写',
+  `period_start` date NOT NULL COMMENT '生效起始日期',
+  `period_end` date NULL DEFAULT NULL COMMENT '生效截止日期，NULL表示持续有效',
+  `base_min` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '缴费基数下限',
+  `base_max` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '缴费基数上限',
+  `personal_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '个人缴纳比例(%)',
+  `company_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '单位缴纳比例(%)',
+  `is_active` tinyint(4) NOT NULL DEFAULT 1 COMMENT '是否当前有效 0否 1是',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_city_insurance_period`(`city_code` ASC, `insurance_code` ASC, `period_start` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_company_city`(`company_id` ASC, `city_code` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_effective`(`city_code` ASC, `insurance_code` ASC, `period_start` ASC, `period_end` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社保公积金参数配置表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_social_param_config
+-- ----------------------------
+INSERT INTO `hr_social_param_config` VALUES (1, 0, 'QD', 'PENSION', NULL, '2026-01-01', '2026-12-31', 4573.00, 22863.00, 0.0800, 0.1600, 1, '青岛企业职工养老保险', 0, '2026-09-13 23:25:43', 1, '2026-09-13 23:25:43', 0);
+INSERT INTO `hr_social_param_config` VALUES (2, 0, 'QD', 'MEDICAL', NULL, '2026-01-01', '2026-12-31', 4573.00, 22863.00, 0.0200, 0.0800, 1, '青岛企业职工医疗保险（含生育）', 0, '2026-09-13 23:25:43', 1, '2026-09-13 23:25:43', 0);
+INSERT INTO `hr_social_param_config` VALUES (3, 0, 'QD', 'UNEMPLOYMENT', NULL, '2026-01-01', '2026-12-31', 4573.00, 22863.00, 0.0030, 0.0070, 1, '青岛企业职工失业保险', 0, '2026-09-13 23:25:43', NULL, '2026-09-13 23:25:43', 0);
+INSERT INTO `hr_social_param_config` VALUES (4, 0, 'QD', 'WORK_INJURY', NULL, '2026-01-01', '2026-12-31', 4573.00, 22863.00, 0.0000, 0.4800, 1, '青岛企业职工工伤保险（按行业浮动，个人不缴）', 0, '2026-09-13 23:25:43', NULL, '2026-09-13 23:25:43', 0);
 
 -- ----------------------------
 -- Table structure for hr_social_security
@@ -1086,7 +1617,7 @@ CREATE TABLE `hr_social_security`  (
   UNIQUE INDEX `uk_employee`(`employee_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社保公积金台账' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社保公积金台账' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_social_security
@@ -1118,10 +1649,44 @@ CREATE TABLE `hr_transfer_apply`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调岗申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调岗申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_transfer_apply
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_year_bonus
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_year_bonus`;
+CREATE TABLE `hr_year_bonus`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL DEFAULT 0,
+  `employee_id` bigint(20) NOT NULL,
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `bonus_year` int(11) NOT NULL,
+  `bonus_type` tinyint(4) NOT NULL DEFAULT 1,
+  `bonus_amount` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `bonus_reason` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `pay_status` tinyint(4) NOT NULL DEFAULT 0,
+  `flow_instance_id` bigint(20) NULL DEFAULT NULL,
+  `apply_status` tinyint(4) NOT NULL DEFAULT 1,
+  `status` tinyint(4) NOT NULL DEFAULT 1,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_company_year`(`company_id` ASC, `bonus_year` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_employee`(`employee_id` ASC, `bonus_year` ASC) USING BTREE,
+  INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE,
+  INDEX `idx_apply_status`(`company_id` ASC, `apply_status` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '年终奖/一次性奖金表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_year_bonus
 -- ----------------------------
 
 -- ----------------------------
@@ -1133,8 +1698,8 @@ CREATE TABLE `map_stall_point`  (
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `map_id` bigint(20) NOT NULL COMMENT '关联地图ID',
   `market_id` bigint(20) NOT NULL COMMENT '所属市场ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '关联铺位ID',
-  `point_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '单个铺位点位JSON数据',
+  `stall_id` bigint(20) NOT NULL COMMENT '关联摊位ID',
+  `point_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '单个摊位点位JSON数据',
   `sort_order` int(11) NOT NULL DEFAULT 0 COMMENT '排序号',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -1144,7 +1709,7 @@ CREATE TABLE `map_stall_point`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_map_stall`(`map_id` ASC, `stall_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '铺位点位明细表（点位超过500条启用）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '摊位点位明细表（点位超过500条启用）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of map_stall_point
@@ -1170,7 +1735,7 @@ CREATE TABLE `market_map`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_market_name_company`(`company_id` ASC, `map_name` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_mark`(`company_id` ASC, `market_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '市场平面图主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '市场平面图主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of market_map
@@ -1194,7 +1759,7 @@ CREATE TABLE `material_category`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of material_category
@@ -1221,7 +1786,7 @@ CREATE TABLE `material_goods`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_category_id`(`category_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资物料档案表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资物料档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of material_goods
@@ -1245,7 +1810,7 @@ CREATE TABLE `material_warehouse`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资仓库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资仓库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of material_warehouse
@@ -1282,7 +1847,7 @@ CREATE TABLE `oa_announcement`  (
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE,
   INDEX `idx_publish_time`(`publish_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '公告表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '公告表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_announcement
@@ -1302,7 +1867,8 @@ INSERT INTO `oa_announcement` VALUES (12, NULL, 0, '测试零发布人', '测试
 INSERT INTO `oa_announcement` VALUES (13, NULL, 0, '代理测试', '测试内容', 1, NULL, NULL, 0, 0, 1, 'admin', NULL, NULL, NULL, 0, 0, 1, '2026-08-26 08:09:35', 1, '2026-08-26 08:09:35', 0);
 INSERT INTO `oa_announcement` VALUES (14, NULL, 0, '测试公告修复验证', '这是一条测试公告，验证发布公告功能是否正常', 1, NULL, NULL, 1, 0, 1, 'admin', NULL, '2026-08-26 08:51:38', NULL, 0, 0, 1, '2026-08-26 08:46:45', 1, '2026-08-26 08:46:45', 0);
 INSERT INTO `oa_announcement` VALUES (15, NULL, 0, '最终验证公告', '验证发布公告功能', 1, NULL, NULL, 4, 0, 1, 'admin', NULL, '2026-08-26 08:54:35', NULL, 0, 0, 1, '2026-08-26 08:50:51', 1, '2026-08-26 08:50:51', 0);
-INSERT INTO `oa_announcement` VALUES (16, NULL, 0, '修复验证公告', '所有接口测试通过', 1, NULL, NULL, 0, 0, 1, 'admin', NULL, NULL, NULL, 0, 0, 1, '2026-08-26 08:52:09', 1, '2026-08-26 08:52:09', 0);
+INSERT INTO `oa_announcement` VALUES (16, NULL, 0, '修复验证公告', '所有接口测试通过', 1, NULL, NULL, 4, 0, 1, 'admin', NULL, '2026-09-10 20:01:43', NULL, 0, 0, 1, '2026-08-26 08:52:09', 1, '2026-08-26 08:52:09', 0);
+INSERT INTO `oa_announcement` VALUES (17, NULL, 0, '123', '123123', 1, NULL, NULL, 4, 0, 1, 'admin', NULL, '2026-09-10 19:55:07', NULL, 0, 0, 1, '2026-09-10 19:55:03', 1, '2026-09-10 19:55:03', 0);
 
 -- ----------------------------
 -- Table structure for oa_announcement_read
@@ -1315,7 +1881,7 @@ CREATE TABLE `oa_announcement_read`  (
   `read_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '阅读时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_au_user`(`announcement_id` ASC, `user_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '公告已读记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '公告已读记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_announcement_read
@@ -1349,7 +1915,7 @@ CREATE TABLE `oa_clock_record`  (
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
   INDEX `idx_clock_time`(`clock_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '打卡记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '打卡记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_clock_record
@@ -1357,6 +1923,8 @@ CREATE TABLE `oa_clock_record`  (
 INSERT INTO `oa_clock_record` VALUES (1, 0, 1, 'admin', 1, '2026-08-25 09:25:46', NULL, NULL, '测试打卡', 0, 0, 0, NULL, 1, '2026-08-25 09:25:46', 0, 1, '2026-08-25 09:25:46', NULL);
 INSERT INTO `oa_clock_record` VALUES (2, 0, 1, 'admin', 1, '2026-08-27 16:27:17', NULL, NULL, '', 0, 0, 0, NULL, 1, '2026-08-27 16:27:17', 0, 1, '2026-08-27 16:27:17', NULL);
 INSERT INTO `oa_clock_record` VALUES (3, 0, 1, 'admin', 2, '2026-08-27 16:27:20', NULL, NULL, '', 0, 0, 0, NULL, 1, '2026-08-27 16:27:20', 0, 1, '2026-08-27 16:27:20', NULL);
+INSERT INTO `oa_clock_record` VALUES (4, 0, 1, 'admin', 1, '2026-09-10 21:09:56', NULL, NULL, '', 0, 0, 0, NULL, 1, '2026-09-10 21:09:56', 0, 1, '2026-09-10 21:09:56', NULL);
+INSERT INTO `oa_clock_record` VALUES (5, 0, 1, 'admin', 2, '2026-09-10 21:09:59', NULL, NULL, '', 0, 0, 0, NULL, 1, '2026-09-10 21:09:59', 0, 1, '2026-09-10 21:09:59', NULL);
 
 -- ----------------------------
 -- Table structure for oa_leave_apply
@@ -1383,11 +1951,12 @@ CREATE TABLE `oa_leave_apply`  (
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
   INDEX `idx_applicant_id`(`applicant_id` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '请假申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '请假申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_leave_apply
 -- ----------------------------
+INSERT INTO `oa_leave_apply` VALUES (2, 0, 1, 'admin', 1, '2026-09-10', '2026-09-10', 1.00, '23', 15, 4, 1, '2026-09-10 19:54:43', 1, '2026-09-10 19:54:43', 0);
 
 -- ----------------------------
 -- Table structure for oa_meeting_booking
@@ -1414,7 +1983,7 @@ CREATE TABLE `oa_meeting_booking`  (
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
   INDEX `idx_room_id`(`room_id` ASC) USING BTREE,
   INDEX `idx_start_time`(`start_time` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会议室预约表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会议室预约表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_meeting_booking
@@ -1443,11 +2012,13 @@ CREATE TABLE `oa_meeting_room`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会议室表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会议室表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_meeting_room
 -- ----------------------------
+INSERT INTO `oa_meeting_room` VALUES (1, 0, '测试会议室', 'A栋3楼', NULL, 50, 1, 1, 0, '测试备注', 1, 1, '2026-09-10 20:15:40', 1, '2026-09-10 20:32:19', 0);
+INSERT INTO `oa_meeting_room` VALUES (2, 0, '2', '3', NULL, 10, 0, 0, 0, NULL, 1, 1, '2026-09-10 20:16:14', 1, '2026-09-10 21:09:47', 0);
 
 -- ----------------------------
 -- Table structure for oa_work_report
@@ -1475,11 +2046,12 @@ CREATE TABLE `oa_work_report`  (
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
   INDEX `idx_report_date`(`report_date` ASC) USING BTREE,
   INDEX `idx_report_type`(`report_type` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作汇报表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作汇报表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_work_report
 -- ----------------------------
+INSERT INTO `oa_work_report` VALUES (1, 0, 1, 'admin', 1, '2026-09-10', '123132', NULL, 4, NULL, 16, 1, '2026-09-10 22:02:22', 1, '2026-09-10 22:02:22', 0);
 
 -- ----------------------------
 -- Table structure for property_fee_bill
@@ -1488,7 +2060,7 @@ DROP TABLE IF EXISTS `property_fee_bill`;
 CREATE TABLE `property_fee_bill`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
   `merchant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '商户ID',
   `contract_id` bigint(20) NULL DEFAULT NULL COMMENT '关联合同ID',
   `bill_month` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '账单月份 yyyy-MM',
@@ -1496,7 +2068,7 @@ CREATE TABLE `property_fee_bill`  (
   `fee_item_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '收费类型ID（biz_fee_item，固定=物业费）',
   `calc_mode` tinyint(4) NOT NULL DEFAULT 1 COMMENT '收费方式 1定额 2按面积',
   `period_type` tinyint(4) NOT NULL DEFAULT 2 COMMENT '收费周期 0不使用 1按年 2按月 3按日',
-  `usage` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '用量：定额=0，按面积=铺位面积（快照）',
+  `usage` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '用量：定额=0，按面积=摊位面积（快照）',
   `unit_price` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '计费单价快照（规则修改不回溯）',
   `period_factor` decimal(10, 4) NOT NULL DEFAULT 1.0000 COMMENT '周期系数（按年/12、按日×当月天数、按月=1）',
   `amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '本条账单金额',
@@ -1513,15 +2085,25 @@ CREATE TABLE `property_fee_bill`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_stall_id`(`stall_id` ASC) USING BTREE,
   INDEX `idx_bill_month`(`bill_month` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 48 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物业费月度记录单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 58 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物业费月度记录单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of property_fee_bill
 -- ----------------------------
 INSERT INTO `property_fee_bill` VALUES (44, 0, 1, 1, 23, '2026-09', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 0, '2026-09-04 22:21:14', 463, 1, '2026-09-04 07:53:34', 1, '2026-09-05 00:38:34', 0);
 INSERT INTO `property_fee_bill` VALUES (45, 0, 1, 1, 23, '2026-10', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 0, NULL, 469, 1, '2026-09-04 14:55:33', 1, '2026-09-04 18:40:52', 0);
-INSERT INTO `property_fee_bill` VALUES (46, 0, 1, 1, 23, '2026-11', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-05 07:49:39', 480, 1, '2026-09-05 07:48:48', 1, '2026-09-05 07:49:39', 0);
-INSERT INTO `property_fee_bill` VALUES (47, 0, 1, 1, 23, '2026-12', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 0, NULL, 481, 1, '2026-09-05 07:48:59', 1, '2026-09-05 07:48:59', 0);
+INSERT INTO `property_fee_bill` VALUES (46, 0, 1, 1, 23, '2026-11', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 0, '2026-09-05 07:49:39', 480, 1, '2026-09-05 07:48:48', 1, '2026-09-05 19:41:54', 0);
+INSERT INTO `property_fee_bill` VALUES (47, 0, 1, 1, 23, '2026-12', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-06 10:54:16', 481, 1, '2026-09-05 07:48:59', 1, '2026-09-06 10:54:16', 0);
+INSERT INTO `property_fee_bill` VALUES (48, 0, 1, 1, 23, '2027-01', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-05 20:01:27', 483, 1, '2026-09-05 19:00:03', 1, '2026-09-05 20:01:27', 0);
+INSERT INTO `property_fee_bill` VALUES (49, 0, 1, 1, 23, '2027-02', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-06 10:54:16', 484, 1, '2026-09-05 19:00:03', 1, '2026-09-06 10:54:16', 0);
+INSERT INTO `property_fee_bill` VALUES (50, 0, 1, 1, 23, '2027-03', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-06 10:47:36', 485, 1, '2026-09-05 19:09:34', 1, '2026-09-06 10:47:36', 0);
+INSERT INTO `property_fee_bill` VALUES (51, 0, 1, 1, 23, '2027-04', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-05 19:43:29', 486, 1, '2026-09-05 19:09:34', 1, '2026-09-05 19:43:29', 0);
+INSERT INTO `property_fee_bill` VALUES (52, 0, 1, 1, 23, '2027-05', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-05 21:04:03', 487, 1, '2026-09-05 19:52:47', 1, '2026-09-05 21:04:03', 0);
+INSERT INTO `property_fee_bill` VALUES (53, 0, 1, 1, 23, '2027-06', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-06 11:13:28', 488, 1, '2026-09-06 11:13:22', 1, '2026-09-06 11:13:28', 0);
+INSERT INTO `property_fee_bill` VALUES (54, 0, 1, 1, 23, '2027-07', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-06 15:35:26', 492, 1, '2026-09-06 15:35:05', 1, '2026-09-06 15:35:26', 0);
+INSERT INTO `property_fee_bill` VALUES (55, 0, 1, 1, 23, '2027-08', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-06 15:35:26', 493, 1, '2026-09-06 15:35:05', 1, '2026-09-06 15:35:26', 0);
+INSERT INTO `property_fee_bill` VALUES (56, 0, 1, 1, 23, '2027-09', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-15 09:49:24', 498, 1, '2026-09-10 19:28:59', 1, '2026-09-15 09:49:24', 0);
+INSERT INTO `property_fee_bill` VALUES (57, 0, 1, 1, 23, '2027-10', 5, 2, 2, 2, 50.00, 0.50, 1.0000, 25.00, 2, '2026-09-15 10:44:18', 503, 1, '2026-09-15 10:19:03', 1, '2026-09-15 10:44:18', 0);
 
 -- ----------------------------
 -- Table structure for property_market
@@ -1549,7 +2131,7 @@ CREATE TABLE `property_market`  (
 -- ----------------------------
 -- Records of property_market
 -- ----------------------------
-INSERT INTO `property_market` VALUES (1, 0, '默认市场', '集团默认市场模板', NULL, NULL, 1, '集团模板：与一期铺位 market_id=1 对齐', 1, '2026-08-18 18:17:04', NULL, NULL, 0);
+INSERT INTO `property_market` VALUES (1, 0, '默认市场', '集团默认市场模板', NULL, NULL, 1, '集团模板：与一期摊位 market_id=1 对齐', 1, '2026-08-18 18:17:04', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for property_stall_category
@@ -1570,7 +2152,7 @@ CREATE TABLE `property_stall_category`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_category_name_company`(`category_name` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '铺位分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '铺位分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of property_stall_category
@@ -1588,7 +2170,7 @@ CREATE TABLE `property_stall_contract`  (
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `contract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '合同编号',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID（v2.0起合同改用租户体系，可空）',
-  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
   `tenant_id` bigint(20) NULL DEFAULT NULL COMMENT '租户ID（关联stall_tenant）',
   `rent_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '月租金金额',
   `deposit_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '押金金额',
@@ -1646,13 +2228,14 @@ CREATE TABLE `property_stall_info`  (
   UNIQUE INDEX `uk_stall_no_company`(`stall_number` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_market_id`(`market_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '铺位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '铺位信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of property_stall_info
 -- ----------------------------
-INSERT INTO `property_stall_info` VALUES (1, 0, 1, 3, '001', '铺位名称', 50.00, 1, '测试', 1, '2026-08-18 18:31:52', 1, '2026-09-01 07:57:57', 0);
+INSERT INTO `property_stall_info` VALUES (1, 0, 1, 3, '001', '摊位名称', 50.00, 1, '测试', 1, '2026-08-18 18:31:52', 1, '2026-09-01 07:57:57', 0);
 INSERT INTO `property_stall_info` VALUES (2, 0, 1, 1, '002', '商铺', 80.00, 0, '', 1, '2026-08-23 18:08:41', 1, '2026-08-31 09:28:00', 0);
+INSERT INTO `property_stall_info` VALUES (3, 0, 1, 3, '0005', '测试', 0.00, 0, '1', 1, '2026-09-08 10:33:12', 1, '2026-09-08 10:41:43', 1);
 
 -- ----------------------------
 -- Table structure for property_stall_tenant
@@ -1694,7 +2277,7 @@ DROP TABLE IF EXISTS `property_water_elec_bill`;
 CREATE TABLE `property_water_elec_bill`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
   `merchant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '商户ID',
   `contract_id` bigint(20) NULL DEFAULT NULL COMMENT '关联合同ID',
   `plan_id` bigint(20) NULL DEFAULT NULL COMMENT '关联应收应付计划ID',
@@ -1717,7 +2300,7 @@ CREATE TABLE `property_water_elec_bill`  (
   INDEX `idx_bill_month`(`bill_month` ASC) USING BTREE,
   INDEX `idx_category`(`category` ASC) USING BTREE,
   INDEX `idx_plan_id`(`plan_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 56 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '水电物业月度记录单表（按类别拆行）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 63 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '水电物业月度记录单表（按类别拆行）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of property_water_elec_bill
@@ -1725,7 +2308,10 @@ CREATE TABLE `property_water_elec_bill`  (
 INSERT INTO `property_water_elec_bill` VALUES (48, 0, 1, 1, 23, 462, '2026-09', 3, 0.00, 15.00, 6.00, 90.00, 0, '2026-09-04 22:21:00', 1, '2026-09-04 07:53:19', 1, '2026-09-05 00:30:41', 0);
 INSERT INTO `property_water_elec_bill` VALUES (53, 0, 1, 1, 23, 470, '2026-09', 3, 15.00, 10.00, 6.00, 60.00, 2, '2026-09-05 00:37:27', 1, '2026-09-04 15:04:10', 1, '2026-09-05 00:37:27', 0);
 INSERT INTO `property_water_elec_bill` VALUES (54, 0, 1, 1, 23, 471, '2026-09', 3, 40.00, 5.00, 6.00, 30.00, 0, NULL, 1, '2026-09-04 17:50:06', 1, '2026-09-04 18:30:51', 0);
-INSERT INTO `property_water_elec_bill` VALUES (55, 0, 1, 1, 23, 472, '2026-09', 3, 45.00, 10.00, 6.00, 60.00, 0, NULL, 1, '2026-09-04 18:31:12', 1, '2026-09-04 18:31:11', 0);
+INSERT INTO `property_water_elec_bill` VALUES (55, 0, 1, 1, 23, 472, '2026-09', 3, 45.00, 10.00, 6.00, 60.00, 2, '2026-09-06 11:10:07', 1, '2026-09-04 18:31:12', 1, '2026-09-06 11:10:07', 0);
+INSERT INTO `property_water_elec_bill` VALUES (56, 0, 1, 0, NULL, 489, '2026-09', 3, 55.00, 10.00, 6.00, 60.00, 2, '2026-09-06 11:13:57', 1, '2026-09-06 11:13:47', 1, '2026-09-06 11:13:57', 0);
+INSERT INTO `property_water_elec_bill` VALUES (61, 0, 1, 0, NULL, 499, '2026-09', 3, 65.00, 10.00, 6.00, 60.00, 2, '2026-09-15 10:44:18', 1, '2026-09-10 19:35:47', 1, '2026-09-15 10:44:18', 0);
+INSERT INTO `property_water_elec_bill` VALUES (62, 0, 1, 0, NULL, 500, '2026-09', 3, 85.00, 10.00, 6.00, 60.00, 2, '2026-09-15 09:49:24', 1, '2026-09-15 09:48:53', 1, '2026-09-15 09:49:24', 0);
 
 -- ----------------------------
 -- Table structure for property_water_elec_meter
@@ -1755,7 +2341,7 @@ CREATE TABLE `property_water_elec_meter`  (
 -- ----------------------------
 -- Records of property_water_elec_meter
 -- ----------------------------
-INSERT INTO `property_water_elec_meter` VALUES (1, 0, 1, '0000a1', 1, '', 55.00, 0.00, 1, 1, '2026-08-19 14:05:29', 1, '2026-09-04 18:31:12', 0);
+INSERT INTO `property_water_elec_meter` VALUES (1, 0, 1, '0000a1', 1, '', 95.00, 0.00, 1, 1, '2026-08-19 14:05:29', 1, '2026-09-15 09:48:53', 0);
 
 -- ----------------------------
 -- Table structure for property_water_elec_pay_record
@@ -1765,10 +2351,10 @@ CREATE TABLE `property_water_elec_pay_record`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
   `bill_id` bigint(20) NOT NULL COMMENT '关联账单ID',
-  `stall_id` bigint(20) NOT NULL COMMENT '铺位ID',
+  `stall_id` bigint(20) NOT NULL COMMENT '摊位ID',
   `merchant_id` bigint(20) NULL DEFAULT NULL COMMENT '商户ID',
-  `stall_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '铺位编号快照（写入时固化）',
-  `stall_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '铺位名称快照（写入时固化）',
+  `stall_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '摊位编号快照（写入时固化）',
+  `stall_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '摊位名称快照（写入时固化）',
   `stall_market_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '所属市场名称快照（写入时固化）',
   `category_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '租赁分类名称快照（写入时固化）',
   `merchant_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '商户名称快照（写入时固化）',
@@ -1791,15 +2377,27 @@ CREATE TABLE `property_water_elec_pay_record`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_bill_id`(`bill_id` ASC) USING BTREE,
   INDEX `idx_flow_no`(`flow_no` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 30 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '水电缴费记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 52 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '水电缴费记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of property_water_elec_pay_record
 -- ----------------------------
-INSERT INTO `property_water_elec_pay_record` VALUES (21, 0, 48, 1, 1, '001', '铺位名称', '默认市场', '车位', '测试优惠租户', 90.00, 3, 'PAY1788531656032-54wo9zaq', 1, 0, NULL, NULL, '', 'YO0020260904000002', 1, '2026-09-04 22:21:00', 1, '2026-09-04 22:21:00', 0);
-INSERT INTO `property_water_elec_pay_record` VALUES (22, 0, 44, 1, 1, '001', '铺位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788531672342-cy3vfp0u', 1, 0, NULL, NULL, '', 'YO0020260904000003', 1, '2026-09-04 22:21:14', 1, '2026-09-04 22:21:15', 0);
-INSERT INTO `property_water_elec_pay_record` VALUES (28, 0, 53, 1, 1, '001', '铺位名称', '默认市场', '车位', '测试优惠租户', 60.00, 3, 'PAY1788539845846-vhh91gw9', 1, 0, NULL, NULL, '', 'YO0020260905000002', 1, '2026-09-05 00:37:27', 1, '2026-09-05 00:37:27', 0);
-INSERT INTO `property_water_elec_pay_record` VALUES (29, 0, 46, 1, 1, '001', '铺位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788565777181-vnstgfis', 1, 0, NULL, NULL, '', 'YO0020260905000004', 1, '2026-09-05 07:49:39', 1, '2026-09-05 07:49:39', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (21, 0, 48, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 90.00, 3, 'PAY1788531656032-54wo9zaq', 1, 0, NULL, NULL, '', 'YO0020260904000002', 1, '2026-09-04 22:21:00', 1, '2026-09-04 22:21:00', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (22, 0, 44, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788531672342-cy3vfp0u', 1, 0, NULL, NULL, '', 'YO0020260904000003', 1, '2026-09-04 22:21:14', 1, '2026-09-04 22:21:15', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (28, 0, 53, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 60.00, 3, 'PAY1788539845846-vhh91gw9', 1, 0, NULL, NULL, '', 'YO0020260905000002', 1, '2026-09-05 00:37:27', 1, '2026-09-05 00:37:27', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (29, 0, 46, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788565777181-vnstgfis', 1, 0, NULL, NULL, '', 'YO0020260905000004', 1, '2026-09-05 07:49:39', 1, '2026-09-05 07:49:39', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (30, 0, 51, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788606809826-41pb9shp', 1, 0, NULL, NULL, '', 'YO0020260905000006', 1, '2026-09-05 19:13:33', 1, '2026-09-05 19:13:33', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (33, 0, 50, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788607865641-g5ewggtd', 1, 0, NULL, NULL, '', 'YO0020260905000007', 1, '2026-09-05 19:31:07', 1, '2026-09-05 19:31:07', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (34, 0, 51, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788608606175-55wi8z5h', 1, 0, NULL, NULL, '', 'YO0020260905000010', 1, '2026-09-05 19:43:29', 1, '2026-09-05 19:43:30', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (35, 0, 52, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788609392108-2nc3r03s', 1, 0, NULL, NULL, '', 'YO0020260905000014', 1, '2026-09-05 19:56:34', 1, '2026-09-05 19:56:34', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (36, 0, 48, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788609685491-jie4paxz', 1, 0, NULL, NULL, '', 'YO0020260905000015', 1, '2026-09-05 20:01:27', 1, '2026-09-05 20:01:27', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (37, 0, 52, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788613440769-p9b69dhb', 1, 0, NULL, NULL, '', 'YO0020260905000017', 1, '2026-09-05 21:04:03', 1, '2026-09-05 21:04:03', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (38, 0, 50, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788662854140-l78ad8ww', 1, 0, NULL, NULL, '', 'YO0020260906000002', 1, '2026-09-06 10:47:36', 1, '2026-09-06 10:47:36', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (39, 0, 55, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 60.00, 3, 'PAY1788664205219-b8awz00c', 1, 0, NULL, NULL, '', 'YO0020260906000006', 1, '2026-09-06 11:10:07', 1, '2026-09-06 11:10:07', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (40, 0, 53, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1788664406530-9u710ms9', 1, 0, NULL, NULL, '', 'YO0020260906000007', 1, '2026-09-06 11:13:28', 1, '2026-09-06 11:13:28', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (41, 0, 56, 1, 0, '001', '摊位名称', '默认市场', '车位', '1', 60.00, 3, 'PAY1788664435580-oaskh9md', 1, 0, NULL, NULL, '', 'YO0020260906000008', 1, '2026-09-06 11:13:57', 1, '2026-09-06 11:40:51', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (50, 0, 61, 1, 0, '001', '摊位名称', '默认市场', '车位', NULL, 60.00, 3, 'PAY1789440256445-d4wvxems-61', 1, 0, NULL, NULL, '合并缴费-水费222', NULL, 1, '2026-09-15 10:44:18', 1, '2026-09-15 10:44:18', 0);
+INSERT INTO `property_water_elec_pay_record` VALUES (51, 0, 57, 1, 1, '001', '摊位名称', '默认市场', '车位', '测试优惠租户', 25.00, 3, 'PAY1789440256445-d4wvxems-57', 1, 0, NULL, NULL, '合并缴费-物业费1111', NULL, 1, '2026-09-15 10:44:18', 1, '2026-09-15 10:44:18', 0);
 
 -- ----------------------------
 -- Table structure for stall_merchant
@@ -1851,7 +2449,7 @@ CREATE TABLE `sys_audit_log`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_create_time`(`company_id` ASC, `create_time` ASC) USING BTREE,
   INDEX `idx_oper_module`(`oper_module` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 856 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '业务审计日志表【永久不可删除】' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1172 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '业务审计日志表【永久不可删除】' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_audit_log
@@ -1877,11 +2475,11 @@ INSERT INTO `sys_audit_log` VALUES (18, 0, 1, '集团超级管理员', '127.0.0.
 INSERT INTO `sys_audit_log` VALUES (19, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_category', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T16:38:27\",\"updateBy\":1,\"updateTime\":\"2026-08-18T17:02:26\",\"isDelete\":0,\"companyId\":0,\"categoryName\":\"商铺1\",\"sortOrder\":1,\"status\":1,\"remark\":\"集团模板：商铺类租赁标的\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-18T17:02:37.5106131\",\"isDelete\":null,\"companyId\":null,\"categoryName\":\"商铺\",\"sortOrder\":1,\"status\":1,\"remark\":\"集团模板：商铺类租赁标的\"}', NULL, '2026-08-18 17:02:38');
 INSERT INTO `sys_audit_log` VALUES (20, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '导出', 'finance_flow_20260818170339.csv', NULL, NULL, NULL, '2026-08-18 17:03:40');
 INSERT INTO `sys_audit_log` VALUES (21, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '编辑', '3', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":null,\"updateTime\":null,\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.property_price\",\"configValue\":\"50.00\",\"configName\":\"???????/??/??\",\"remark\":\"?????????????????????????????\"}', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":1,\"updateTime\":\"2026-08-18T17:09:06.8942708\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.property_price\",\"configValue\":\"50.00\",\"configName\":\"111\",\"remark\":\"?????????????????????????????\"}', NULL, '2026-08-18 17:09:07');
-INSERT INTO `sys_audit_log` VALUES (22, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '编辑', '3', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":1,\"updateTime\":\"2026-08-18T17:09:07\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.property_price\",\"configValue\":\"50.00\",\"configName\":\"111\",\"remark\":\"?????????????????????????????\"}', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":1,\"updateTime\":\"2026-08-18T17:09:07\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.property_price\",\"configValue\":\"50.00\",\"configName\":\"物业费单价（元/铺位/月）\",\"remark\":\"水电物业账单生成计费参数，集团统一配置，一期按铺位固定费用\"}', NULL, '2026-08-18 17:09:25');
+INSERT INTO `sys_audit_log` VALUES (22, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '编辑', '3', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":1,\"updateTime\":\"2026-08-18T17:09:07\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.property_price\",\"configValue\":\"50.00\",\"configName\":\"111\",\"remark\":\"?????????????????????????????\"}', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":1,\"updateTime\":\"2026-08-18T17:09:07\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.property_price\",\"configValue\":\"50.00\",\"configName\":\"物业费单价（元/摊位/月）\",\"remark\":\"水电物业账单生成计费参数，集团统一配置，一期按摊位固定费用\"}', NULL, '2026-08-18 17:09:25');
 INSERT INTO `sys_audit_log` VALUES (23, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":null,\"updateTime\":null,\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.elec_price\",\"configValue\":\"1.20\",\"configName\":\"??????/??\",\"remark\":\"???????????????????\"}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":1,\"updateTime\":\"2026-08-18T17:09:39.4782107\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.elec_price\",\"configValue\":\"1.20\",\"configName\":\"电费单价（元/度）\",\"remark\":\"水电物业账单生成计费参数，集团统一配置\"}', NULL, '2026-08-18 17:09:39');
 INSERT INTO `sys_audit_log` VALUES (24, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":null,\"updateTime\":null,\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.water_price\",\"configValue\":\"4.50\",\"configName\":\"??????/??\",\"remark\":\"???????????????????\"}', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T15:53:31\",\"updateBy\":1,\"updateTime\":\"2026-08-18T17:09:55.2961922\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"water_elec.water_price\",\"configValue\":\"4.50\",\"configName\":\"水费单价（元/吨）\",\"remark\":\"水电物业账单生成计费参数，集团统一配置\"}', NULL, '2026-08-18 17:09:55');
 INSERT INTO `sys_audit_log` VALUES (25, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-18 18:28:48');
-INSERT INTO `sys_audit_log` VALUES (26, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '新增', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:51.904362\",\"updateBy\":1,\"updateTime\":\"2026-08-18T18:31:51.904362\",\"isDelete\":null,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"stallType\":2,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-18 18:31:52');
+INSERT INTO `sys_audit_log` VALUES (26, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '新增', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:51.904362\",\"updateBy\":1,\"updateTime\":\"2026-08-18T18:31:51.904362\",\"isDelete\":null,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"stallType\":2,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-18 18:31:52');
 INSERT INTO `sys_audit_log` VALUES (27, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T19:13:38.9456685\",\"updateBy\":1,\"updateTime\":\"2026-08-18T19:13:38.9456685\",\"isDelete\":null,\"companyId\":0,\"parentId\":0,\"orgName\":\"集团总经理室\",\"orgType\":1,\"sortOrder\":0,\"status\":1}', NULL, '2026-08-18 19:13:39');
 INSERT INTO `sys_audit_log` VALUES (28, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '2', NULL, '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-18T19:13:47.2881162\",\"updateBy\":1,\"updateTime\":\"2026-08-18T19:13:47.2881162\",\"isDelete\":null,\"companyId\":0,\"parentId\":0,\"orgName\":\"集团综合管理部\",\"orgType\":1,\"sortOrder\":0,\"status\":1}', NULL, '2026-08-18 19:13:47');
 INSERT INTO `sys_audit_log` VALUES (29, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '3', NULL, '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-08-18T19:13:53.7619489\",\"updateBy\":1,\"updateTime\":\"2026-08-18T19:13:53.7619489\",\"isDelete\":null,\"companyId\":0,\"parentId\":0,\"orgName\":\"集团财务中心\",\"orgType\":1,\"sortOrder\":0,\"status\":1}', NULL, '2026-08-18 19:13:54');
@@ -1916,7 +2514,7 @@ INSERT INTO `sys_audit_log` VALUES (57, 0, 1, '集团超级管理员', '127.0.0.
 INSERT INTO `sys_audit_log` VALUES (58, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '新增', '2', NULL, '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-19T13:00:33.6298095\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:00:33.6298095\",\"isDelete\":null,\"companyId\":0,\"ruleName\":\"电费\",\"feeItemId\":4,\"calcMode\":1,\"price\":0.5,\"periodType\":2,\"overdueRate\":0.5,\"status\":1,\"remark\":\"\"}', NULL, '2026-08-19 13:00:34');
 INSERT INTO `sys_audit_log` VALUES (59, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '新增', '3', NULL, '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-08-19T13:01:29.5126527\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:01:29.5126527\",\"isDelete\":null,\"companyId\":0,\"ruleName\":\"租金1\",\"feeItemId\":1,\"calcMode\":1,\"price\":2000,\"periodType\":2,\"overdueRate\":0.5,\"status\":1,\"remark\":\"\"}', NULL, '2026-08-19 13:01:30');
 INSERT INTO `sys_audit_log` VALUES (60, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[]', '[{\"id\":1,\"ruleName\":\"租金\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":1000.00,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50,\"status\":1},{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50,\"status\":1}]', NULL, '2026-08-19 13:01:45');
-INSERT INTO `sys_audit_log` VALUES (61, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-18T18:31:52\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":0,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-19T13:01:44.9284435\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-19 13:01:45');
+INSERT INTO `sys_audit_log` VALUES (61, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-18T18:31:52\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":0,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-19T13:01:44.9284435\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-19 13:01:45');
 INSERT INTO `sys_audit_log` VALUES (62, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-19 13:02:50');
 INSERT INTO `sys_audit_log` VALUES (63, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-19 13:02:55');
 INSERT INTO `sys_audit_log` VALUES (64, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-19 13:03:00');
@@ -1924,7 +2522,7 @@ INSERT INTO `sys_audit_log` VALUES (65, 0, 0, 'system', '127.0.0.1', 'base', '�
 INSERT INTO `sys_audit_log` VALUES (66, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-19 13:03:19');
 INSERT INTO `sys_audit_log` VALUES (67, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-19 13:03:34');
 INSERT INTO `sys_audit_log` VALUES (68, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[{\"relId\":1,\"ruleId\":1,\"ruleName\":\"租金\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":1000.00,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50},{\"relId\":2,\"ruleId\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50}]', '[{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50,\"status\":1},{\"id\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50,\"status\":1}]', NULL, '2026-08-19 13:03:34');
-INSERT INTO `sys_audit_log` VALUES (69, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:01:45\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":0,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-19T13:03:33.8421788\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":null,\"stallNumber\":\"001\",\"stallName\":null,\"stallArea\":null,\"status\":0,\"remark\":null}', NULL, '2026-08-19 13:03:34');
+INSERT INTO `sys_audit_log` VALUES (69, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:01:45\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":0,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-19T13:03:33.8421788\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":null,\"stallNumber\":\"001\",\"stallName\":null,\"stallArea\":null,\"status\":0,\"remark\":null}', NULL, '2026-08-19 13:03:34');
 INSERT INTO `sys_audit_log` VALUES (70, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-19 13:12:35');
 INSERT INTO `sys_audit_log` VALUES (71, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-19T13:00:34\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:00:34\",\"isDelete\":0,\"companyId\":0,\"ruleName\":\"电费\",\"feeItemId\":4,\"calcMode\":1,\"price\":0.50,\"periodType\":2,\"overdueRate\":0.50,\"status\":1,\"remark\":\"\"}', '{\"id\":2,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-19T13:13:38.1535152\",\"isDelete\":null,\"companyId\":null,\"ruleName\":\"电费\",\"feeItemId\":4,\"calcMode\":1,\"price\":0.5,\"periodType\":0,\"overdueRate\":0.5,\"status\":1,\"remark\":\"\"}', NULL, '2026-08-19 13:13:38');
 INSERT INTO `sys_audit_log` VALUES (72, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '新增', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T14:05:28.6744161\",\"updateBy\":1,\"updateTime\":\"2026-08-19T14:05:28.6744161\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"meterNo\":\"0000a1\",\"meterType\":1,\"gatewayCode\":\"\",\"currentRead\":0,\"balanceAmount\":0,\"status\":1}', NULL, '2026-08-19 14:05:29');
@@ -1933,7 +2531,7 @@ INSERT INTO `sys_audit_log` VALUES (74, 0, 1, '集团超级管理员', '127.0.0.
 INSERT INTO `sys_audit_log` VALUES (75, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '新增', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T14:08:08.4637548\",\"updateBy\":1,\"updateTime\":\"2026-08-19T14:08:08.4637548\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"billMonth\":\"2026-07\",\"waterRead\":20,\"elecRead\":null,\"waterPrice\":4.50,\"elecPrice\":0.50,\"propertyPrice\":50.00,\"waterUsage\":20,\"elecUsage\":0,\"waterAmount\":90.00,\"elecAmount\":0.00,\"propertyAmount\":50.00,\"totalAmount\":140.00,\"payStatus\":0,\"payTime\":null}', NULL, '2026-08-19 14:08:08');
 INSERT INTO `sys_audit_log` VALUES (76, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '新增', '4', NULL, '{\"id\":4,\"createBy\":1,\"createTime\":\"2026-08-19T14:15:33.3568033\",\"updateBy\":1,\"updateTime\":\"2026-08-19T14:15:33.3568033\",\"isDelete\":null,\"companyId\":0,\"ruleName\":\"水费\",\"feeItemId\":3,\"calcMode\":1,\"price\":6,\"periodType\":0,\"overdueRate\":0.5,\"status\":1,\"remark\":\"\"}', NULL, '2026-08-19 14:15:33');
 INSERT INTO `sys_audit_log` VALUES (77, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[{\"relId\":3,\"ruleId\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":4,\"ruleId\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50}]', '[{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50,\"status\":1},{\"id\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1}]', NULL, '2026-08-19 14:15:50');
-INSERT INTO `sys_audit_log` VALUES (78, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:03:34\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":0,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-19T14:15:49.6203475\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-19 14:15:50');
+INSERT INTO `sys_audit_log` VALUES (78, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:03:34\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":0,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-19T14:15:49.6203475\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-19 14:15:50');
 INSERT INTO `sys_audit_log` VALUES (79, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '新增', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T14:16:03.4900647\",\"updateBy\":1,\"updateTime\":\"2026-08-19T14:16:03.4900647\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"billMonth\":\"2026-07\",\"waterRead\":10,\"elecRead\":null,\"waterPrice\":6.00,\"elecPrice\":0.50,\"propertyPrice\":0,\"waterUsage\":10,\"elecUsage\":0,\"waterAmount\":60.00,\"elecAmount\":0.00,\"propertyAmount\":0,\"totalAmount\":60.00,\"payStatus\":0,\"payTime\":null}', NULL, '2026-08-19 14:16:03');
 INSERT INTO `sys_audit_log` VALUES (80, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T14:16:24.1794244\",\"updateBy\":1,\"updateTime\":\"2026-08-19T14:16:24.1794244\",\"isDelete\":null,\"companyId\":0,\"billId\":1,\"stallId\":1,\"merchantId\":null,\"payAmount\":60.00,\"payType\":3,\"requestId\":\"WE1787120180250-zpeao73c\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\"}', NULL, '2026-08-19 14:16:24');
 INSERT INTO `sys_audit_log` VALUES (81, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '新增', '2', NULL, '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-19T14:16:46.3713942\",\"updateBy\":1,\"updateTime\":\"2026-08-19T14:16:46.3713942\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"billMonth\":\"2026-08\",\"waterRead\":15,\"elecRead\":null,\"waterPrice\":6.00,\"elecPrice\":0.50,\"propertyPrice\":0,\"waterUsage\":5.00,\"elecUsage\":0.00,\"waterAmount\":30.0000,\"elecAmount\":0.0000,\"propertyAmount\":0,\"totalAmount\":30.0000,\"payStatus\":0,\"payTime\":null}', NULL, '2026-08-19 14:16:46');
@@ -2056,7 +2654,7 @@ INSERT INTO `sys_audit_log` VALUES (197, 0, 1, '集团超级管理员', '127.0.0
 INSERT INTO `sys_audit_log` VALUES (198, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '退租', '8', '{\"id\":8,\"createBy\":1,\"createTime\":\"2026-08-21T19:02:26\",\"updateBy\":1,\"updateTime\":\"2026-08-21T19:02:26\",\"isDelete\":0,\"companyId\":0,\"contractNo\":\"HT202608211902253543\",\"merchantId\":null,\"tenantId\":1,\"stallId\":1,\"rentAmount\":2000.00,\"depositAmount\":0.00,\"startTime\":\"2026-08-21\",\"endTime\":\"2027-08-21\",\"contractStatus\":1,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', '{\"id\":8,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-21T19:02:32.1078461\",\"isDelete\":null,\"companyId\":null,\"contractNo\":null,\"merchantId\":null,\"tenantId\":null,\"stallId\":null,\"rentAmount\":null,\"depositAmount\":null,\"startTime\":null,\"endTime\":null,\"contractStatus\":2,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-21 19:02:32');
 INSERT INTO `sys_audit_log` VALUES (199, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '新增', '5', NULL, '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-08-21T19:04:26.0549247\",\"updateBy\":1,\"updateTime\":\"2026-08-21T19:04:26.0549247\",\"isDelete\":null,\"companyId\":0,\"ruleName\":\"物业费\",\"feeItemId\":2,\"calcMode\":2,\"price\":0.5,\"periodType\":2,\"overdueRate\":0,\"status\":1,\"remark\":\"\"}', NULL, '2026-08-21 19:04:26');
 INSERT INTO `sys_audit_log` VALUES (200, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[{\"relId\":5,\"ruleId\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":6,\"ruleId\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50},{\"relId\":7,\"ruleId\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50}]', '[{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50,\"status\":1},{\"id\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00,\"status\":1}]', NULL, '2026-08-21 19:04:57');
-INSERT INTO `sys_audit_log` VALUES (201, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-21T19:02:32\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":0,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-21T19:04:57.3142944\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-21 19:04:57');
+INSERT INTO `sys_audit_log` VALUES (201, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-21T19:02:32\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":0,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-21T19:04:57.3142944\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-21 19:04:57');
 INSERT INTO `sys_audit_log` VALUES (202, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '新增', '9', NULL, '{\"id\":9,\"createBy\":1,\"createTime\":\"2026-08-21T19:05:26.3231268\",\"updateBy\":1,\"updateTime\":\"2026-08-21T19:05:26.3231268\",\"isDelete\":null,\"companyId\":0,\"contractNo\":\"HT202608211905266097\",\"merchantId\":null,\"tenantId\":1,\"stallId\":1,\"rentAmount\":2000,\"depositAmount\":0,\"startTime\":\"2026-08-21\",\"endTime\":\"2027-08-21\",\"contractStatus\":1,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-21 19:05:26');
 INSERT INTO `sys_audit_log` VALUES (203, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-23 10:09:50');
 INSERT INTO `sys_audit_log` VALUES (204, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '2', '[]', '[{\"id\":1,\"ruleName\":\"租金\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":1000.00,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.50,\"status\":1},{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00,\"status\":1}]', NULL, '2026-08-23 18:08:41');
@@ -2100,10 +2698,10 @@ INSERT INTO `sys_audit_log` VALUES (241, 0, 0, 'system', '127.0.0.1', 'base', '�
 INSERT INTO `sys_audit_log` VALUES (242, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '新增', '5', NULL, '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-08-24T11:38:24.1315652\",\"updateBy\":1,\"updateTime\":\"2026-08-24T11:38:24.1315652\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"planId\":null,\"billMonth\":\"2026-08\",\"category\":3,\"prevMeterRead\":150.00,\"usage\":10.00,\"unitPrice\":6.00,\"totalAmount\":60.0000,\"payStatus\":0,\"payTime\":null}', NULL, '2026-08-24 11:38:24');
 INSERT INTO `sys_audit_log` VALUES (243, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '177', NULL, '\"核销金额=60.00，账单=water_elec/5\"', NULL, '2026-08-24 11:39:06');
 INSERT INTO `sys_audit_log` VALUES (244, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '8', NULL, '{\"id\":8,\"createBy\":1,\"createTime\":\"2026-08-24T11:39:05.5059933\",\"updateBy\":1,\"updateTime\":\"2026-08-24T11:39:05.5059933\",\"isDelete\":null,\"companyId\":0,\"billId\":5,\"stallId\":1,\"merchantId\":0,\"payAmount\":60.00,\"payType\":3,\"requestId\":\"WE1787542743243-o3bbsi8q\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\"}', NULL, '2026-08-24 11:39:06');
-INSERT INTO `sys_audit_log` VALUES (245, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '作废', '2', '{\"id\":2,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"2\",\"planId\":null,\"merchantId\":null,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":30.00,\"discountAmount\":0.00,\"realAmount\":30.00,\"payType\":1,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":null,\"remark\":\"水电物业缴费-2026-08\",\"createBy\":0,\"createTime\":\"2026-08-19T14:17:45\"}', NULL, NULL, '2026-08-24 16:10:23');
-INSERT INTO `sys_audit_log` VALUES (246, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红申请', '3', '{\"id\":3,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"1\",\"planId\":null,\"merchantId\":null,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":2,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":null,\"remark\":\"水电物业退费\",\"createBy\":0,\"createTime\":\"2026-08-19T14:18:09\"}', NULL, NULL, '2026-08-24 16:11:06');
+INSERT INTO `sys_audit_log` VALUES (245, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '作废', '2', '{\"id\":2,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"2\",\"planId\":null,\"merchantId\":null,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":30.00,\"discountAmount\":0.00,\"realAmount\":30.00,\"payType\":1,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":null,\"remark\":\"水电物业缴费-2026-08\",\"createBy\":0,\"createTime\":\"2026-08-19T14:17:45\"}', NULL, NULL, '2026-08-24 16:10:23');
+INSERT INTO `sys_audit_log` VALUES (246, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红申请', '3', '{\"id\":3,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"1\",\"planId\":null,\"merchantId\":null,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":2,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":null,\"remark\":\"水电物业退费\",\"createBy\":0,\"createTime\":\"2026-08-19T14:18:09\"}', NULL, NULL, '2026-08-24 16:11:06');
 INSERT INTO `sys_audit_log` VALUES (247, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '158', NULL, '\"核销金额=60.00，账单=water_elec/3\"', NULL, '2026-08-24 16:23:39');
-INSERT INTO `sys_audit_log` VALUES (248, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '9', NULL, '{\"id\":9,\"createBy\":1,\"createTime\":\"2026-08-24T16:23:38.2371223\",\"updateBy\":1,\"updateTime\":\"2026-08-24T16:23:38.2371223\",\"isDelete\":null,\"companyId\":0,\"billId\":3,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":60.00,\"payType\":3,\"requestId\":\"WE1787559815038-k7jitdur\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-08-24 16:23:39');
+INSERT INTO `sys_audit_log` VALUES (248, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '9', NULL, '{\"id\":9,\"createBy\":1,\"createTime\":\"2026-08-24T16:23:38.2371223\",\"updateBy\":1,\"updateTime\":\"2026-08-24T16:23:38.2371223\",\"isDelete\":null,\"companyId\":0,\"billId\":3,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":60.00,\"payType\":3,\"requestId\":\"WE1787559815038-k7jitdur\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-08-24 16:23:39');
 INSERT INTO `sys_audit_log` VALUES (249, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-25 08:35:27');
 INSERT INTO `sys_audit_log` VALUES (250, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-25 08:35:37');
 INSERT INTO `sys_audit_log` VALUES (251, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-25 08:35:37');
@@ -2260,12 +2858,12 @@ INSERT INTO `sys_audit_log` VALUES (404, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (406, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:10:56');
 INSERT INTO `sys_audit_log` VALUES (408, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:14:34');
 INSERT INTO `sys_audit_log` VALUES (409, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:14:34');
-INSERT INTO `sys_audit_log` VALUES (410, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '13', '{\"id\":13,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"3\",\"planId\":158,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000003\",\"remark\":\"水电物业缴费\",\"createBy\":0,\"createTime\":\"2026-08-24T16:23:38\"}', NULL, NULL, '2026-08-27 17:14:34');
+INSERT INTO `sys_audit_log` VALUES (410, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '13', '{\"id\":13,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"3\",\"planId\":158,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000003\",\"remark\":\"水电物业缴费\",\"createBy\":0,\"createTime\":\"2026-08-24T16:23:38\"}', NULL, NULL, '2026-08-27 17:14:34');
 INSERT INTO `sys_audit_log` VALUES (411, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'flow_engine', '提交', '5', NULL, '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-08-27T17:14:34.1387077\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:14:34.1387077\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608271714346211\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"13\",\"title\":\"冲红申请-流水ID:13\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:14:34.1377065\",\"finishTime\":null}', NULL, '2026-08-27 17:14:34');
 INSERT INTO `sys_audit_log` VALUES (412, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:15:01');
 INSERT INTO `sys_audit_log` VALUES (413, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:16:05');
 INSERT INTO `sys_audit_log` VALUES (414, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:16:31');
-INSERT INTO `sys_audit_log` VALUES (415, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:16:51');
+INSERT INTO `sys_audit_log` VALUES (415, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:16:51');
 INSERT INTO `sys_audit_log` VALUES (416, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '6', NULL, '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-08-27T17:16:51.4836429\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:16:51.4836429\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608271716518059\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"11\",\"title\":\"冲红申请-流水ID:11\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:16:51.4836429\",\"finishTime\":null}', NULL, '2026-08-27 17:16:51');
 INSERT INTO `sys_audit_log` VALUES (417, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '完成', '5', NULL, '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-08-27T17:14:34\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:14:34\",\"isDelete\":0,\"companyId\":0,\"instanceNo\":\"FL202608271714346211\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"13\",\"title\":\"冲红申请-流水ID:13\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":1,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:14:34\",\"finishTime\":\"2026-08-27T17:17:08.4319551\"}', NULL, '2026-08-27 17:17:08');
 INSERT INTO `sys_audit_log` VALUES (418, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:25:45');
@@ -2275,16 +2873,16 @@ INSERT INTO `sys_audit_log` VALUES (421, 0, 1, '集团超级管理员', '0:0:0:0
 INSERT INTO `sys_audit_log` VALUES (422, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:28:06');
 INSERT INTO `sys_audit_log` VALUES (423, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:28:48');
 INSERT INTO `sys_audit_log` VALUES (424, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:28:48');
-INSERT INTO `sys_audit_log` VALUES (425, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '20', '{\"id\":20,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":-60.00,\"payType\":3,\"flowType\":2,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002-RED\",\"remark\":\"冲红反向流水（原流水ID=11，审批通过后生效）\",\"createBy\":1,\"createTime\":\"2026-08-27T17:16:51\"}', NULL, NULL, '2026-08-27 17:28:48');
+INSERT INTO `sys_audit_log` VALUES (425, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '20', '{\"id\":20,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":-60.00,\"payType\":3,\"flowType\":2,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002-RED\",\"remark\":\"冲红反向流水（原流水ID=11，审批通过后生效）\",\"createBy\":1,\"createTime\":\"2026-08-27T17:16:51\"}', NULL, NULL, '2026-08-27 17:28:48');
 INSERT INTO `sys_audit_log` VALUES (426, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'flow_engine', '提交', '7', NULL, '{\"id\":7,\"createBy\":1,\"createTime\":\"2026-08-27T17:28:48.0641336\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:28:48.0641336\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608271728486164\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"20\",\"title\":\"冲红申请-流水ID:20\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:28:48.0641336\",\"finishTime\":null}', NULL, '2026-08-27 17:28:48');
 INSERT INTO `sys_audit_log` VALUES (427, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:29:22');
 INSERT INTO `sys_audit_log` VALUES (428, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:29:54');
-INSERT INTO `sys_audit_log` VALUES (429, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '19', '{\"id\":19,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"3\",\"planId\":158,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":-60.00,\"payType\":3,\"flowType\":2,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000003-RED\",\"remark\":\"冲红反向流水（原流水ID=13，审批通过后生效）\",\"createBy\":1,\"createTime\":\"2026-08-27T17:14:34\"}', NULL, NULL, '2026-08-27 17:29:54');
+INSERT INTO `sys_audit_log` VALUES (429, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '19', '{\"id\":19,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"3\",\"planId\":158,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":-60.00,\"payType\":3,\"flowType\":2,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000003-RED\",\"remark\":\"冲红反向流水（原流水ID=13，审批通过后生效）\",\"createBy\":1,\"createTime\":\"2026-08-27T17:14:34\"}', NULL, NULL, '2026-08-27 17:29:54');
 INSERT INTO `sys_audit_log` VALUES (430, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'flow_engine', '提交', '8', NULL, '{\"id\":8,\"createBy\":1,\"createTime\":\"2026-08-27T17:29:54.4289163\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:29:54.4289163\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608271729540166\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"19\",\"title\":\"冲红申请-流水ID:19\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:29:54.4289163\",\"finishTime\":null}', NULL, '2026-08-27 17:29:54');
 INSERT INTO `sys_audit_log` VALUES (431, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:31:03');
 INSERT INTO `sys_audit_log` VALUES (432, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:31:29');
 INSERT INTO `sys_audit_log` VALUES (433, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:31:29');
-INSERT INTO `sys_audit_log` VALUES (434, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红】\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:31:29');
+INSERT INTO `sys_audit_log` VALUES (434, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红】\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:31:29');
 INSERT INTO `sys_audit_log` VALUES (435, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'flow_engine', '提交', '9', NULL, '{\"id\":9,\"createBy\":1,\"createTime\":\"2026-08-27T17:31:28.9935372\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:31:28.9935372\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608271731282915\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"11\",\"title\":\"冲红申请-流水ID:11\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:31:28.9911434\",\"finishTime\":null}', NULL, '2026-08-27 17:31:29');
 INSERT INTO `sys_audit_log` VALUES (436, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:31:58');
 INSERT INTO `sys_audit_log` VALUES (437, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:32:25');
@@ -2300,7 +2898,7 @@ INSERT INTO `sys_audit_log` VALUES (447, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (448, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:44:57');
 INSERT INTO `sys_audit_log` VALUES (449, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:45:13');
 INSERT INTO `sys_audit_log` VALUES (450, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:46:20');
-INSERT INTO `sys_audit_log` VALUES (451, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红】【冲红审批中：端到端测试】\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:46:20');
+INSERT INTO `sys_audit_log` VALUES (451, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红】【冲红审批中：端到端测试】\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:46:20');
 INSERT INTO `sys_audit_log` VALUES (452, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'flow_engine', '提交', '10', NULL, '{\"id\":10,\"createBy\":1,\"createTime\":\"2026-08-27T17:46:20.0047357\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:46:20.0047357\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608271746206244\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"11\",\"title\":\"冲红申请-流水ID:11\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:46:20.0047357\",\"finishTime\":null}', NULL, '2026-08-27 17:46:20');
 INSERT INTO `sys_audit_log` VALUES (453, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:46:51');
 INSERT INTO `sys_audit_log` VALUES (454, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:48:00');
@@ -2309,12 +2907,12 @@ INSERT INTO `sys_audit_log` VALUES (456, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (457, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:51:10');
 INSERT INTO `sys_audit_log` VALUES (459, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:52:58');
 INSERT INTO `sys_audit_log` VALUES (460, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:52:58');
-INSERT INTO `sys_audit_log` VALUES (461, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红】【冲红审批中：端到端测试】【冲红审批中：test】\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:52:58');
+INSERT INTO `sys_audit_log` VALUES (461, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红】【冲红审批中：端到端测试】【冲红审批中：test】\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:52:58');
 INSERT INTO `sys_audit_log` VALUES (462, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'flow_engine', '提交', '11', NULL, '{\"id\":11,\"createBy\":1,\"createTime\":\"2026-08-27T17:52:58.1015911\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:52:58.1015911\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608271752580135\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"11\",\"title\":\"冲红申请-流水ID:11\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:52:58.1005862\",\"finishTime\":null}', NULL, '2026-08-27 17:52:58');
 INSERT INTO `sys_audit_log` VALUES (463, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:55:03');
 INSERT INTO `sys_audit_log` VALUES (464, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:55:03');
 INSERT INTO `sys_audit_log` VALUES (465, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:55:59');
-INSERT INTO `sys_audit_log` VALUES (466, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红】【冲红审批中：端到端测试】【冲红审批中：test】【冲红审批中：test】\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:55:59');
+INSERT INTO `sys_audit_log` VALUES (466, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'finance', '冲红申请', '11', '{\"id\":11,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"5\",\"planId\":177,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000002\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红】【冲红审批中：端到端测试】【冲红审批中：test】【冲红审批中：test】\",\"createBy\":0,\"createTime\":\"2026-08-24T11:39:05\"}', NULL, NULL, '2026-08-27 17:55:59');
 INSERT INTO `sys_audit_log` VALUES (467, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'flow_engine', '提交', '12', NULL, '{\"id\":12,\"createBy\":1,\"createTime\":\"2026-08-27T17:55:59.199313\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:55:59.199313\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608271755592931\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"11\",\"title\":\"冲红申请-流水ID:11\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:55:59.1973021\",\"finishTime\":null}', NULL, '2026-08-27 17:55:59');
 INSERT INTO `sys_audit_log` VALUES (468, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:56:30');
 INSERT INTO `sys_audit_log` VALUES (469, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'flow_engine', '完成', '12', NULL, '{\"id\":12,\"createBy\":1,\"createTime\":\"2026-08-27T17:55:59\",\"updateBy\":1,\"updateTime\":\"2026-08-27T17:55:59\",\"isDelete\":0,\"companyId\":0,\"instanceNo\":\"FL202608271755592931\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"11\",\"title\":\"冲红申请-流水ID:11\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":1,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T17:55:59\",\"finishTime\":\"2026-08-27T17:56:29.8071876\"}', NULL, '2026-08-27 17:56:30');
@@ -2322,7 +2920,7 @@ INSERT INTO `sys_audit_log` VALUES (470, 0, 1, '集团超级管理员', '0:0:0:0
 INSERT INTO `sys_audit_log` VALUES (471, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:56:47');
 INSERT INTO `sys_audit_log` VALUES (472, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:57:32');
 INSERT INTO `sys_audit_log` VALUES (473, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-27 17:58:19');
-INSERT INTO `sys_audit_log` VALUES (474, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红申请', '13', '{\"id\":13,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"3\",\"planId\":158,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000003\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红修复】\",\"createBy\":0,\"createTime\":\"2026-08-24T16:23:38\"}', NULL, NULL, '2026-08-27 20:05:01');
+INSERT INTO `sys_audit_log` VALUES (474, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红申请', '13', '{\"id\":13,\"companyId\":0,\"businessType\":\"water_elec\",\"billId\":\"3\",\"planId\":158,\"merchantId\":0,\"stallId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payerName\":null,\"payerPhone\":null,\"payerCompanyName\":null,\"payerType\":null,\"contractNo\":null,\"contractId\":null,\"originalAmount\":60.00,\"discountAmount\":0.00,\"realAmount\":60.00,\"payType\":3,\"flowType\":1,\"status\":1,\"flowStatus\":1,\"redFlushFlowId\":null,\"voidReason\":null,\"tradeNo\":null,\"flowNo\":\"YO0020260824000003\",\"remark\":\"水电物业缴费【冲红审批中：测试冲红修复】\",\"createBy\":0,\"createTime\":\"2026-08-24T16:23:38\"}', NULL, NULL, '2026-08-27 20:05:01');
 INSERT INTO `sys_audit_log` VALUES (475, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '13', NULL, '{\"id\":13,\"createBy\":1,\"createTime\":\"2026-08-27T20:05:00.7523456\",\"updateBy\":1,\"updateTime\":\"2026-08-27T20:05:00.7523456\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202608272005003408\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"13\",\"title\":\"冲红申请-流水ID:13\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T20:05:00.7523456\",\"finishTime\":null}', NULL, '2026-08-27 20:05:01');
 INSERT INTO `sys_audit_log` VALUES (476, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '完成', '13', NULL, '{\"id\":13,\"createBy\":1,\"createTime\":\"2026-08-27T20:05:01\",\"updateBy\":1,\"updateTime\":\"2026-08-27T20:05:01\",\"isDelete\":0,\"companyId\":0,\"instanceNo\":\"FL202608272005003408\",\"defId\":9,\"defName\":\"财务流水冲红审批\",\"bizType\":\"finance_red_flush\",\"sourceType\":\"finance_flow\",\"sourceId\":\"13\",\"title\":\"冲红申请-流水ID:13\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":1,\"currentNodeName\":\"冲红审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-08-27T20:05:01\",\"finishTime\":\"2026-08-27T20:05:31.1305287\"}', NULL, '2026-08-27 20:05:31');
 INSERT INTO `sys_audit_log` VALUES (477, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红审批通过', '13', NULL, NULL, NULL, '2026-08-27 20:05:31');
@@ -2437,7 +3035,7 @@ INSERT INTO `sys_audit_log` VALUES (585, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (586, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-30 08:40:14');
 INSERT INTO `sys_audit_log` VALUES (587, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-30 09:10:25');
 INSERT INTO `sys_audit_log` VALUES (588, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '220', NULL, '\"核销金额=300.00，账单=water_elec/33\"', NULL, '2026-08-30 09:48:43');
-INSERT INTO `sys_audit_log` VALUES (589, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '10', NULL, '{\"id\":10,\"createBy\":1,\"createTime\":\"2026-08-30T09:48:42.8913498\",\"updateBy\":1,\"updateTime\":\"2026-08-30T09:48:42.8913498\",\"isDelete\":null,\"companyId\":0,\"billId\":33,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":300.00,\"payType\":3,\"requestId\":\"PAY1788054518248-giogeew5\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-08-30 09:48:43');
+INSERT INTO `sys_audit_log` VALUES (589, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '10', NULL, '{\"id\":10,\"createBy\":1,\"createTime\":\"2026-08-30T09:48:42.8913498\",\"updateBy\":1,\"updateTime\":\"2026-08-30T09:48:42.8913498\",\"isDelete\":null,\"companyId\":0,\"billId\":33,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":300.00,\"payType\":3,\"requestId\":\"PAY1788054518248-giogeew5\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-08-30 09:48:43');
 INSERT INTO `sys_audit_log` VALUES (590, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-30 13:36:53');
 INSERT INTO `sys_audit_log` VALUES (591, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-30 13:38:52');
 INSERT INTO `sys_audit_log` VALUES (592, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-30 13:40:33');
@@ -2498,7 +3096,7 @@ INSERT INTO `sys_audit_log` VALUES (646, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (647, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 00:35:27');
 INSERT INTO `sys_audit_log` VALUES (648, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 08:30:47');
 INSERT INTO `sys_audit_log` VALUES (649, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 08:30:58');
-INSERT INTO `sys_audit_log` VALUES (650, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '14', NULL, '{\"id\":14,\"createBy\":1,\"createTime\":\"2026-08-31T09:26:25.5293173\",\"updateBy\":1,\"updateTime\":\"2026-08-31T09:26:25.5293173\",\"isDelete\":null,\"companyId\":0,\"billId\":37,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":60.00,\"payType\":3,\"requestId\":\"PAY1788139584168-vg7adk0l\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-08-31 09:26:26');
+INSERT INTO `sys_audit_log` VALUES (650, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '14', NULL, '{\"id\":14,\"createBy\":1,\"createTime\":\"2026-08-31T09:26:25.5293173\",\"updateBy\":1,\"updateTime\":\"2026-08-31T09:26:25.5293173\",\"isDelete\":null,\"companyId\":0,\"billId\":37,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":60.00,\"payType\":3,\"requestId\":\"PAY1788139584168-vg7adk0l\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-08-31 09:26:26');
 INSERT INTO `sys_audit_log` VALUES (651, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '退租', '10', '{\"id\":10,\"createBy\":1,\"createTime\":\"2026-08-24T07:25:17\",\"updateBy\":1,\"updateTime\":\"2026-08-24T07:25:17\",\"isDelete\":0,\"companyId\":0,\"contractNo\":\"HT202608240725173862\",\"merchantId\":null,\"tenantId\":1,\"stallId\":2,\"rentAmount\":1000.00,\"depositAmount\":1000.00,\"startTime\":\"2026-08-24\",\"endTime\":\"2027-08-24\",\"contractStatus\":1,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', '{\"id\":10,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T09:27:59.5907954\",\"isDelete\":null,\"companyId\":null,\"contractNo\":null,\"merchantId\":null,\"tenantId\":null,\"stallId\":null,\"rentAmount\":null,\"depositAmount\":null,\"startTime\":null,\"endTime\":null,\"contractStatus\":2,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-31 09:28:00');
 INSERT INTO `sys_audit_log` VALUES (652, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '退租', '9', '{\"id\":9,\"createBy\":1,\"createTime\":\"2026-08-21T19:05:26\",\"updateBy\":1,\"updateTime\":\"2026-08-21T19:05:26\",\"isDelete\":0,\"companyId\":0,\"contractNo\":\"HT202608211905266097\",\"merchantId\":null,\"tenantId\":1,\"stallId\":1,\"rentAmount\":2000.00,\"depositAmount\":0.00,\"startTime\":\"2026-08-21\",\"endTime\":\"2027-08-21\",\"contractStatus\":1,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', '{\"id\":9,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T09:28:01.90451\",\"isDelete\":null,\"companyId\":null,\"contractNo\":null,\"merchantId\":null,\"tenantId\":null,\"stallId\":null,\"rentAmount\":null,\"depositAmount\":null,\"startTime\":null,\"endTime\":null,\"contractStatus\":2,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-31 09:28:02');
 INSERT INTO `sys_audit_log` VALUES (653, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '新增', '11', NULL, '{\"id\":11,\"createBy\":1,\"createTime\":\"2026-08-31T09:28:47.9637366\",\"updateBy\":1,\"updateTime\":\"2026-08-31T09:28:47.9637366\",\"isDelete\":null,\"companyId\":0,\"contractNo\":\"HT202608310928476108\",\"merchantId\":null,\"tenantId\":1,\"stallId\":1,\"rentAmount\":2000,\"depositAmount\":0,\"startTime\":\"2026-08-31\",\"endTime\":\"2027-08-31\",\"contractStatus\":1,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-31 09:28:48');
@@ -2521,10 +3119,10 @@ INSERT INTO `sys_audit_log` VALUES (669, 0, 1, '集团超级管理员', '127.0.0
 INSERT INTO `sys_audit_log` VALUES (670, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 12:43:53');
 INSERT INTO `sys_audit_log` VALUES (671, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 12:45:10');
 INSERT INTO `sys_audit_log` VALUES (672, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[{\"relId\":8,\"ruleId\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":9,\"ruleId\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50},{\"relId\":10,\"ruleId\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":11,\"ruleId\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00}]', '[{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50,\"status\":1},{\"id\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00,\"status\":1}]', NULL, '2026-08-31 12:46:53');
-INSERT INTO `sys_audit_log` VALUES (673, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T11:20:22\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T12:46:52.873114\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-31 12:46:53');
+INSERT INTO `sys_audit_log` VALUES (673, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T11:20:22\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T12:46:52.873114\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-31 12:46:53');
 INSERT INTO `sys_audit_log` VALUES (674, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '新增', '13', NULL, '{\"id\":13,\"createBy\":1,\"createTime\":\"2026-08-31T12:47:11.4301489\",\"updateBy\":1,\"updateTime\":\"2026-08-31T12:47:11.4301489\",\"isDelete\":null,\"companyId\":0,\"contractNo\":\"HT202608311247118124\",\"merchantId\":null,\"tenantId\":1,\"stallId\":1,\"rentAmount\":2000,\"depositAmount\":0,\"startTime\":\"2026-08-31\",\"endTime\":\"2027-08-31\",\"contractStatus\":0,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-31 12:47:12');
 INSERT INTO `sys_audit_log` VALUES (675, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[{\"relId\":25,\"ruleId\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":26,\"ruleId\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50},{\"relId\":27,\"ruleId\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":28,\"ruleId\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00}]', '[{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50,\"status\":1},{\"id\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00,\"status\":1}]', NULL, '2026-08-31 12:48:10');
-INSERT INTO `sys_audit_log` VALUES (676, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T12:47:11\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T12:48:09.6032622\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-31 12:48:10');
+INSERT INTO `sys_audit_log` VALUES (676, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T12:47:11\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T12:48:09.6032622\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-31 12:48:10');
 INSERT INTO `sys_audit_log` VALUES (677, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '新增', '14', NULL, '{\"id\":14,\"createBy\":1,\"createTime\":\"2026-08-31T12:48:37.1015497\",\"updateBy\":1,\"updateTime\":\"2026-08-31T12:48:37.1015497\",\"isDelete\":null,\"companyId\":0,\"contractNo\":\"HT202608311248370138\",\"merchantId\":null,\"tenantId\":1,\"stallId\":1,\"rentAmount\":2000,\"depositAmount\":0,\"startTime\":\"2026-08-31\",\"endTime\":\"2027-08-31\",\"contractStatus\":0,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-31 12:48:37');
 INSERT INTO `sys_audit_log` VALUES (678, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 13:36:40');
 INSERT INTO `sys_audit_log` VALUES (679, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 13:36:53');
@@ -2534,16 +3132,16 @@ INSERT INTO `sys_audit_log` VALUES (682, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (683, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 17:21:28');
 INSERT INTO `sys_audit_log` VALUES (684, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 17:21:43');
 INSERT INTO `sys_audit_log` VALUES (685, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[{\"relId\":29,\"ruleId\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":30,\"ruleId\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50},{\"relId\":31,\"ruleId\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":32,\"ruleId\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00}]', '[{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50,\"status\":1},{\"id\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00,\"status\":1},{\"id\":6,\"ruleName\":\"押金\",\"feeItemId\":5,\"feeItemName\":\"押金\",\"categoryType\":5,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":1000.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.00,\"status\":1}]', NULL, '2026-08-31 17:22:01');
-INSERT INTO `sys_audit_log` VALUES (686, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T12:48:37\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T17:22:00.9892914\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"status\":1,\"remark\":\"测试\"}', NULL, '2026-08-31 17:22:01');
+INSERT INTO `sys_audit_log` VALUES (686, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T12:48:37\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T17:22:00.9892914\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"status\":1,\"remark\":\"测试\"}', NULL, '2026-08-31 17:22:01');
 INSERT INTO `sys_audit_log` VALUES (687, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[{\"relId\":33,\"ruleId\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":34,\"ruleId\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50},{\"relId\":35,\"ruleId\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":36,\"ruleId\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00},{\"relId\":37,\"ruleId\":6,\"ruleName\":\"押金\",\"feeItemId\":5,\"feeItemName\":\"押金\",\"categoryType\":5,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":1000.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.00}]', '[{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50,\"status\":1},{\"id\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00,\"status\":1},{\"id\":6,\"ruleName\":\"押金\",\"feeItemId\":5,\"feeItemName\":\"押金\",\"categoryType\":5,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":1000.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.00,\"status\":1}]', NULL, '2026-08-31 17:23:29');
-INSERT INTO `sys_audit_log` VALUES (688, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T17:22:01\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T17:23:28.9827191\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-31 17:23:29');
+INSERT INTO `sys_audit_log` VALUES (688, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T17:22:01\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T17:23:28.9827191\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-31 17:23:29');
 INSERT INTO `sys_audit_log` VALUES (689, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '新增', '15', NULL, '{\"id\":15,\"createBy\":1,\"createTime\":\"2026-08-31T17:23:50.2443312\",\"updateBy\":1,\"updateTime\":\"2026-08-31T17:23:50.2443312\",\"isDelete\":null,\"companyId\":0,\"contractNo\":\"HT202608311723502046\",\"merchantId\":null,\"tenantId\":1,\"stallId\":1,\"rentAmount\":2000,\"depositAmount\":1000,\"startTime\":\"2026-08-31\",\"endTime\":\"2027-08-31\",\"contractStatus\":0,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-31 17:23:51');
 INSERT INTO `sys_audit_log` VALUES (690, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 17:39:15');
 INSERT INTO `sys_audit_log` VALUES (691, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 17:40:59');
 INSERT INTO `sys_audit_log` VALUES (692, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 17:55:29');
 INSERT INTO `sys_audit_log` VALUES (693, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 17:56:02');
 INSERT INTO `sys_audit_log` VALUES (694, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '1', '[{\"relId\":38,\"ruleId\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":39,\"ruleId\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50},{\"relId\":40,\"ruleId\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50},{\"relId\":41,\"ruleId\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00},{\"relId\":42,\"ruleId\":6,\"ruleName\":\"押金\",\"feeItemId\":5,\"feeItemName\":\"押金\",\"categoryType\":5,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":1000.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.00}]', '[{\"id\":2,\"ruleName\":\"电费\",\"feeItemId\":4,\"feeItemName\":\"电费\",\"categoryType\":4,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":0.50,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":3,\"ruleName\":\"租金1\",\"feeItemId\":1,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":2000.00,\"periodType\":1,\"periodTypeText\":\"按年\",\"overdueRate\":0.50,\"status\":1},{\"id\":4,\"ruleName\":\"水费\",\"feeItemId\":3,\"feeItemName\":\"水费\",\"categoryType\":3,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":6.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.50,\"status\":1},{\"id\":5,\"ruleName\":\"物业费\",\"feeItemId\":2,\"feeItemName\":\"物业费\",\"categoryType\":2,\"calcMode\":2,\"calcModeText\":\"按面积\",\"price\":0.50,\"periodType\":2,\"periodTypeText\":\"按月\",\"overdueRate\":0.00,\"status\":1},{\"id\":6,\"ruleName\":\"押金\",\"feeItemId\":5,\"feeItemName\":\"押金\",\"categoryType\":5,\"calcMode\":1,\"calcModeText\":\"定额\",\"price\":1000.00,\"periodType\":0,\"periodTypeText\":\"不使用周期\",\"overdueRate\":0.00,\"status\":1}]', NULL, '2026-08-31 17:57:07');
-INSERT INTO `sys_audit_log` VALUES (695, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T17:23:50\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T17:57:06.692021\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-31 17:57:07');
+INSERT INTO `sys_audit_log` VALUES (695, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-18T18:31:52\",\"updateBy\":1,\"updateTime\":\"2026-08-31T17:23:50\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50.00,\"status\":1,\"remark\":\"测试\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-08-31T17:57:06.692021\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallArea\":50,\"status\":0,\"remark\":\"测试\"}', NULL, '2026-08-31 17:57:07');
 INSERT INTO `sys_audit_log` VALUES (696, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '新增', '16', NULL, '{\"id\":16,\"createBy\":1,\"createTime\":\"2026-08-31T17:57:28.3518707\",\"updateBy\":1,\"updateTime\":\"2026-08-31T17:57:28.3518707\",\"isDelete\":null,\"companyId\":0,\"contractNo\":\"HT202608311757285693\",\"merchantId\":null,\"tenantId\":1,\"stallId\":1,\"rentAmount\":2000,\"depositAmount\":1000,\"startTime\":\"2026-08-31\",\"endTime\":\"2027-08-31\",\"contractStatus\":0,\"flowInstanceId\":null,\"attachmentUrl\":null,\"remark\":\"\"}', NULL, '2026-08-31 17:57:29');
 INSERT INTO `sys_audit_log` VALUES (697, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 18:11:06');
 INSERT INTO `sys_audit_log` VALUES (698, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-08-31 18:11:49');
@@ -2561,9 +3159,9 @@ INSERT INTO `sys_audit_log` VALUES (709, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (710, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-01 08:06:24');
 INSERT INTO `sys_audit_log` VALUES (711, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-01 08:06:25');
 INSERT INTO `sys_audit_log` VALUES (712, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-03 08:35:52');
-INSERT INTO `sys_audit_log` VALUES (713, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '18', NULL, '{\"id\":18,\"createBy\":1,\"createTime\":\"2026-09-03T09:53:07.6257982\",\"updateBy\":1,\"updateTime\":\"2026-09-03T09:53:07.6257982\",\"isDelete\":null,\"companyId\":0,\"billId\":2,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788400386573-s8a9k1i0\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-03 09:53:08');
-INSERT INTO `sys_audit_log` VALUES (714, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '缴费', '59', NULL, '{\"id\":19,\"createBy\":1,\"createTime\":\"2026-09-03T09:53:20.2845261\",\"updateBy\":1,\"updateTime\":\"2026-09-03T09:53:20.2845261\",\"isDelete\":null,\"companyId\":0,\"billId\":59,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":2000.00,\"payType\":3,\"requestId\":\"PAY1788400398725-vnhdr8zw\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-03 09:53:20');
-INSERT INTO `sys_audit_log` VALUES (715, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '缴费', '58', NULL, '{\"id\":20,\"createBy\":1,\"createTime\":\"2026-09-03T14:58:27.2436624\",\"updateBy\":1,\"updateTime\":\"2026-09-03T14:58:27.2436624\",\"isDelete\":null,\"companyId\":0,\"billId\":58,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":1000.00,\"payType\":3,\"requestId\":\"PAY1788418705907-o99ccsx1\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-03 14:58:27');
+INSERT INTO `sys_audit_log` VALUES (713, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '18', NULL, '{\"id\":18,\"createBy\":1,\"createTime\":\"2026-09-03T09:53:07.6257982\",\"updateBy\":1,\"updateTime\":\"2026-09-03T09:53:07.6257982\",\"isDelete\":null,\"companyId\":0,\"billId\":2,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788400386573-s8a9k1i0\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-03 09:53:08');
+INSERT INTO `sys_audit_log` VALUES (714, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '缴费', '59', NULL, '{\"id\":19,\"createBy\":1,\"createTime\":\"2026-09-03T09:53:20.2845261\",\"updateBy\":1,\"updateTime\":\"2026-09-03T09:53:20.2845261\",\"isDelete\":null,\"companyId\":0,\"billId\":59,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":2000.00,\"payType\":3,\"requestId\":\"PAY1788400398725-vnhdr8zw\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-03 09:53:20');
+INSERT INTO `sys_audit_log` VALUES (715, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_contract', '缴费', '58', NULL, '{\"id\":20,\"createBy\":1,\"createTime\":\"2026-09-03T14:58:27.2436624\",\"updateBy\":1,\"updateTime\":\"2026-09-03T14:58:27.2436624\",\"isDelete\":null,\"companyId\":0,\"billId\":58,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":1000.00,\"payType\":3,\"requestId\":\"PAY1788418705907-o99ccsx1\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-03 14:58:27');
 INSERT INTO `sys_audit_log` VALUES (716, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-03 17:18:28');
 INSERT INTO `sys_audit_log` VALUES (717, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-03 17:19:20');
 INSERT INTO `sys_audit_log` VALUES (718, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-03 17:19:20');
@@ -2637,9 +3235,9 @@ INSERT INTO `sys_audit_log` VALUES (785, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (786, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-04 22:15:53');
 INSERT INTO `sys_audit_log` VALUES (787, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-04 22:16:40');
 INSERT INTO `sys_audit_log` VALUES (788, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '462', NULL, '\"核销金额=90.00，账单=water_elec/48\"', NULL, '2026-09-04 22:21:00');
-INSERT INTO `sys_audit_log` VALUES (789, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '21', NULL, '{\"id\":21,\"createBy\":1,\"createTime\":\"2026-09-04T22:20:59.9905933\",\"updateBy\":1,\"updateTime\":\"2026-09-04T22:20:59.9905933\",\"isDelete\":null,\"companyId\":0,\"billId\":48,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":90.00,\"payType\":3,\"requestId\":\"PAY1788531656032-54wo9zaq\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-04 22:21:00');
+INSERT INTO `sys_audit_log` VALUES (789, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '21', NULL, '{\"id\":21,\"createBy\":1,\"createTime\":\"2026-09-04T22:20:59.9905933\",\"updateBy\":1,\"updateTime\":\"2026-09-04T22:20:59.9905933\",\"isDelete\":null,\"companyId\":0,\"billId\":48,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":90.00,\"payType\":3,\"requestId\":\"PAY1788531656032-54wo9zaq\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-04 22:21:00');
 INSERT INTO `sys_audit_log` VALUES (790, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '463', NULL, '\"核销金额=25.00，账单=property/44\"', NULL, '2026-09-04 22:21:15');
-INSERT INTO `sys_audit_log` VALUES (791, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '22', NULL, '{\"id\":22,\"createBy\":1,\"createTime\":\"2026-09-04T22:21:14.3919698\",\"updateBy\":1,\"updateTime\":\"2026-09-04T22:21:14.3919698\",\"isDelete\":null,\"companyId\":0,\"billId\":44,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788531672342-cy3vfp0u\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-04 22:21:15');
+INSERT INTO `sys_audit_log` VALUES (791, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '22', NULL, '{\"id\":22,\"createBy\":1,\"createTime\":\"2026-09-04T22:21:14.3919698\",\"updateBy\":1,\"updateTime\":\"2026-09-04T22:21:14.3919698\",\"isDelete\":null,\"companyId\":0,\"billId\":44,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788531672342-cy3vfp0u\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-04 22:21:15');
 INSERT INTO `sys_audit_log` VALUES (792, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-04 22:26:37');
 INSERT INTO `sys_audit_log` VALUES (793, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-04 23:09:04');
 INSERT INTO `sys_audit_log` VALUES (794, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-04 23:09:17');
@@ -2652,7 +3250,7 @@ INSERT INTO `sys_audit_log` VALUES (800, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'bas
 INSERT INTO `sys_audit_log` VALUES (801, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 00:27:44');
 INSERT INTO `sys_audit_log` VALUES (802, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 00:28:29');
 INSERT INTO `sys_audit_log` VALUES (803, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '470', NULL, '\"核销金额=60.00，账单=water_elec/53\"', NULL, '2026-09-05 00:37:27');
-INSERT INTO `sys_audit_log` VALUES (804, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '28', NULL, '{\"id\":28,\"createBy\":1,\"createTime\":\"2026-09-05T00:37:27.1049801\",\"updateBy\":1,\"updateTime\":\"2026-09-05T00:37:27.1049801\",\"isDelete\":null,\"companyId\":0,\"billId\":53,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":60.00,\"payType\":3,\"requestId\":\"PAY1788539845846-vhh91gw9\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 00:37:27');
+INSERT INTO `sys_audit_log` VALUES (804, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '28', NULL, '{\"id\":28,\"createBy\":1,\"createTime\":\"2026-09-05T00:37:27.1049801\",\"updateBy\":1,\"updateTime\":\"2026-09-05T00:37:27.1049801\",\"isDelete\":null,\"companyId\":0,\"billId\":53,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":60.00,\"payType\":3,\"requestId\":\"PAY1788539845846-vhh91gw9\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 00:37:27');
 INSERT INTO `sys_audit_log` VALUES (805, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 00:37:28');
 INSERT INTO `sys_audit_log` VALUES (806, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 00:37:45');
 INSERT INTO `sys_audit_log` VALUES (807, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 00:37:55');
@@ -2668,7 +3266,7 @@ INSERT INTO `sys_audit_log` VALUES (816, 0, 1, '集团超级管理员', '127.0.0
 INSERT INTO `sys_audit_log` VALUES (817, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '477', NULL, '\"核销金额=140.00，账单=fee_bill/76\"', NULL, '2026-09-05 07:49:22');
 INSERT INTO `sys_audit_log` VALUES (818, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '缴费', '12', NULL, '{\"id\":12,\"createBy\":1,\"createTime\":\"2026-09-05T07:49:22\",\"updateBy\":1,\"updateTime\":\"2026-09-05T07:49:22\",\"isDelete\":0,\"companyId\":0,\"payBillNo\":\"PY0020260905000004\",\"sourceType\":\"fee_bill\",\"sourceId\":76,\"stallId\":1,\"merchantId\":null,\"totalAmount\":140.00,\"paidAmount\":0.00,\"unpaidAmount\":140.00,\"payStatus\":0,\"payTime\":null,\"remark\":\"\"}', NULL, '2026-09-05 07:49:22');
 INSERT INTO `sys_audit_log` VALUES (819, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '480', NULL, '\"核销金额=25.00，账单=property/46\"', NULL, '2026-09-05 07:49:39');
-INSERT INTO `sys_audit_log` VALUES (820, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '29', NULL, '{\"id\":29,\"createBy\":1,\"createTime\":\"2026-09-05T07:49:38.5045715\",\"updateBy\":1,\"updateTime\":\"2026-09-05T07:49:38.5045715\",\"isDelete\":null,\"companyId\":0,\"billId\":46,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"铺位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788565777181-vnstgfis\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 07:49:39');
+INSERT INTO `sys_audit_log` VALUES (820, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '29', NULL, '{\"id\":29,\"createBy\":1,\"createTime\":\"2026-09-05T07:49:38.5045715\",\"updateBy\":1,\"updateTime\":\"2026-09-05T07:49:38.5045715\",\"isDelete\":null,\"companyId\":0,\"billId\":46,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788565777181-vnstgfis\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 07:49:39');
 INSERT INTO `sys_audit_log` VALUES (821, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 08:07:41');
 INSERT INTO `sys_audit_log` VALUES (822, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 08:20:42');
 INSERT INTO `sys_audit_log` VALUES (823, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 08:20:56');
@@ -2704,6 +3302,375 @@ INSERT INTO `sys_audit_log` VALUES (852, 0, 0, 'system', '127.0.0.1', 'base', '�
 INSERT INTO `sys_audit_log` VALUES (853, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 16:11:44');
 INSERT INTO `sys_audit_log` VALUES (854, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:14:32');
 INSERT INTO `sys_audit_log` VALUES (855, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:14:50');
+INSERT INTO `sys_audit_log` VALUES (856, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:27:17');
+INSERT INTO `sys_audit_log` VALUES (857, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:32:44');
+INSERT INTO `sys_audit_log` VALUES (858, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:32:49');
+INSERT INTO `sys_audit_log` VALUES (859, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:34:15');
+INSERT INTO `sys_audit_log` VALUES (860, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:34:28');
+INSERT INTO `sys_audit_log` VALUES (861, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:39:42');
+INSERT INTO `sys_audit_log` VALUES (862, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:44:47');
+INSERT INTO `sys_audit_log` VALUES (863, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:48:36');
+INSERT INTO `sys_audit_log` VALUES (864, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 17:48:57');
+INSERT INTO `sys_audit_log` VALUES (865, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 18:02:08');
+INSERT INTO `sys_audit_log` VALUES (866, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 18:04:36');
+INSERT INTO `sys_audit_log` VALUES (867, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 18:13:22');
+INSERT INTO `sys_audit_log` VALUES (868, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 18:13:28');
+INSERT INTO `sys_audit_log` VALUES (869, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 18:13:36');
+INSERT INTO `sys_audit_log` VALUES (870, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 18:14:10');
+INSERT INTO `sys_audit_log` VALUES (871, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 18:21:02');
+INSERT INTO `sys_audit_log` VALUES (872, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '48', NULL, '{\"id\":48,\"createBy\":1,\"createTime\":\"2026-09-05T19:00:03.1203834\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:00:03.1203834\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"billMonth\":\"2027-01\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":null}', NULL, '2026-09-05 19:00:03');
+INSERT INTO `sys_audit_log` VALUES (873, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '49', NULL, '{\"id\":49,\"createBy\":1,\"createTime\":\"2026-09-05T19:00:03.2457567\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:00:03.2457567\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"billMonth\":\"2027-02\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":null}', NULL, '2026-09-05 19:00:03');
+INSERT INTO `sys_audit_log` VALUES (874, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '50', NULL, '{\"id\":50,\"createBy\":1,\"createTime\":\"2026-09-05T19:09:33.8287725\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:09:33.8287725\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"billMonth\":\"2027-03\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":23}', NULL, '2026-09-05 19:09:34');
+INSERT INTO `sys_audit_log` VALUES (875, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '51', NULL, '{\"id\":51,\"createBy\":1,\"createTime\":\"2026-09-05T19:09:33.9001567\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:09:33.9001567\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"billMonth\":\"2027-04\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":23}', NULL, '2026-09-05 19:09:34');
+INSERT INTO `sys_audit_log` VALUES (876, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '486', NULL, '\"核销金额=25.00，账单=property/51\"', NULL, '2026-09-05 19:13:33');
+INSERT INTO `sys_audit_log` VALUES (877, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '30', NULL, '{\"id\":30,\"createBy\":1,\"createTime\":\"2026-09-05T19:13:33.0712545\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:13:33.0712545\",\"isDelete\":null,\"companyId\":0,\"billId\":51,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788606809826-41pb9shp\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 19:13:33');
+INSERT INTO `sys_audit_log` VALUES (882, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '485', NULL, '\"核销金额=25.00，账单=property/50\"', NULL, '2026-09-05 19:31:07');
+INSERT INTO `sys_audit_log` VALUES (883, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '33', NULL, '{\"id\":33,\"createBy\":1,\"createTime\":\"2026-09-05T19:31:06.8689699\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:31:06.8689699\",\"isDelete\":null,\"companyId\":0,\"billId\":50,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788607865641-g5ewggtd\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 19:31:07');
+INSERT INTO `sys_audit_log` VALUES (884, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '34', NULL, '{\"id\":34,\"createBy\":1,\"createTime\":\"2026-09-05T19:43:29.3961238\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:43:29.3961238\",\"isDelete\":null,\"companyId\":0,\"billId\":51,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788608606175-55wi8z5h\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 19:43:30');
+INSERT INTO `sys_audit_log` VALUES (885, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '21', NULL, '\"合并缴费，金额=50.00\"', NULL, '2026-09-05 19:44:07');
+INSERT INTO `sys_audit_log` VALUES (886, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '52', NULL, '{\"id\":52,\"createBy\":1,\"createTime\":\"2026-09-05T19:52:47.2781701\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:52:47.2781701\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":1,\"billMonth\":\"2027-05\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":23}', NULL, '2026-09-05 19:52:47');
+INSERT INTO `sys_audit_log` VALUES (887, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '487', NULL, '\"核销金额=25.00，账单=property/52\"', NULL, '2026-09-05 19:56:34');
+INSERT INTO `sys_audit_log` VALUES (888, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '35', NULL, '{\"id\":35,\"createBy\":1,\"createTime\":\"2026-09-05T19:56:33.8142347\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:56:33.8142347\",\"isDelete\":null,\"companyId\":0,\"billId\":52,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788609392108-2nc3r03s\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 19:56:34');
+INSERT INTO `sys_audit_log` VALUES (889, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-05 20:00:58');
+INSERT INTO `sys_audit_log` VALUES (890, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '36', NULL, '{\"id\":36,\"createBy\":1,\"createTime\":\"2026-09-05T20:01:26.7226974\",\"updateBy\":1,\"updateTime\":\"2026-09-05T20:01:26.7226974\",\"isDelete\":null,\"companyId\":0,\"billId\":48,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788609685491-jie4paxz\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 20:01:27');
+INSERT INTO `sys_audit_log` VALUES (891, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红缴费单', '23', '{\"id\":23,\"createBy\":1,\"createTime\":\"2026-09-05T20:01:27\",\"updateBy\":1,\"updateTime\":\"2026-09-05T20:01:27\",\"isDelete\":0,\"companyId\":0,\"payBillNo\":\"YO0020260905000015\",\"sourceType\":\"fee_bill\",\"sourceId\":48,\"stallId\":1,\"merchantId\":1,\"totalAmount\":25.00,\"paidAmount\":25.00,\"unpaidAmount\":0.00,\"payStatus\":2,\"payTime\":\"2026-09-05T20:01:27\",\"remark\":\"\"}', NULL, NULL, '2026-09-05 20:01:59');
+INSERT INTO `sys_audit_log` VALUES (892, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '红冲冲销', '487', NULL, '\"核销金额=-25.00，账单=property_fee/52\"', NULL, '2026-09-05 20:16:33');
+INSERT INTO `sys_audit_log` VALUES (893, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红缴费单', '22', '{\"id\":22,\"createBy\":1,\"createTime\":\"2026-09-05T19:56:34\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:56:34\",\"isDelete\":0,\"companyId\":0,\"payBillNo\":\"YO0020260905000014\",\"sourceType\":\"fee_bill\",\"sourceId\":52,\"stallId\":1,\"merchantId\":1,\"totalAmount\":25.00,\"paidAmount\":25.00,\"unpaidAmount\":0.00,\"payStatus\":2,\"payTime\":\"2026-09-05T19:56:34\",\"remark\":\"\"}', NULL, NULL, '2026-09-05 20:16:33');
+INSERT INTO `sys_audit_log` VALUES (894, 0, 1, '集团超级管理员', '127.0.0.1', 'finance', '冲红缴费单', '21', '{\"id\":21,\"createBy\":1,\"createTime\":\"2026-09-05T19:44:06\",\"updateBy\":1,\"updateTime\":\"2026-09-05T19:44:07\",\"isDelete\":0,\"companyId\":0,\"payBillNo\":\"YO0020260905000011\",\"sourceType\":\"fee_bill\",\"sourceId\":49,\"stallId\":1,\"merchantId\":null,\"totalAmount\":50.00,\"paidAmount\":50.00,\"unpaidAmount\":0.00,\"payStatus\":2,\"payTime\":\"2026-09-05T19:44:07\",\"remark\":\"1232\"}', NULL, NULL, '2026-09-05 20:23:18');
+INSERT INTO `sys_audit_log` VALUES (895, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '487', NULL, '\"核销金额=25.00，账单=property/52\"', NULL, '2026-09-05 21:04:03');
+INSERT INTO `sys_audit_log` VALUES (896, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '37', NULL, '{\"id\":37,\"createBy\":1,\"createTime\":\"2026-09-05T21:04:03.2644997\",\"updateBy\":1,\"updateTime\":\"2026-09-05T21:04:03.2644997\",\"isDelete\":null,\"companyId\":0,\"billId\":52,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788613440769-p9b69dhb\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-05 21:04:03');
+INSERT INTO `sys_audit_log` VALUES (897, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '编辑', '5', '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-08-21T19:04:26\",\"updateBy\":1,\"updateTime\":\"2026-08-21T19:04:26\",\"isDelete\":0,\"companyId\":0,\"ruleName\":\"物业费\",\"feeItemId\":2,\"calcMode\":2,\"price\":0.50,\"periodType\":2,\"overdueRate\":0.00,\"status\":1,\"remark\":\"\"}', '{\"id\":5,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-05T21:22:01.7888942\",\"isDelete\":null,\"companyId\":null,\"ruleName\":\"物业费1111\",\"feeItemId\":2,\"calcMode\":2,\"price\":0.5,\"periodType\":2,\"overdueRate\":0,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-05 21:22:02');
+INSERT INTO `sys_audit_log` VALUES (898, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '编辑', '4', '{\"id\":4,\"createBy\":1,\"createTime\":\"2026-08-19T14:15:33\",\"updateBy\":1,\"updateTime\":\"2026-08-19T14:15:33\",\"isDelete\":0,\"companyId\":0,\"ruleName\":\"水费\",\"feeItemId\":3,\"calcMode\":1,\"price\":6.00,\"periodType\":0,\"overdueRate\":0.50,\"status\":1,\"remark\":\"\"}', '{\"id\":4,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-05T21:22:09.2343525\",\"isDelete\":null,\"companyId\":null,\"ruleName\":\"水费222\",\"feeItemId\":3,\"calcMode\":1,\"price\":6,\"periodType\":0,\"overdueRate\":0.5,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-05 21:22:09');
+INSERT INTO `sys_audit_log` VALUES (899, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-19T13:00:34\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:13:38\",\"isDelete\":0,\"companyId\":0,\"ruleName\":\"电费\",\"feeItemId\":4,\"calcMode\":1,\"price\":0.50,\"periodType\":0,\"overdueRate\":0.50,\"status\":1,\"remark\":\"\"}', '{\"id\":2,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-05T21:22:13.0031628\",\"isDelete\":null,\"companyId\":null,\"ruleName\":\"电费333\",\"feeItemId\":4,\"calcMode\":1,\"price\":0.5,\"periodType\":0,\"overdueRate\":0.5,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-05 21:22:13');
+INSERT INTO `sys_audit_log` VALUES (900, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T13:00:08\",\"updateBy\":1,\"updateTime\":\"2026-08-19T13:00:08\",\"isDelete\":0,\"companyId\":0,\"ruleName\":\"租金\",\"feeItemId\":1,\"calcMode\":1,\"price\":1000.00,\"periodType\":2,\"overdueRate\":0.50,\"status\":1,\"remark\":\"\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-05T21:22:17.7816575\",\"isDelete\":null,\"companyId\":null,\"ruleName\":\"租金444\",\"feeItemId\":1,\"calcMode\":1,\"price\":1000,\"periodType\":2,\"overdueRate\":0.5,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-05 21:22:18');
+INSERT INTO `sys_audit_log` VALUES (901, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '编辑', '6', '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-08-24T07:24:25\",\"updateBy\":1,\"updateTime\":\"2026-08-24T07:24:25\",\"isDelete\":0,\"companyId\":0,\"ruleName\":\"押金\",\"feeItemId\":5,\"calcMode\":1,\"price\":1000.00,\"periodType\":0,\"overdueRate\":0.00,\"status\":1,\"remark\":\"\"}', '{\"id\":6,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-05T21:22:26.9359015\",\"isDelete\":null,\"companyId\":null,\"ruleName\":\"押金666\",\"feeItemId\":5,\"calcMode\":1,\"price\":1000,\"periodType\":0,\"overdueRate\":0,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-05 21:22:27');
+INSERT INTO `sys_audit_log` VALUES (902, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 10:46:25');
+INSERT INTO `sys_audit_log` VALUES (903, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '38', NULL, '{\"id\":38,\"createBy\":1,\"createTime\":\"2026-09-06T10:47:35.9735091\",\"updateBy\":1,\"updateTime\":\"2026-09-06T10:47:35.9735091\",\"isDelete\":null,\"companyId\":0,\"billId\":50,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788662854140-l78ad8ww\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-06 10:47:36');
+INSERT INTO `sys_audit_log` VALUES (904, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '26', NULL, '\"合并缴费，金额=50.00\"', NULL, '2026-09-06 10:54:16');
+INSERT INTO `sys_audit_log` VALUES (905, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '39', NULL, '{\"id\":39,\"createBy\":1,\"createTime\":\"2026-09-06T11:10:07.0314243\",\"updateBy\":1,\"updateTime\":\"2026-09-06T11:10:07.0314243\",\"isDelete\":null,\"companyId\":0,\"billId\":55,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":60.00,\"payType\":3,\"requestId\":\"PAY1788664205219-b8awz00c\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-06 11:10:07');
+INSERT INTO `sys_audit_log` VALUES (906, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '53', NULL, '{\"id\":53,\"createBy\":1,\"createTime\":\"2026-09-06T11:13:21.6864377\",\"updateBy\":1,\"updateTime\":\"2026-09-06T11:13:21.6864377\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":1,\"billMonth\":\"2027-06\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":23}', NULL, '2026-09-06 11:13:22');
+INSERT INTO `sys_audit_log` VALUES (907, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '488', NULL, '\"核销金额=25.00，账单=property/53\"', NULL, '2026-09-06 11:13:28');
+INSERT INTO `sys_audit_log` VALUES (908, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '40', NULL, '{\"id\":40,\"createBy\":1,\"createTime\":\"2026-09-06T11:13:27.7784836\",\"updateBy\":1,\"updateTime\":\"2026-09-06T11:13:27.7784836\",\"isDelete\":null,\"companyId\":0,\"billId\":53,\"stallId\":1,\"merchantId\":1,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":\"测试优惠租户\",\"payAmount\":25.00,\"payType\":3,\"requestId\":\"PAY1788664406530-9u710ms9\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-06 11:13:28');
+INSERT INTO `sys_audit_log` VALUES (909, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '新增', '56', NULL, '{\"id\":56,\"createBy\":1,\"createTime\":\"2026-09-06T11:13:46.9900705\",\"updateBy\":1,\"updateTime\":\"2026-09-06T11:13:46.9900705\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"planId\":null,\"billMonth\":\"2026-09\",\"category\":3,\"prevMeterRead\":55.00,\"usage\":10.00,\"unitPrice\":6.00,\"totalAmount\":60.0000,\"payStatus\":0,\"payTime\":null}', NULL, '2026-09-06 11:13:47');
+INSERT INTO `sys_audit_log` VALUES (910, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '489', NULL, '\"核销金额=60.00，账单=water_elec/56\"', NULL, '2026-09-06 11:13:57');
+INSERT INTO `sys_audit_log` VALUES (911, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '缴费', '41', NULL, '{\"id\":41,\"createBy\":1,\"createTime\":\"2026-09-06T11:13:57.430908\",\"updateBy\":1,\"updateTime\":\"2026-09-06T11:13:57.430908\",\"isDelete\":null,\"companyId\":0,\"billId\":56,\"stallId\":1,\"merchantId\":0,\"stallNumber\":\"001\",\"stallName\":\"摊位名称\",\"stallMarketName\":\"默认市场\",\"categoryName\":\"车位\",\"merchantName\":null,\"payAmount\":60.00,\"payType\":3,\"requestId\":\"PAY1788664435580-oaskh9md\",\"recordType\":1,\"refundStatus\":0,\"refundTime\":null,\"refundRecordId\":null,\"remark\":\"\",\"flowNo\":null}', NULL, '2026-09-06 11:13:57');
+INSERT INTO `sys_audit_log` VALUES (912, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 12:53:00');
+INSERT INTO `sys_audit_log` VALUES (913, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:44:45');
+INSERT INTO `sys_audit_log` VALUES (914, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:44:55');
+INSERT INTO `sys_audit_log` VALUES (915, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:45:00');
+INSERT INTO `sys_audit_log` VALUES (916, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:47:10');
+INSERT INTO `sys_audit_log` VALUES (917, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:47:44');
+INSERT INTO `sys_audit_log` VALUES (918, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:48:36');
+INSERT INTO `sys_audit_log` VALUES (919, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:48:43');
+INSERT INTO `sys_audit_log` VALUES (920, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:55:47');
+INSERT INTO `sys_audit_log` VALUES (921, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:56:02');
+INSERT INTO `sys_audit_log` VALUES (922, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 14:59:43');
+INSERT INTO `sys_audit_log` VALUES (923, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 15:14:47');
+INSERT INTO `sys_audit_log` VALUES (924, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 15:20:44');
+INSERT INTO `sys_audit_log` VALUES (925, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 15:33:47');
+INSERT INTO `sys_audit_log` VALUES (926, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-06 15:34:12');
+INSERT INTO `sys_audit_log` VALUES (927, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '54', NULL, '{\"id\":54,\"createBy\":1,\"createTime\":\"2026-09-06T15:35:05.0906848\",\"updateBy\":1,\"updateTime\":\"2026-09-06T15:35:05.0906848\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":1,\"billMonth\":\"2027-07\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":23}', NULL, '2026-09-06 15:35:05');
+INSERT INTO `sys_audit_log` VALUES (928, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '55', NULL, '{\"id\":55,\"createBy\":1,\"createTime\":\"2026-09-06T15:35:05.1642292\",\"updateBy\":1,\"updateTime\":\"2026-09-06T15:35:05.1642292\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":1,\"billMonth\":\"2027-08\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":23}', NULL, '2026-09-06 15:35:05');
+INSERT INTO `sys_audit_log` VALUES (929, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '492', NULL, '\"核销金额=25.00，账单=property/54\"', NULL, '2026-09-06 15:35:26');
+INSERT INTO `sys_audit_log` VALUES (930, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '493', NULL, '\"核销金额=25.00，账单=property/55\"', NULL, '2026-09-06 15:35:26');
+INSERT INTO `sys_audit_log` VALUES (931, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '30', NULL, '\"合并缴费，金额=50.00\"', NULL, '2026-09-06 15:35:26');
+INSERT INTO `sys_audit_log` VALUES (932, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 09:11:12');
+INSERT INTO `sys_audit_log` VALUES (933, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 09:52:26');
+INSERT INTO `sys_audit_log` VALUES (934, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '13', NULL, '{\"id\":13,\"createBy\":1,\"createTime\":\"2026-09-07T09:52:49.1167397\",\"updateBy\":1,\"updateTime\":\"2026-09-07T09:52:49.1167397\",\"isDelete\":null,\"companyId\":1,\"parentId\":1,\"orgName\":\"测试\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 09:52:49');
+INSERT INTO `sys_audit_log` VALUES (935, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '14', NULL, '{\"id\":14,\"createBy\":1,\"createTime\":\"2026-09-07T09:57:02.8145317\",\"updateBy\":1,\"updateTime\":\"2026-09-07T09:57:02.8145317\",\"isDelete\":null,\"companyId\":0,\"parentId\":6,\"orgName\":\"测试1\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 09:57:03');
+INSERT INTO `sys_audit_log` VALUES (936, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '15', NULL, '{\"id\":15,\"createBy\":1,\"createTime\":\"2026-09-07T09:58:04.6509575\",\"updateBy\":1,\"updateTime\":\"2026-09-07T09:58:04.6509575\",\"isDelete\":null,\"companyId\":6,\"parentId\":6,\"orgName\":\"测试\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 09:58:05');
+INSERT INTO `sys_audit_log` VALUES (937, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '16', NULL, '{\"id\":16,\"createBy\":1,\"createTime\":\"2026-09-07T09:58:49.6301528\",\"updateBy\":1,\"updateTime\":\"2026-09-07T09:58:49.6301528\",\"isDelete\":null,\"companyId\":11,\"parentId\":1,\"orgName\":\"测试\",\"orgType\":2,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 09:58:50');
+INSERT INTO `sys_audit_log` VALUES (938, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '17', NULL, '{\"id\":17,\"createBy\":1,\"createTime\":\"2026-09-07T10:02:55.2234763\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:02:55.2234763\",\"isDelete\":null,\"companyId\":12,\"parentId\":1,\"orgName\":\"测试1\",\"orgType\":2,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 10:02:55');
+INSERT INTO `sys_audit_log` VALUES (939, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '18', NULL, '{\"id\":18,\"createBy\":1,\"createTime\":\"2026-09-07T10:04:53.7691486\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:04:53.7691486\",\"isDelete\":null,\"companyId\":3,\"parentId\":1,\"orgName\":\"测试\",\"orgType\":2,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 10:04:54');
+INSERT INTO `sys_audit_log` VALUES (940, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '19', NULL, '{\"id\":19,\"createBy\":1,\"createTime\":\"2026-09-07T10:05:12.1192107\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:05:12.1192107\",\"isDelete\":null,\"companyId\":1,\"parentId\":6,\"orgName\":\"测试\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 10:05:12');
+INSERT INTO `sys_audit_log` VALUES (941, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '20', NULL, '{\"id\":20,\"createBy\":1,\"createTime\":\"2026-09-07T10:05:43.259082\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:05:43.259082\",\"isDelete\":null,\"companyId\":1,\"parentId\":1,\"orgName\":\"测试1\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 10:05:43');
+INSERT INTO `sys_audit_log` VALUES (942, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '21', NULL, '{\"id\":21,\"createBy\":1,\"createTime\":\"2026-09-07T10:24:03.7289322\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:24:03.7289322\",\"isDelete\":null,\"companyId\":3,\"parentId\":1,\"orgName\":\"吃的啥\",\"orgType\":2,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 10:24:04');
+INSERT INTO `sys_audit_log` VALUES (943, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '22', NULL, '{\"id\":22,\"createBy\":1,\"createTime\":\"2026-09-07T10:24:21.59736\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:24:21.59736\",\"isDelete\":null,\"companyId\":1,\"parentId\":1,\"orgName\":\"测试\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 10:24:22');
+INSERT INTO `sys_audit_log` VALUES (944, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '23', NULL, '{\"id\":23,\"createBy\":1,\"createTime\":\"2026-09-07T10:25:12.004697\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:25:12.004697\",\"isDelete\":null,\"companyId\":1,\"parentId\":6,\"orgName\":\"测试\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 10:25:12');
+INSERT INTO `sys_audit_log` VALUES (945, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 10:46:23');
+INSERT INTO `sys_audit_log` VALUES (946, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 10:48:06');
+INSERT INTO `sys_audit_log` VALUES (947, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 10:48:52');
+INSERT INTO `sys_audit_log` VALUES (948, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '24', NULL, '{\"id\":24,\"createBy\":1,\"createTime\":\"2026-09-07T10:49:06.2185371\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:49:06.2185371\",\"isDelete\":null,\"companyId\":0,\"parentId\":1,\"orgName\":\"测试1\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 10:49:06');
+INSERT INTO `sys_audit_log` VALUES (949, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 10:59:40');
+INSERT INTO `sys_audit_log` VALUES (950, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:00:52');
+INSERT INTO `sys_audit_log` VALUES (951, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:01:34');
+INSERT INTO `sys_audit_log` VALUES (952, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:01:34');
+INSERT INTO `sys_audit_log` VALUES (953, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:02:50');
+INSERT INTO `sys_audit_log` VALUES (954, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:02:56');
+INSERT INTO `sys_audit_log` VALUES (955, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:02:58');
+INSERT INTO `sys_audit_log` VALUES (956, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:03:16');
+INSERT INTO `sys_audit_log` VALUES (957, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '25', NULL, '{\"id\":25,\"createBy\":1,\"createTime\":\"2026-09-07T11:03:58.2077506\",\"updateBy\":1,\"updateTime\":\"2026-09-07T11:03:58.2077506\",\"isDelete\":null,\"companyId\":0,\"parentId\":1,\"orgName\":\"测试\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, '2026-09-07 11:03:58');
+INSERT INTO `sys_audit_log` VALUES (958, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '删除', '25', '{\"id\":25,\"createBy\":1,\"createTime\":\"2026-09-07T11:03:58\",\"updateBy\":1,\"updateTime\":\"2026-09-07T11:03:58\",\"isDelete\":0,\"companyId\":0,\"parentId\":1,\"orgName\":\"测试\",\"orgType\":3,\"sortOrder\":0,\"status\":1}', NULL, NULL, '2026-09-07 11:04:07');
+INSERT INTO `sys_audit_log` VALUES (959, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '26', NULL, '{\"id\":26,\"createBy\":1,\"createTime\":\"2026-09-07T11:06:37.8013621\",\"updateBy\":1,\"updateTime\":\"2026-09-07T11:06:37.8013621\",\"isDelete\":null,\"companyId\":0,\"parentId\":1,\"orgName\":\"总经办1\",\"orgType\":3,\"sortOrder\":1,\"status\":1}', NULL, '2026-09-07 11:06:38');
+INSERT INTO `sys_audit_log` VALUES (960, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-21T09:20:52\",\"updateBy\":null,\"updateTime\":null,\"isDelete\":0,\"companyId\":0,\"parentId\":1,\"orgName\":\"总经办\",\"orgType\":3,\"sortOrder\":1,\"status\":1}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-21T09:20:52\",\"updateBy\":1,\"updateTime\":\"2026-09-07T11:10:42.622153\",\"isDelete\":0,\"companyId\":0,\"parentId\":1,\"orgName\":\"总经办1\",\"orgType\":3,\"sortOrder\":1,\"status\":1}', NULL, '2026-09-07 11:10:43');
+INSERT INTO `sys_audit_log` VALUES (961, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-21T09:20:52\",\"updateBy\":1,\"updateTime\":\"2026-09-07T11:10:43\",\"isDelete\":0,\"companyId\":0,\"parentId\":1,\"orgName\":\"总经办1\",\"orgType\":3,\"sortOrder\":1,\"status\":1}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-08-21T09:20:52\",\"updateBy\":1,\"updateTime\":\"2026-09-07T11:10:43\",\"isDelete\":0,\"companyId\":0,\"parentId\":1,\"orgName\":\"总经办\",\"orgType\":3,\"sortOrder\":1,\"status\":1}', NULL, '2026-09-07 11:10:47');
+INSERT INTO `sys_audit_log` VALUES (962, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '1', '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-08-18T12:34:31\",\"updateBy\":0,\"updateTime\":\"2026-08-26T07:25:05\",\"isDelete\":0,\"companyId\":0,\"username\":\"admin\",\"password\":\"$2a$10$0zgq2ilQLN0kC6XLyR17COxA./GDdftY659m/FOsGoHxOfGQMVtwS\",\"realName\":\"集团超级管理员\",\"phone\":\"\",\"email\":null,\"avatar\":null,\"status\":1}', '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-08-18T12:34:31\",\"updateBy\":0,\"updateTime\":\"2026-08-26T07:25:05\",\"isDelete\":0,\"companyId\":0,\"username\":\"admin\",\"password\":\"$2a$10$0zgq2ilQLN0kC6XLyR17COxA./GDdftY659m/FOsGoHxOfGQMVtwS\",\"realName\":\"集团超级管理员\",\"phone\":\"13698668278\",\"email\":\"36412314@qq.com\",\"avatar\":null,\"status\":1}', NULL, '2026-09-07 11:11:07');
+INSERT INTO `sys_audit_log` VALUES (963, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:15:45');
+INSERT INTO `sys_audit_log` VALUES (964, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:16:18');
+INSERT INTO `sys_audit_log` VALUES (965, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:17:42');
+INSERT INTO `sys_audit_log` VALUES (966, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:22:56');
+INSERT INTO `sys_audit_log` VALUES (967, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:24:04');
+INSERT INTO `sys_audit_log` VALUES (968, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:24:16');
+INSERT INTO `sys_audit_log` VALUES (969, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:24:39');
+INSERT INTO `sys_audit_log` VALUES (970, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:28:36');
+INSERT INTO `sys_audit_log` VALUES (971, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 11:40:26');
+INSERT INTO `sys_audit_log` VALUES (972, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 12:16:13');
+INSERT INTO `sys_audit_log` VALUES (973, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 12:16:29');
+INSERT INTO `sys_audit_log` VALUES (974, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '2', NULL, '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:24.8078067\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:24.8078067\",\"isDelete\":null,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$QZA7B4kEq6HCfEjMnIzP0uP1M8as4cL4DsXbGGdSocgvmZqdhKdSK\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', NULL, '2026-09-07 12:24:25');
+INSERT INTO `sys_audit_log` VALUES (975, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:25\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$QZA7B4kEq6HCfEjMnIzP0uP1M8as4cL4DsXbGGdSocgvmZqdhKdSK\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:25\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$QZA7B4kEq6HCfEjMnIzP0uP1M8as4cL4DsXbGGdSocgvmZqdhKdSK\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', NULL, '2026-09-07 12:24:35');
+INSERT INTO `sys_audit_log` VALUES (976, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '重置密码', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:25\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$QZA7B4kEq6HCfEjMnIzP0uP1M8as4cL4DsXbGGdSocgvmZqdhKdSK\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', '{\"id\":2,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:46.924537\",\"isDelete\":null,\"companyId\":null,\"username\":null,\"password\":\"$2a$10$dC8NacyhYNPxnyUGHb066.0J/DQ89YSZpwxUqhtZKyDi5pStYwpc2\",\"realName\":null,\"phone\":null,\"email\":null,\"avatar\":null,\"status\":null}', NULL, '2026-09-07 12:24:47');
+INSERT INTO `sys_audit_log` VALUES (977, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:47\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$dC8NacyhYNPxnyUGHb066.0J/DQ89YSZpwxUqhtZKyDi5pStYwpc2\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', '{\"id\":2,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:52.6191263\",\"isDelete\":null,\"companyId\":null,\"username\":null,\"password\":null,\"realName\":null,\"phone\":null,\"email\":null,\"avatar\":null,\"status\":0}', NULL, '2026-09-07 12:24:53');
+INSERT INTO `sys_audit_log` VALUES (978, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:53\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$dC8NacyhYNPxnyUGHb066.0J/DQ89YSZpwxUqhtZKyDi5pStYwpc2\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":0}', '{\"id\":2,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:54.990822\",\"isDelete\":null,\"companyId\":null,\"username\":null,\"password\":null,\"realName\":null,\"phone\":null,\"email\":null,\"avatar\":null,\"status\":1}', NULL, '2026-09-07 12:24:55');
+INSERT INTO `sys_audit_log` VALUES (979, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '删除', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:24:55\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$dC8NacyhYNPxnyUGHb066.0J/DQ89YSZpwxUqhtZKyDi5pStYwpc2\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', NULL, NULL, '2026-09-07 12:25:00');
+INSERT INTO `sys_audit_log` VALUES (980, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '[]', '[12,1,3]', NULL, '2026-09-07 12:25:49');
+INSERT INTO `sys_audit_log` VALUES (981, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '[1,3,12]', '[37,43,44,45,46,47,36]', NULL, '2026-09-07 12:26:16');
+INSERT INTO `sys_audit_log` VALUES (982, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-07 12:37:39');
+INSERT INTO `sys_audit_log` VALUES (983, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '新增', '3', NULL, '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-07T12:39:04.6608157\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:39:04.6608157\",\"isDelete\":null,\"companyId\":1,\"roleName\":\"test\",\"roleCode\":\"test\",\"remark\":\"\"}', NULL, '2026-09-07 12:39:05');
+INSERT INTO `sys_audit_log` VALUES (984, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '3', '[]', '[37,36]', NULL, '2026-09-07 12:40:37');
+INSERT INTO `sys_audit_log` VALUES (985, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '3', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-07T12:39:05\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:39:05\",\"isDelete\":0,\"companyId\":1,\"roleName\":\"test\",\"roleCode\":\"test\",\"remark\":\"\"}', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-07T12:39:05\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:39:05\",\"isDelete\":0,\"companyId\":1,\"roleName\":\"test\",\"roleCode\":\"test1\",\"remark\":\"\"}', NULL, '2026-09-07 12:40:48');
+INSERT INTO `sys_audit_log` VALUES (986, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '3', '[37]', '[37,52,36]', NULL, '2026-09-07 12:46:17');
+INSERT INTO `sys_audit_log` VALUES (987, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '3', '[36,37,52]', '[37,52,68,36]', NULL, '2026-09-07 12:47:21');
+INSERT INTO `sys_audit_log` VALUES (988, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '3', '[37,52,68]', '[37,52]', NULL, '2026-09-07 12:53:54');
+INSERT INTO `sys_audit_log` VALUES (989, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '3', '[37,52]', '[37]', NULL, '2026-09-07 12:54:01');
+INSERT INTO `sys_audit_log` VALUES (990, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '3', '[37]', '[37,52]', NULL, '2026-09-07 12:54:13');
+INSERT INTO `sys_audit_log` VALUES (991, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '审核', '1', NULL, '{\"id\":1,\"companyId\":0,\"targetUserId\":1,\"applyUserId\":1,\"auditUserId\":1,\"permissionList\":\"[\\\"user:delete\\\"]\",\"applyReason\":\"演示数据：申请开通用户删除权限，请复核\",\"auditStatus\":2,\"auditComment\":\"\",\"applyTime\":\"2026-08-18T12:51:36\",\"auditTime\":\"2026-09-07T13:02:55.5366071\"}', NULL, '2026-09-07 13:02:56');
+INSERT INTO `sys_audit_log` VALUES (992, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '3', '[]', '[]', NULL, '2026-09-08 10:33:12');
+INSERT INTO `sys_audit_log` VALUES (993, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '新增', '3', NULL, '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-08T10:33:11.977272\",\"updateBy\":1,\"updateTime\":\"2026-09-08T10:33:11.977272\",\"isDelete\":null,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"0005\",\"stallName\":\"测试\",\"stallArea\":0,\"status\":0,\"remark\":\"\"}', NULL, '2026-09-08 10:33:12');
+INSERT INTO `sys_audit_log` VALUES (994, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_rule', '绑定', '3', '[]', '[]', NULL, '2026-09-08 10:34:02');
+INSERT INTO `sys_audit_log` VALUES (995, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '编辑', '3', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-08T10:33:12\",\"updateBy\":1,\"updateTime\":\"2026-09-08T10:33:12\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"0005\",\"stallName\":\"测试\",\"stallArea\":0.00,\"status\":0,\"remark\":\"\"}', '{\"id\":3,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-08T10:34:01.6282647\",\"isDelete\":null,\"companyId\":null,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"0005\",\"stallName\":\"测试\",\"stallArea\":0,\"status\":0,\"remark\":\"1\"}', NULL, '2026-09-08 10:34:02');
+INSERT INTO `sys_audit_log` VALUES (996, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 10:40:15');
+INSERT INTO `sys_audit_log` VALUES (997, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_lease', '删除', '3', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-08T10:33:12\",\"updateBy\":1,\"updateTime\":\"2026-09-08T10:34:02\",\"isDelete\":0,\"companyId\":0,\"marketId\":1,\"stallCategoryId\":3,\"stallNumber\":\"0005\",\"stallName\":\"测试\",\"stallArea\":0.00,\"status\":0,\"remark\":\"1\"}', NULL, NULL, '2026-09-08 10:41:43');
+INSERT INTO `sys_audit_log` VALUES (998, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_category', '新增', '4', NULL, '{\"id\":4,\"createBy\":1,\"createTime\":\"2026-09-08T10:41:52.114804\",\"updateBy\":1,\"updateTime\":\"2026-09-08T10:41:52.114804\",\"isDelete\":null,\"companyId\":0,\"categoryName\":\"测试\",\"sortOrder\":0,\"status\":1,\"remark\":\"12\"}', NULL, '2026-09-08 10:41:52');
+INSERT INTO `sys_audit_log` VALUES (999, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_category', '编辑', '4', '{\"id\":4,\"createBy\":1,\"createTime\":\"2026-09-08T10:41:52\",\"updateBy\":1,\"updateTime\":\"2026-09-08T10:41:52\",\"isDelete\":0,\"companyId\":0,\"categoryName\":\"测试\",\"sortOrder\":0,\"status\":1,\"remark\":\"12\"}', '{\"id\":4,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-08T10:41:55.7387248\",\"isDelete\":null,\"companyId\":null,\"categoryName\":\"测试\",\"sortOrder\":0,\"status\":1,\"remark\":\"122\"}', NULL, '2026-09-08 10:41:56');
+INSERT INTO `sys_audit_log` VALUES (1000, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 10:50:36');
+INSERT INTO `sys_audit_log` VALUES (1001, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 10:54:04');
+INSERT INTO `sys_audit_log` VALUES (1002, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 10:59:52');
+INSERT INTO `sys_audit_log` VALUES (1003, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_category', '新增', '5', NULL, '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-09-08T11:01:37.7530973\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:01:37.7530973\",\"isDelete\":null,\"companyId\":0,\"categoryName\":\"ces\",\"sortOrder\":0,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-08 11:01:38');
+INSERT INTO `sys_audit_log` VALUES (1004, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:13:24');
+INSERT INTO `sys_audit_log` VALUES (1005, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:13:58');
+INSERT INTO `sys_audit_log` VALUES (1006, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:14:17');
+INSERT INTO `sys_audit_log` VALUES (1007, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:25:32');
+INSERT INTO `sys_audit_log` VALUES (1008, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:25:40');
+INSERT INTO `sys_audit_log` VALUES (1009, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:26:08');
+INSERT INTO `sys_audit_log` VALUES (1010, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:26:17');
+INSERT INTO `sys_audit_log` VALUES (1011, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:26:17');
+INSERT INTO `sys_audit_log` VALUES (1012, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:29:53');
+INSERT INTO `sys_audit_log` VALUES (1013, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:29:53');
+INSERT INTO `sys_audit_log` VALUES (1014, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:30:31');
+INSERT INTO `sys_audit_log` VALUES (1015, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:31:47');
+INSERT INTO `sys_audit_log` VALUES (1016, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:32:00');
+INSERT INTO `sys_audit_log` VALUES (1017, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'stall_category', '删除', '5', '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-09-08T11:01:38\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:13:58\",\"isDelete\":0,\"companyId\":0,\"categoryName\":\"ces\",\"sortOrder\":0,\"status\":1,\"remark\":\"\"}', NULL, NULL, '2026-09-08 11:32:00');
+INSERT INTO `sys_audit_log` VALUES (1018, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_category', '新增', '6', NULL, '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-09-08T11:33:35.4513827\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:33:35.4513827\",\"isDelete\":null,\"companyId\":0,\"categoryName\":\"ceshi \",\"sortOrder\":0,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-08 11:33:36');
+INSERT INTO `sys_audit_log` VALUES (1019, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_category', '删除', '6', '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-09-08T11:33:35\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:33:35\",\"isDelete\":0,\"companyId\":0,\"categoryName\":\"ceshi \",\"sortOrder\":0,\"status\":1,\"remark\":\"\"}', NULL, NULL, '2026-09-08 11:33:40');
+INSERT INTO `sys_audit_log` VALUES (1020, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '导出', 'audit_20260908114041.csv', NULL, NULL, NULL, '2026-09-08 11:40:42');
+INSERT INTO `sys_audit_log` VALUES (1021, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '新增', '14', NULL, '{\"id\":14,\"createBy\":1,\"createTime\":\"2026-09-08T11:41:03.9572578\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:41:03.9572578\",\"isDelete\":null,\"companyId\":0,\"configKey\":\"ceshi_12\",\"configValue\":\"132\",\"configName\":\"1\",\"remark\":\"\"}', NULL, '2026-09-08 11:41:04');
+INSERT INTO `sys_audit_log` VALUES (1022, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '新增', '15', NULL, '{\"id\":15,\"createBy\":1,\"createTime\":\"2026-09-08T11:41:17.6873905\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:41:17.6873905\",\"isDelete\":null,\"companyId\":0,\"configKey\":\"adf_dfa\",\"configValue\":\"12\",\"configName\":\"2\",\"remark\":\"\"}', NULL, '2026-09-08 11:41:18');
+INSERT INTO `sys_audit_log` VALUES (1023, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '编辑', '15', '{\"id\":15,\"createBy\":1,\"createTime\":\"2026-09-08T11:41:18\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:41:18\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"adf_dfa\",\"configValue\":\"12\",\"configName\":\"2\",\"remark\":\"\"}', '{\"id\":15,\"createBy\":1,\"createTime\":\"2026-09-08T11:41:18\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:41:18\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"adf_dfa\",\"configValue\":\"1232\",\"configName\":\"2\",\"remark\":\"\"}', NULL, '2026-09-08 11:41:54');
+INSERT INTO `sys_audit_log` VALUES (1024, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-08 11:46:10');
+INSERT INTO `sys_audit_log` VALUES (1025, 0, 1, '集团超级管理员', '127.0.0.1', 'stall_category', '删除', '5', '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-09-08T11:01:38\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:47:17\",\"isDelete\":0,\"companyId\":0,\"categoryName\":\"ces\",\"sortOrder\":0,\"status\":1,\"remark\":\"\"}', NULL, NULL, '2026-09-08 11:47:23');
+INSERT INTO `sys_audit_log` VALUES (1026, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '删除', '15', '{\"id\":15,\"createBy\":1,\"createTime\":\"2026-09-08T11:41:18\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:41:18\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"adf_dfa\",\"configValue\":\"1232\",\"configName\":\"2\",\"remark\":\"\"}', NULL, NULL, '2026-09-08 11:47:59');
+INSERT INTO `sys_audit_log` VALUES (1027, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '删除', '14', '{\"id\":14,\"createBy\":1,\"createTime\":\"2026-09-08T11:41:04\",\"updateBy\":1,\"updateTime\":\"2026-09-08T11:41:04\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"ceshi_12\",\"configValue\":\"132\",\"configName\":\"1\",\"remark\":\"\"}', NULL, NULL, '2026-09-08 11:48:02');
+INSERT INTO `sys_audit_log` VALUES (1028, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 09:46:57');
+INSERT INTO `sys_audit_log` VALUES (1029, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:06:59');
+INSERT INTO `sys_audit_log` VALUES (1030, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_item', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T12:24:43\",\"updateBy\":null,\"updateTime\":\"2026-08-19T13:53:24\",\"isDelete\":0,\"companyId\":0,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcUnit\":\"元/月\",\"remark\":\"集团模板：摊位租金收费\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-10T19:07:52.4039142\",\"isDelete\":null,\"companyId\":null,\"feeItemName\":\"租金1\",\"categoryType\":1,\"calcUnit\":\"元/月\",\"remark\":\"集团模板：摊位租金收费\"}', NULL, '2026-09-10 19:07:53');
+INSERT INTO `sys_audit_log` VALUES (1031, 0, 1, '集团超级管理员', '127.0.0.1', 'fee_item', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T12:24:43\",\"updateBy\":1,\"updateTime\":\"2026-09-10T19:07:52\",\"isDelete\":0,\"companyId\":0,\"feeItemName\":\"租金1\",\"categoryType\":1,\"calcUnit\":\"元/月\",\"remark\":\"集团模板：摊位租金收费\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-10T19:07:56.6272766\",\"isDelete\":null,\"companyId\":null,\"feeItemName\":\"租金\",\"categoryType\":1,\"calcUnit\":\"元/月\",\"remark\":\"集团模板：摊位租金收费\"}', NULL, '2026-09-10 19:07:57');
+INSERT INTO `sys_audit_log` VALUES (1032, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:26:46');
+INSERT INTO `sys_audit_log` VALUES (1033, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:27:20');
+INSERT INTO `sys_audit_log` VALUES (1034, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '56', NULL, '{\"id\":56,\"createBy\":1,\"createTime\":\"2026-09-10T19:28:59.0435795\",\"updateBy\":1,\"updateTime\":\"2026-09-10T19:28:59.0435795\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":1,\"billMonth\":\"2027-09\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":23}', NULL, '2026-09-10 19:28:59');
+INSERT INTO `sys_audit_log` VALUES (1035, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:35:13');
+INSERT INTO `sys_audit_log` VALUES (1036, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:35:15');
+INSERT INTO `sys_audit_log` VALUES (1037, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '新增', '61', NULL, '{\"id\":61,\"createBy\":1,\"createTime\":\"2026-09-10T19:35:47.171491\",\"updateBy\":1,\"updateTime\":\"2026-09-10T19:35:47.171491\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"planId\":null,\"billMonth\":\"2026-09\",\"category\":3,\"prevMeterRead\":65.00,\"usage\":10.00,\"unitPrice\":6.00,\"totalAmount\":60.0000,\"payStatus\":0,\"payTime\":null}', NULL, '2026-09-10 19:35:47');
+INSERT INTO `sys_audit_log` VALUES (1038, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '抄表', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T14:05:29\",\"updateBy\":1,\"updateTime\":\"2026-09-10T19:35:47\",\"isDelete\":0,\"companyId\":0,\"stallId\":1,\"meterNo\":\"0000a1\",\"meterType\":1,\"gatewayCode\":\"\",\"currentRead\":75.00,\"balanceAmount\":0.00,\"status\":1}', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-19T14:05:29\",\"updateBy\":1,\"updateTime\":\"2026-09-10T19:35:47\",\"isDelete\":0,\"companyId\":0,\"stallId\":1,\"meterNo\":\"0000a1\",\"meterType\":1,\"gatewayCode\":\"\",\"currentRead\":85,\"balanceAmount\":0.00,\"status\":1}', NULL, '2026-09-10 19:37:54');
+INSERT INTO `sys_audit_log` VALUES (1039, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:45:05');
+INSERT INTO `sys_audit_log` VALUES (1040, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:45:15');
+INSERT INTO `sys_audit_log` VALUES (1041, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '15', NULL, '{\"id\":15,\"createBy\":1,\"createTime\":\"2026-09-10T19:54:42.5725392\",\"updateBy\":1,\"updateTime\":\"2026-09-10T19:54:42.5725392\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609101954424146\",\"defId\":1,\"defName\":\"租赁合同审批\",\"bizType\":\"contract\",\"sourceType\":\"leave_apply\",\"sourceId\":\"2\",\"title\":\"admin 申请年假 1天\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-10T19:54:42.5720298\",\"finishTime\":null}', NULL, '2026-09-10 19:54:43');
+INSERT INTO `sys_audit_log` VALUES (1042, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '2', NULL, '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-10T19:54:42.5629926\",\"updateBy\":1,\"updateTime\":\"2026-09-10T19:54:42.5629926\",\"isDelete\":null,\"companyId\":0,\"applyNo\":\"LA202609101954420560\",\"applyUserId\":1,\"applyUserName\":\"admin\",\"leaveType\":1,\"startDate\":\"2026-09-10\",\"endDate\":\"2026-09-10\",\"leaveDays\":1,\"reason\":\"23\",\"flowInstanceId\":15,\"applyStatus\":1,\"remark\":null}', NULL, '2026-09-10 19:54:43');
+INSERT INTO `sys_audit_log` VALUES (1043, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:59:21');
+INSERT INTO `sys_audit_log` VALUES (1044, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 19:59:37');
+INSERT INTO `sys_audit_log` VALUES (1045, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:00:07');
+INSERT INTO `sys_audit_log` VALUES (1046, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:00:27');
+INSERT INTO `sys_audit_log` VALUES (1047, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:01:00');
+INSERT INTO `sys_audit_log` VALUES (1048, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:15:09');
+INSERT INTO `sys_audit_log` VALUES (1049, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:15:27');
+INSERT INTO `sys_audit_log` VALUES (1050, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:15:40');
+INSERT INTO `sys_audit_log` VALUES (1051, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:19:06');
+INSERT INTO `sys_audit_log` VALUES (1052, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:30:11');
+INSERT INTO `sys_audit_log` VALUES (1053, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:30:26');
+INSERT INTO `sys_audit_log` VALUES (1054, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:32:31');
+INSERT INTO `sys_audit_log` VALUES (1055, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:32:57');
+INSERT INTO `sys_audit_log` VALUES (1056, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 20:33:09');
+INSERT INTO `sys_audit_log` VALUES (1057, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 22:02:09');
+INSERT INTO `sys_audit_log` VALUES (1058, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '16', NULL, '{\"id\":16,\"createBy\":1,\"createTime\":\"2026-09-10T22:02:21.9113817\",\"updateBy\":1,\"updateTime\":\"2026-09-10T22:02:21.9113817\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609102202216818\",\"defId\":1,\"defName\":\"租赁合同审批\",\"bizType\":\"contract\",\"sourceType\":\"work_report\",\"sourceId\":\"1\",\"title\":\"admin 提交日报：2026-09-10\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-10T22:02:21.9103361\",\"finishTime\":null}', NULL, '2026-09-10 22:02:22');
+INSERT INTO `sys_audit_log` VALUES (1059, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_org', '新增', '2', NULL, '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-10T22:02:43.4646083\",\"updateBy\":1,\"updateTime\":\"2026-09-10T22:02:43.4646083\",\"isDelete\":null,\"companyId\":0,\"postName\":\"3123\",\"postCode\":\"123123\",\"postLevel\":\"23\",\"deptId\":null,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-10 22:02:44');
+INSERT INTO `sys_audit_log` VALUES (1060, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-10T22:02:43\",\"updateBy\":1,\"updateTime\":\"2026-09-10T22:02:43\",\"isDelete\":0,\"companyId\":0,\"postName\":\"3123\",\"postCode\":\"123123\",\"postLevel\":\"23\",\"deptId\":null,\"status\":1,\"remark\":\"\"}', '{\"id\":2,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-10T22:02:49.008635\",\"isDelete\":null,\"companyId\":null,\"postName\":\"31232\",\"postCode\":\"123123\",\"postLevel\":\"23\",\"deptId\":null,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-10 22:02:49');
+INSERT INTO `sys_audit_log` VALUES (1061, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_org', '删除', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-10T22:02:43\",\"updateBy\":1,\"updateTime\":\"2026-09-10T22:02:49\",\"isDelete\":0,\"companyId\":0,\"postName\":\"31232\",\"postCode\":\"123123\",\"postLevel\":\"23\",\"deptId\":null,\"status\":1,\"remark\":\"\"}', NULL, NULL, '2026-09-10 22:02:52');
+INSERT INTO `sys_audit_log` VALUES (1062, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_employee', '新增', '2', NULL, '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-10T22:03:04.195804\",\"updateBy\":1,\"updateTime\":\"2026-09-10T22:03:04.195804\",\"isDelete\":null,\"companyId\":0,\"userId\":null,\"employeeNo\":\"123\",\"name\":\"123123\",\"idCardNo\":null,\"phone\":null,\"email\":null,\"gender\":1,\"birthdate\":null,\"entryDate\":\"2026-09-10\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":1,\"employeeStatus\":1,\"orgId\":null,\"postId\":null,\"postLevel\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":null,\"socialSecurityBase\":null,\"basicSalary\":null,\"remark\":null}', NULL, '2026-09-10 22:03:04');
+INSERT INTO `sys_audit_log` VALUES (1063, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_employee', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-10T22:03:04\",\"updateBy\":1,\"updateTime\":\"2026-09-10T22:03:04\",\"isDelete\":0,\"companyId\":0,\"userId\":null,\"employeeNo\":\"123\",\"name\":\"123123\",\"idCardNo\":null,\"phone\":null,\"email\":null,\"gender\":1,\"birthdate\":null,\"entryDate\":\"2026-09-10\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":1,\"employeeStatus\":1,\"orgId\":null,\"postId\":null,\"postLevel\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":null,\"socialSecurityBase\":null,\"basicSalary\":null,\"remark\":null}', '{\"id\":2,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-10T22:03:14.1778436\",\"isDelete\":null,\"companyId\":null,\"userId\":null,\"employeeNo\":null,\"name\":\"123123\",\"idCardNo\":null,\"phone\":\"12312312312\",\"email\":null,\"gender\":1,\"birthdate\":null,\"entryDate\":\"2026-09-10\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":1,\"employeeStatus\":null,\"orgId\":null,\"postId\":null,\"postLevel\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":null,\"socialSecurityBase\":null,\"basicSalary\":null,\"remark\":null}', NULL, '2026-09-10 22:03:14');
+INSERT INTO `sys_audit_log` VALUES (1064, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_employee', '删除', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-10T22:03:04\",\"updateBy\":1,\"updateTime\":\"2026-09-10T22:03:14\",\"isDelete\":0,\"companyId\":0,\"userId\":null,\"employeeNo\":\"123\",\"name\":\"123123\",\"idCardNo\":null,\"phone\":\"12312312312\",\"email\":null,\"gender\":1,\"birthdate\":null,\"entryDate\":\"2026-09-10\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":1,\"employeeStatus\":1,\"orgId\":null,\"postId\":null,\"postLevel\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":null,\"socialSecurityBase\":null,\"basicSalary\":null,\"remark\":null}', NULL, NULL, '2026-09-10 22:03:17');
+INSERT INTO `sys_audit_log` VALUES (1065, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 23:20:37');
+INSERT INTO `sys_audit_log` VALUES (1066, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-10 23:21:03');
+INSERT INTO `sys_audit_log` VALUES (1067, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '17', NULL, '{\"id\":17,\"createBy\":1,\"createTime\":\"2026-09-10T23:34:35.0485392\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:34:35.0485392\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609102334357648\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"10\",\"title\":\"2号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-10T23:34:35.0469743\",\"finishTime\":null}', NULL, '2026-09-10 23:34:35');
+INSERT INTO `sys_audit_log` VALUES (1068, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '10', NULL, '{\"id\":10,\"createBy\":1,\"createTime\":\"2026-09-10T23:34:35.0234684\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:34:35.0234684\",\"isDelete\":null,\"companyId\":0,\"employeeNo\":\"0002\",\"name\":\"2号员工\",\"idCardNo\":\"370284199001011116\",\"phone\":\"13112312312\",\"gender\":1,\"birthdate\":\"2026-09-10\",\"entryDate\":\"2026-09-10\",\"employmentType\":1,\"orgId\":1,\"postId\":1,\"basicSalary\":4000,\"bankAccount\":\"123456133\",\"autoCreateUser\":0,\"flowInstanceId\":17,\"status\":1,\"remark\":\"备注\"}', NULL, '2026-09-10 23:34:35');
+INSERT INTO `sys_audit_log` VALUES (1069, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '完成', '17', NULL, '{\"id\":17,\"createBy\":1,\"createTime\":\"2026-09-10T23:34:35\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:34:35\",\"isDelete\":0,\"companyId\":0,\"instanceNo\":\"FL202609102334357648\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"10\",\"title\":\"2号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":1,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-10T23:34:35\",\"finishTime\":\"2026-09-10T23:34:53.6053094\"}', NULL, '2026-09-10 23:34:54');
+INSERT INTO `sys_audit_log` VALUES (1070, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_employee', '新增', '3', NULL, '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-10T23:34:53.6451967\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:34:53.6451967\",\"isDelete\":null,\"companyId\":0,\"userId\":null,\"employeeNo\":\"0002\",\"name\":\"2号员工\",\"idCardNo\":\"370284199001011116\",\"phone\":\"13112312312\",\"email\":null,\"gender\":1,\"birthdate\":\"2026-09-10\",\"entryDate\":\"2026-09-10\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":1,\"employeeStatus\":1,\"orgId\":1,\"postId\":1,\"postLevel\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":\"123456133\",\"socialSecurityBase\":null,\"basicSalary\":4000.00,\"remark\":\"备注\"}', NULL, '2026-09-10 23:34:54');
+INSERT INTO `sys_audit_log` VALUES (1071, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '10', NULL, '{\"id\":10,\"createBy\":1,\"createTime\":\"2026-09-10T23:34:35\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:34:35\",\"isDelete\":0,\"companyId\":0,\"employeeNo\":\"0002\",\"name\":\"2号员工\",\"idCardNo\":\"370284199001011116\",\"phone\":\"13112312312\",\"gender\":1,\"birthdate\":\"2026-09-10\",\"entryDate\":\"2026-09-10\",\"employmentType\":1,\"orgId\":1,\"postId\":1,\"basicSalary\":4000.00,\"bankAccount\":\"123456133\",\"autoCreateUser\":0,\"flowInstanceId\":17,\"status\":2,\"remark\":\"备注\"}', NULL, '2026-09-10 23:34:54');
+INSERT INTO `sys_audit_log` VALUES (1072, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '18', NULL, '{\"id\":18,\"createBy\":1,\"createTime\":\"2026-09-10T23:36:34.4615889\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:36:34.4615889\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609102336341046\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"11\",\"title\":\"3号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-10T23:36:34.4615889\",\"finishTime\":null}', NULL, '2026-09-10 23:36:34');
+INSERT INTO `sys_audit_log` VALUES (1073, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '11', NULL, '{\"id\":11,\"createBy\":1,\"createTime\":\"2026-09-10T23:36:34.4554713\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:36:34.4554713\",\"isDelete\":null,\"companyId\":0,\"employeeNo\":\"0003\",\"name\":\"3号员工\",\"idCardNo\":\"370282199001011115\",\"phone\":\"1312311231\",\"gender\":1,\"birthdate\":\"2026-09-10\",\"entryDate\":\"2026-09-10\",\"employmentType\":2,\"orgId\":1,\"postId\":1,\"basicSalary\":5000,\"bankAccount\":\"33231213\",\"autoCreateUser\":0,\"flowInstanceId\":18,\"status\":1,\"remark\":\"备注\"}', NULL, '2026-09-10 23:36:34');
+INSERT INTO `sys_audit_log` VALUES (1074, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '完成', '18', NULL, '{\"id\":18,\"createBy\":1,\"createTime\":\"2026-09-10T23:36:34\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:36:34\",\"isDelete\":0,\"companyId\":0,\"instanceNo\":\"FL202609102336341046\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"11\",\"title\":\"3号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":1,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-10T23:36:34\",\"finishTime\":\"2026-09-10T23:36:41.4545893\"}', NULL, '2026-09-10 23:36:41');
+INSERT INTO `sys_audit_log` VALUES (1075, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_employee', '新增', '4', NULL, '{\"id\":4,\"createBy\":1,\"createTime\":\"2026-09-10T23:36:41.4727711\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:36:41.4727711\",\"isDelete\":null,\"companyId\":0,\"userId\":null,\"employeeNo\":\"0003\",\"name\":\"3号员工\",\"idCardNo\":\"370282199001011115\",\"phone\":\"1312311231\",\"email\":null,\"gender\":1,\"birthdate\":\"2026-09-10\",\"entryDate\":\"2026-09-10\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":2,\"employeeStatus\":1,\"orgId\":1,\"postId\":1,\"postLevel\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":\"33231213\",\"socialSecurityBase\":null,\"basicSalary\":5000.00,\"remark\":\"备注\"}', NULL, '2026-09-10 23:36:41');
+INSERT INTO `sys_audit_log` VALUES (1076, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '11', NULL, '{\"id\":11,\"createBy\":1,\"createTime\":\"2026-09-10T23:36:34\",\"updateBy\":1,\"updateTime\":\"2026-09-10T23:36:34\",\"isDelete\":0,\"companyId\":0,\"employeeNo\":\"0003\",\"name\":\"3号员工\",\"idCardNo\":\"370282199001011115\",\"phone\":\"1312311231\",\"gender\":1,\"birthdate\":\"2026-09-10\",\"entryDate\":\"2026-09-10\",\"employmentType\":2,\"orgId\":1,\"postId\":1,\"basicSalary\":5000.00,\"bankAccount\":\"33231213\",\"autoCreateUser\":0,\"flowInstanceId\":18,\"status\":2,\"remark\":\"备注\"}', NULL, '2026-09-10 23:36:41');
+INSERT INTO `sys_audit_log` VALUES (1077, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-11 15:07:08');
+INSERT INTO `sys_audit_log` VALUES (1078, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-11 15:20:05');
+INSERT INTO `sys_audit_log` VALUES (1079, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-11 15:34:59');
+INSERT INTO `sys_audit_log` VALUES (1080, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-12 09:27:46');
+INSERT INTO `sys_audit_log` VALUES (1081, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-12 10:52:15');
+INSERT INTO `sys_audit_log` VALUES (1082, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-12 11:29:37');
+INSERT INTO `sys_audit_log` VALUES (1083, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-12 11:32:27');
+INSERT INTO `sys_audit_log` VALUES (1084, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-12 11:38:22');
+INSERT INTO `sys_audit_log` VALUES (1085, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-12 12:05:12');
+INSERT INTO `sys_audit_log` VALUES (1086, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-12 12:07:34');
+INSERT INTO `sys_audit_log` VALUES (1087, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 20:42:48');
+INSERT INTO `sys_audit_log` VALUES (1088, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 21:22:20');
+INSERT INTO `sys_audit_log` VALUES (1089, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 21:40:18');
+INSERT INTO `sys_audit_log` VALUES (1090, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 21:46:34');
+INSERT INTO `sys_audit_log` VALUES (1091, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 21:50:34');
+INSERT INTO `sys_audit_log` VALUES (1092, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 21:52:09');
+INSERT INTO `sys_audit_log` VALUES (1093, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 21:54:06');
+INSERT INTO `sys_audit_log` VALUES (1094, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 22:53:05');
+INSERT INTO `sys_audit_log` VALUES (1095, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 22:55:19');
+INSERT INTO `sys_audit_log` VALUES (1096, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:06:36');
+INSERT INTO `sys_audit_log` VALUES (1097, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:06:36');
+INSERT INTO `sys_audit_log` VALUES (1098, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:08:34');
+INSERT INTO `sys_audit_log` VALUES (1099, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:08:46');
+INSERT INTO `sys_audit_log` VALUES (1100, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:10:06');
+INSERT INTO `sys_audit_log` VALUES (1101, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:10:39');
+INSERT INTO `sys_audit_log` VALUES (1102, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:13:33');
+INSERT INTO `sys_audit_log` VALUES (1103, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:26:35');
+INSERT INTO `sys_audit_log` VALUES (1104, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:29:13');
+INSERT INTO `sys_audit_log` VALUES (1105, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:33:41');
+INSERT INTO `sys_audit_log` VALUES (1106, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:34:13');
+INSERT INTO `sys_audit_log` VALUES (1107, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:35:43');
+INSERT INTO `sys_audit_log` VALUES (1108, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:41:10');
+INSERT INTO `sys_audit_log` VALUES (1109, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:41:38');
+INSERT INTO `sys_audit_log` VALUES (1110, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:43:28');
+INSERT INTO `sys_audit_log` VALUES (1111, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:43:28');
+INSERT INTO `sys_audit_log` VALUES (1112, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:44:14');
+INSERT INTO `sys_audit_log` VALUES (1113, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:48:04');
+INSERT INTO `sys_audit_log` VALUES (1114, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:51:56');
+INSERT INTO `sys_audit_log` VALUES (1115, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-13 23:55:46');
+INSERT INTO `sys_audit_log` VALUES (1116, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:00:18');
+INSERT INTO `sys_audit_log` VALUES (1117, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:06:45');
+INSERT INTO `sys_audit_log` VALUES (1118, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:17:20');
+INSERT INTO `sys_audit_log` VALUES (1119, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:17:38');
+INSERT INTO `sys_audit_log` VALUES (1120, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_calc', '基数重算', 'batch_2026', NULL, '{\"effectiveYear\":\"2026\",\"failCount\":0,\"successCount\":0,\"totalCount\":0}', NULL, '2026-09-14 00:18:56');
+INSERT INTO `sys_audit_log` VALUES (1121, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:24:14');
+INSERT INTO `sys_audit_log` VALUES (1122, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:24:35');
+INSERT INTO `sys_audit_log` VALUES (1123, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:25:15');
+INSERT INTO `sys_audit_log` VALUES (1124, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:34:49');
+INSERT INTO `sys_audit_log` VALUES (1125, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:37:48');
+INSERT INTO `sys_audit_log` VALUES (1126, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 00:38:10');
+INSERT INTO `sys_audit_log` VALUES (1127, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_param', '参数停用', '1', '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-09-13T23:25:43\",\"updateBy\":1,\"updateTime\":\"2026-09-13T23:25:43\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"insuranceCode\":\"PENSION\",\"industryCode\":null,\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":4573.00,\"baseMax\":22863.00,\"personalRate\":0.0800,\"companyRate\":0.1600,\"isActive\":0,\"remark\":\"青岛企业职工养老保险\"}', '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-09-13T23:25:43\",\"updateBy\":1,\"updateTime\":\"2026-09-13T23:25:43\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"insuranceCode\":\"PENSION\",\"industryCode\":null,\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":4573.00,\"baseMax\":22863.00,\"personalRate\":0.0800,\"companyRate\":0.1600,\"isActive\":0,\"remark\":\"青岛企业职工养老保险\"}', NULL, '2026-09-14 09:21:57');
+INSERT INTO `sys_audit_log` VALUES (1128, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_param', '参数停用', '2', '{\"id\":2,\"createBy\":0,\"createTime\":\"2026-09-13T23:25:43\",\"updateBy\":1,\"updateTime\":\"2026-09-13T23:25:43\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"insuranceCode\":\"MEDICAL\",\"industryCode\":null,\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":4573.00,\"baseMax\":22863.00,\"personalRate\":0.0200,\"companyRate\":0.0800,\"isActive\":0,\"remark\":\"青岛企业职工医疗保险（含生育）\"}', '{\"id\":2,\"createBy\":0,\"createTime\":\"2026-09-13T23:25:43\",\"updateBy\":1,\"updateTime\":\"2026-09-13T23:25:43\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"insuranceCode\":\"MEDICAL\",\"industryCode\":null,\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":4573.00,\"baseMax\":22863.00,\"personalRate\":0.0200,\"companyRate\":0.0800,\"isActive\":0,\"remark\":\"青岛企业职工医疗保险（含生育）\"}', NULL, '2026-09-14 09:22:25');
+INSERT INTO `sys_audit_log` VALUES (1129, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_param', '参数激活', '1', '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-09-13T23:25:43\",\"updateBy\":1,\"updateTime\":\"2026-09-13T23:25:43\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"insuranceCode\":\"PENSION\",\"industryCode\":null,\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":4573.00,\"baseMax\":22863.00,\"personalRate\":0.0800,\"companyRate\":0.1600,\"isActive\":1,\"remark\":\"青岛企业职工养老保险\"}', '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-09-13T23:25:43\",\"updateBy\":1,\"updateTime\":\"2026-09-13T23:25:43\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"insuranceCode\":\"PENSION\",\"industryCode\":null,\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":4573.00,\"baseMax\":22863.00,\"personalRate\":0.0800,\"companyRate\":0.1600,\"isActive\":1,\"remark\":\"青岛企业职工养老保险\"}', NULL, '2026-09-14 09:33:05');
+INSERT INTO `sys_audit_log` VALUES (1130, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_param', '参数激活', '2', '{\"id\":2,\"createBy\":0,\"createTime\":\"2026-09-13T23:25:43\",\"updateBy\":1,\"updateTime\":\"2026-09-13T23:25:43\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"insuranceCode\":\"MEDICAL\",\"industryCode\":null,\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":4573.00,\"baseMax\":22863.00,\"personalRate\":0.0200,\"companyRate\":0.0800,\"isActive\":1,\"remark\":\"青岛企业职工医疗保险（含生育）\"}', '{\"id\":2,\"createBy\":0,\"createTime\":\"2026-09-13T23:25:43\",\"updateBy\":1,\"updateTime\":\"2026-09-13T23:25:43\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"insuranceCode\":\"MEDICAL\",\"industryCode\":null,\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":4573.00,\"baseMax\":22863.00,\"personalRate\":0.0200,\"companyRate\":0.0800,\"isActive\":1,\"remark\":\"青岛企业职工医疗保险（含生育）\"}', NULL, '2026-09-14 09:33:07');
+INSERT INTO `sys_audit_log` VALUES (1131, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 09:45:36');
+INSERT INTO `sys_audit_log` VALUES (1132, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_param', '参数停用', '1', '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-09-14T00:17:19\",\"updateBy\":1,\"updateTime\":\"2026-09-14T00:17:19\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":2300.00,\"baseMax\":22863.00,\"employeeRate\":12.00,\"companyRate\":12.00,\"isActive\":0,\"remark\":\"青岛企业职工住房公积金（个人12%+单位12%）\"}', '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-09-14T00:17:19\",\"updateBy\":1,\"updateTime\":\"2026-09-14T00:17:19\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":2300.00,\"baseMax\":22863.00,\"employeeRate\":12.00,\"companyRate\":12.00,\"isActive\":0,\"remark\":\"青岛企业职工住房公积金（个人12%+单位12%）\"}', NULL, '2026-09-14 09:45:42');
+INSERT INTO `sys_audit_log` VALUES (1133, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_param', '参数激活', '2', NULL, '{\"id\":2,\"createBy\":0,\"createTime\":\"2026-09-14T00:17:19\",\"updateBy\":1,\"updateTime\":\"2026-09-14T00:17:19\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"periodStart\":\"2027-01-01\",\"periodEnd\":null,\"baseMin\":2300.00,\"baseMax\":22863.00,\"employeeRate\":12.00,\"companyRate\":12.00,\"isActive\":1,\"remark\":\"青岛企业职工住房公积金（次年预留）\"}', NULL, '2026-09-14 09:45:42');
+INSERT INTO `sys_audit_log` VALUES (1134, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_param', '参数停用', '2', '{\"id\":2,\"createBy\":0,\"createTime\":\"2026-09-14T00:17:19\",\"updateBy\":1,\"updateTime\":\"2026-09-14T00:17:19\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"periodStart\":\"2027-01-01\",\"periodEnd\":null,\"baseMin\":2300.00,\"baseMax\":22863.00,\"employeeRate\":12.00,\"companyRate\":12.00,\"isActive\":0,\"remark\":\"青岛企业职工住房公积金（次年预留）\"}', '{\"id\":2,\"createBy\":0,\"createTime\":\"2026-09-14T00:17:19\",\"updateBy\":1,\"updateTime\":\"2026-09-14T00:17:19\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"periodStart\":\"2027-01-01\",\"periodEnd\":null,\"baseMin\":2300.00,\"baseMax\":22863.00,\"employeeRate\":12.00,\"companyRate\":12.00,\"isActive\":0,\"remark\":\"青岛企业职工住房公积金（次年预留）\"}', NULL, '2026-09-14 09:45:47');
+INSERT INTO `sys_audit_log` VALUES (1135, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_social_param', '参数激活', '1', NULL, '{\"id\":1,\"createBy\":0,\"createTime\":\"2026-09-14T00:17:19\",\"updateBy\":1,\"updateTime\":\"2026-09-14T00:17:19\",\"isDelete\":0,\"companyId\":0,\"cityCode\":\"QD\",\"periodStart\":\"2026-01-01\",\"periodEnd\":\"2026-12-31\",\"baseMin\":2300.00,\"baseMax\":22863.00,\"employeeRate\":12.00,\"companyRate\":12.00,\"isActive\":1,\"remark\":\"青岛企业职工住房公积金（个人12%+单位12%）\"}', NULL, '2026-09-14 09:45:47');
+INSERT INTO `sys_audit_log` VALUES (1136, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 11:22:15');
+INSERT INTO `sys_audit_log` VALUES (1137, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 14:26:35');
+INSERT INTO `sys_audit_log` VALUES (1138, 0, 1, '集团超级管理员', '127.0.0.1', 'sys', '编辑', '19', '{\"id\":19,\"createBy\":0,\"createTime\":\"2026-09-14T10:44:25\",\"updateBy\":null,\"updateTime\":null,\"isDelete\":0,\"companyId\":0,\"configKey\":\"device.auth.enabled\",\"configValue\":\"false\",\"configName\":\"客户端设备校验开关\",\"remark\":\"开启后登录需校验设备授权\"}', '{\"id\":19,\"createBy\":0,\"createTime\":\"2026-09-14T10:44:25\",\"updateBy\":1,\"updateTime\":\"2026-09-14T14:27:13.6768724\",\"isDelete\":0,\"companyId\":0,\"configKey\":\"device.auth.enabled\",\"configValue\":\"true\",\"configName\":\"客户端设备校验开关\",\"remark\":\"开启后登录需校验设备授权\"}', NULL, '2026-09-14 14:27:14');
+INSERT INTO `sys_audit_log` VALUES (1139, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-14 14:27:19');
+INSERT INTO `sys_audit_log` VALUES (1140, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 14:29:29');
+INSERT INTO `sys_audit_log` VALUES (1141, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 14:29:44');
+INSERT INTO `sys_audit_log` VALUES (1142, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 14:41:54');
+INSERT INTO `sys_audit_log` VALUES (1143, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 14:56:40');
+INSERT INTO `sys_audit_log` VALUES (1144, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-14 17:10:02');
+INSERT INTO `sys_audit_log` VALUES (1145, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 17:55:01');
+INSERT INTO `sys_audit_log` VALUES (1146, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-14 18:10:03');
+INSERT INTO `sys_audit_log` VALUES (1147, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 19:08:16');
+INSERT INTO `sys_audit_log` VALUES (1148, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-14 19:08:25');
+INSERT INTO `sys_audit_log` VALUES (1149, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 09:28:55');
+INSERT INTO `sys_audit_log` VALUES (1150, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 09:43:39');
+INSERT INTO `sys_audit_log` VALUES (1151, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 09:46:20');
+INSERT INTO `sys_audit_log` VALUES (1152, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 09:48:41');
+INSERT INTO `sys_audit_log` VALUES (1153, 0, 1, '集团超级管理员', '127.0.0.1', 'waterElec', '新增', '62', NULL, '{\"id\":62,\"createBy\":1,\"createTime\":\"2026-09-15T09:48:53.208506\",\"updateBy\":1,\"updateTime\":\"2026-09-15T09:48:53.208506\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":null,\"planId\":null,\"billMonth\":\"2026-09\",\"category\":3,\"prevMeterRead\":85.00,\"usage\":10.00,\"unitPrice\":6.00,\"totalAmount\":60.0000,\"payStatus\":0,\"payTime\":null}', NULL, '2026-09-15 09:48:53');
+INSERT INTO `sys_audit_log` VALUES (1154, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '489', NULL, '\"核销金额=25.00，账单=water_elec/56\"', NULL, '2026-09-15 09:49:24');
+INSERT INTO `sys_audit_log` VALUES (1155, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '498', NULL, '\"核销金额=25.00，账单=property/56\"', NULL, '2026-09-15 09:49:24');
+INSERT INTO `sys_audit_log` VALUES (1156, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '500', NULL, '\"核销金额=60.00，账单=water_elec/62\"', NULL, '2026-09-15 09:49:24');
+INSERT INTO `sys_audit_log` VALUES (1157, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '31', NULL, '\"合并缴费，金额=85.00\"', NULL, '2026-09-15 09:49:24');
+INSERT INTO `sys_audit_log` VALUES (1158, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 09:55:24');
+INSERT INTO `sys_audit_log` VALUES (1159, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 09:59:29');
+INSERT INTO `sys_audit_log` VALUES (1160, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 09:59:33');
+INSERT INTO `sys_audit_log` VALUES (1161, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '新增', '57', NULL, '{\"id\":57,\"createBy\":1,\"createTime\":\"2026-09-15T10:19:02.9258485\",\"updateBy\":1,\"updateTime\":\"2026-09-15T10:19:02.9258485\",\"isDelete\":null,\"companyId\":0,\"stallId\":1,\"merchantId\":1,\"billMonth\":\"2027-10\",\"ruleId\":5,\"feeItemId\":2,\"calcMode\":2,\"periodType\":2,\"usage\":50.00,\"unitPrice\":0.50,\"periodFactor\":1,\"amount\":25.00,\"planId\":null,\"payStatus\":0,\"payTime\":null,\"contractId\":23}', NULL, '2026-09-15 10:19:03');
+INSERT INTO `sys_audit_log` VALUES (1164, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 10:24:36');
+INSERT INTO `sys_audit_log` VALUES (1167, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 10:30:42');
+INSERT INTO `sys_audit_log` VALUES (1168, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 10:42:12');
+INSERT INTO `sys_audit_log` VALUES (1169, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '499', NULL, '\"核销金额=60.00，账单=water_elec/61\"', NULL, '2026-09-15 10:44:18');
+INSERT INTO `sys_audit_log` VALUES (1170, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '503', NULL, '\"核销金额=25.00，账单=property/57\"', NULL, '2026-09-15 10:44:18');
+INSERT INTO `sys_audit_log` VALUES (1171, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '36', NULL, '\"合并缴费，金额=85.00\"', NULL, '2026-09-15 10:44:18');
+
+-- ----------------------------
+-- Table structure for sys_city
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_city`;
+CREATE TABLE `sys_city`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '城市编码，如 BJ/GZ/SZ',
+  `city_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '城市名称，如 北京/广州/深圳',
+  `province` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '省份',
+  `sort` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0停用 1启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_city_code`(`city_code` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '城市字典表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_city
+-- ----------------------------
+INSERT INTO `sys_city` VALUES (1, 'QD', '青岛', '山东', 1, 1, '计划单列市', 0, '2026-09-13 19:47:42', NULL, '2026-09-14 00:11:12', 0);
+INSERT INTO `sys_city` VALUES (2, 'BJ', '北京', '北京', 1, 1, '直辖市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (3, 'SH', '上海', '上海', 2, 1, '直辖市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (4, 'GZ', '广州', '广东', 3, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (5, 'SZ', '深圳', '广东', 4, 1, '特区', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (6, 'HZ', '杭州', '浙江', 5, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (7, 'NJ', '南京', '江苏', 6, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (8, 'CD', '成都', '四川', 7, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (9, 'WH', '武汉', '湖北', 8, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+
+-- ----------------------------
+-- Table structure for sys_client_device_auth
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_client_device_auth`;
+CREATE TABLE `sys_client_device_auth`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `motherboard_sn` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主板SN',
+  `cpu_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'CPU编号',
+  `disk_sn` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '硬盘序列号（可选）',
+  `device_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '设备名称（备注）',
+  `authorized_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '授权人ID',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '授权有效期（NULL表示永久）',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0禁用 1启用',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_sn_cpu`(`motherboard_sn` ASC, `cpu_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户端设备授权清单' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_client_device_auth
+-- ----------------------------
+INSERT INTO `sys_client_device_auth` VALUES (3, '241248319101089', 'BFEBFBFF000C0662', '0000_0000_0000_0000_A428_B70C_48C9_0002.', NULL, 0, NULL, 1, 0, '2026-09-14 14:29:02', 0, '2026-09-14 14:29:21', 0);
 
 -- ----------------------------
 -- Table structure for sys_config
@@ -2723,14 +3690,14 @@ CREATE TABLE `sys_config`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_config_key_company`(`config_key` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统参数配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统参数配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_config
 -- ----------------------------
 INSERT INTO `sys_config` VALUES (1, 0, 'water_elec.water_price', '4.50', '水费单价（元/吨）', '水电物业账单生成计费参数，集团统一配置', 1, '2026-08-18 15:53:31', 1, '2026-08-18 17:09:55', 0);
 INSERT INTO `sys_config` VALUES (2, 0, 'water_elec.elec_price', '1.90', '电费单价（元/度）', '水电物业账单生成计费参数，集团统一配置', 1, '2026-08-18 15:53:31', 1, '2026-08-18 17:09:39', 0);
-INSERT INTO `sys_config` VALUES (3, 0, 'water_elec.property_price', '50.00', '物业费单价（元/铺位/月）', '水电物业账单生成计费参数，集团统一配置，一期按铺位固定费用', 1, '2026-08-18 15:53:31', 1, '2026-08-18 17:09:07', 0);
+INSERT INTO `sys_config` VALUES (3, 0, 'water_elec.property_price', '50.00', '物业费单价（元/摊位/月）', '水电物业账单生成计费参数，集团统一配置，一期按摊位固定费用', 1, '2026-08-18 15:53:31', 1, '2026-08-18 17:09:07', 0);
 INSERT INTO `sys_config` VALUES (4, 0, 'discount.waive_months_limit', '3', '免租期上限（月）', '优惠申请免租期超限 → need_audit=1 自动发起审批', 1, '2026-08-20 14:40:35', NULL, NULL, 0);
 INSERT INTO `sys_config` VALUES (5, 0, 'discount.min_rate_limit', '80', '折扣率下限（%）', '优惠申请折扣低于下限 → need_audit=1 自动发起审批', 1, '2026-08-20 14:40:35', NULL, NULL, 0);
 INSERT INTO `sys_config` VALUES (6, 0, 'discount.max_deduct_limit', '5000.00', '单合同减免金额上限（元）', '优惠申请减免超上限 → need_audit=1 自动发起审批', 1, '2026-08-20 14:40:35', NULL, NULL, 0);
@@ -2739,8 +3706,14 @@ INSERT INTO `sys_config` VALUES (8, 0, 'plan.adjust_amount_limit', '2000.00', '�
 INSERT INTO `sys_config` VALUES (9, 0, 'plan.overdue_remind_days', '7', '逾期提醒天数', '计划逾期N天推送站内信/短信提醒', 1, '2026-08-20 14:40:35', NULL, NULL, 0);
 INSERT INTO `sys_config` VALUES (10, 0, 'reimburse.amount_limit', '5000.00', '报销单金额阈值（元）', '报销金额超阈值自动选用 reimburse_large 大额流程', 1, '2026-08-20 14:40:35', NULL, NULL, 0);
 INSERT INTO `sys_config` VALUES (11, 0, 'purchase.amount_limit', '20000.00', '采购单金额阈值（元）', '采购金额超阈值自动选用 purchase_large 大额流程', 1, '2026-08-20 14:40:35', NULL, NULL, 0);
-INSERT INTO `sys_config` VALUES (12, 0, 'contract.rent_editable', '0', '合同租金押金可写开关', '1=新增合同时租金/押金可手工填写；0=只读（按铺位收费规则自动带出，禁止手改）', 0, '2026-08-20 16:49:26', NULL, '2026-08-20 16:49:43', 0);
+INSERT INTO `sys_config` VALUES (12, 0, 'contract.rent_editable', '0', '合同租金押金可写开关', '1=新增合同时租金/押金可手工填写；0=只读（按摊位收费规则自动带出，禁止手改）', 0, '2026-08-20 16:49:26', NULL, '2026-08-20 16:49:43', 0);
 INSERT INTO `sys_config` VALUES (13, 0, 'contract.discount_editable', '0', '合同优惠参数可写开关', '1=新增合同时免租/折扣/减免可手工调整；0=只读（随所选优惠策略自动带出，禁止手改）', 0, '2026-08-20 16:49:26', 1, '2026-08-20 16:49:45', 0);
+INSERT INTO `sys_config` VALUES (16, 0, 'hr.salary.archive.bandwidth_warn_only', '1', '带宽校验模式', '1仅警告允许保存 0直接拦截', 0, '2026-09-11 14:49:13', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (17, 0, 'hr.salary.batch_adjust.require_audit', '1', '批量调薪是否必须审批', '1是 0否', 0, '2026-09-11 14:49:13', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (18, 0, 'hr.salary.rule.require_audit', '1', '薪资模板变更是否必须审批', '1是 0否', 0, '2026-09-11 14:49:13', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (19, 0, 'device.auth.enabled', 'true', '客户端设备校验开关', '开启后登录需校验设备授权', 0, '2026-09-14 10:44:25', 1, '2026-09-14 14:27:14', 0);
+INSERT INTO `sys_config` VALUES (20, 0, 'device.auth.rsa_private_key', '', '设备校验RSA私钥', 'PEM格式私钥，仅后端使用', 0, '2026-09-14 10:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (21, 0, 'device.auth.rsa_public_key', '', '设备校验RSA公钥', 'PEM格式公钥，用于验签', 0, '2026-09-14 10:44:25', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for sys_dict_data
@@ -2792,7 +3765,7 @@ CREATE TABLE `sys_dict_type`  (
 -- ----------------------------
 -- Records of sys_dict_type
 -- ----------------------------
-INSERT INTO `sys_dict_type` VALUES (1, 'stall_status', '铺位状态', 1, NULL, 0, '2026-08-18 12:34:31', NULL, NULL, 0);
+INSERT INTO `sys_dict_type` VALUES (1, 'stall_status', '摊位状态', 1, NULL, 0, '2026-08-18 12:34:31', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for sys_ding_sync_record
@@ -2809,11 +3782,93 @@ CREATE TABLE `sys_ding_sync_record`  (
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '钉钉同步记录表【预留，一期不执行业务写入】' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '钉钉同步记录表【预留，一期不执行业务写入】' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_ding_sync_record
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_industry
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_industry`;
+CREATE TABLE `sys_industry`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `industry_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '行业编码',
+  `industry_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '行业名称',
+  `work_injury_rate_base` decimal(6, 4) NULL DEFAULT 0.0000 COMMENT '工伤保险行业基准费率(%)',
+  `status` tinyint(4) NOT NULL DEFAULT 1,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_industry_code`(`industry_code` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '行业字典表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_industry
+-- ----------------------------
+INSERT INTO `sys_industry` VALUES (1, 'A01', '农、林、牧、渔业', 0.5000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (2, 'B01', '采矿业', 1.0000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (3, 'C01', '制造业', 0.7000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (4, 'D01', '电力、热力、燃气及水生产和供应业', 0.4000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (5, 'E01', '建筑业', 1.2000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (6, 'F01', '批发和零售业', 0.5000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (7, 'G01', '交通运输、仓储和邮政业', 0.8000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (8, 'H01', '住宿和餐饮业', 0.6000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (9, 'I01', '信息传输、软件和信息技术服务业', 0.3000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (10, 'J01', '金融业', 0.3000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (11, 'K01', '房地产业', 0.5000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (12, 'L01', '租赁和商务服务业', 0.4000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (13, 'M01', '科学研究和技术服务业', 0.3000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (14, 'N01', '水利、环境和公共设施管理业', 0.5000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (15, 'O01', '居民服务、修理和其他服务业', 0.6000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (16, 'P01', '教育', 0.4000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (17, 'Q01', '卫生和社会工作', 0.5000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (18, 'R01', '文化、体育和娱乐业', 0.6000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (19, 'S01', '公共管理、社会保障和社会组织', 0.3000, 1, NULL, 0, '2026-09-13 19:47:39', NULL, '2026-09-13 23:08:47', 0);
+INSERT INTO `sys_industry` VALUES (20, 'A02', '农、林、牧、渔专业及辅助性活动', 0.0500, 1, NULL, 0, '2026-09-13 23:25:43', NULL, '2026-09-13 23:25:43', 0);
+INSERT INTO `sys_industry` VALUES (21, 'B02', '科学研究和技术服务业', 0.0500, 1, NULL, 0, '2026-09-13 23:25:43', NULL, '2026-09-13 23:25:43', 0);
+INSERT INTO `sys_industry` VALUES (22, 'C02', '信息传输、软件和信息技术服务业', 0.1200, 1, NULL, 0, '2026-09-13 23:25:43', NULL, '2026-09-13 23:25:43', 0);
+INSERT INTO `sys_industry` VALUES (23, 'D02', '批发和零售业', 0.2000, 1, NULL, 0, '2026-09-13 23:25:43', NULL, '2026-09-13 23:25:43', 0);
+INSERT INTO `sys_industry` VALUES (24, 'E02', '建筑业', 0.4800, 1, NULL, 0, '2026-09-13 23:25:43', NULL, '2026-09-13 23:25:43', 0);
+
+-- ----------------------------
+-- Table structure for sys_insurance_type
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_insurance_type`;
+CREATE TABLE `sys_insurance_type`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `insurance_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '险种编码，如 PENSION/MEDICAL/UNEMPLOYMENT/WORK_INJURY/MATERNITY/LONG_CARE/SUPPLEMENT_MEDICAL/ANNUITY',
+  `insurance_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '险种名称',
+  `insurance_type` tinyint(4) NOT NULL COMMENT '分类 1法定五险 2补充福利 3试点险种',
+  `personal_share` tinyint(4) NOT NULL DEFAULT 1 COMMENT '是否含个人缴纳部分 0否 1是',
+  `company_share` tinyint(4) NOT NULL DEFAULT 1 COMMENT '是否含单位缴纳部分 0否 1是',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0停用 1启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_insurance_code`(`insurance_code` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '险种字典表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_insurance_type
+-- ----------------------------
+INSERT INTO `sys_insurance_type` VALUES (1, 'PENSION', '养老保险', 1, 1, 1, 1, NULL, 0, '2026-09-13 19:47:40', NULL, '2026-09-13 23:05:58', 0);
+INSERT INTO `sys_insurance_type` VALUES (2, 'MEDICAL', '医疗保险', 1, 1, 1, 1, NULL, 0, '2026-09-13 19:47:40', NULL, '2026-09-13 23:05:58', 0);
+INSERT INTO `sys_insurance_type` VALUES (3, 'UNEMPLOYMENT', '失业保险', 1, 1, 1, 1, NULL, 0, '2026-09-13 19:47:40', NULL, '2026-09-13 23:05:58', 0);
+INSERT INTO `sys_insurance_type` VALUES (4, 'WORK_INJURY', '工伤保险', 1, 0, 1, 1, NULL, 0, '2026-09-13 19:47:40', NULL, '2026-09-13 23:05:58', 0);
+INSERT INTO `sys_insurance_type` VALUES (5, 'MATERNITY', '生育保险', 1, 0, 1, 1, NULL, 0, '2026-09-13 19:47:40', NULL, '2026-09-13 23:05:58', 0);
+INSERT INTO `sys_insurance_type` VALUES (6, 'LONG_CARE', '长期护理险', 3, 1, 1, 1, NULL, 0, '2026-09-13 19:47:40', NULL, '2026-09-13 23:05:58', 0);
+INSERT INTO `sys_insurance_type` VALUES (7, 'SUPPLEMENT_MEDICAL', '补充医疗保险', 2, 1, 1, 1, NULL, 0, '2026-09-13 19:47:40', NULL, '2026-09-13 23:05:58', 0);
+INSERT INTO `sys_insurance_type` VALUES (8, 'ANNUITY', '企业年金', 2, 1, 1, 1, NULL, 0, '2026-09-13 19:47:40', NULL, '2026-09-13 23:05:58', 0);
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -2836,7 +3891,7 @@ CREATE TABLE `sys_menu`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 131 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限菜单表（集团全局）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 187 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限菜单表（集团全局）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -2879,7 +3934,6 @@ INSERT INTO `sys_menu` VALUES (35, 11, '复核处理', 'permission:audit:audit',
 INSERT INTO `sys_menu` VALUES (36, 0, '物业管理', NULL, '/property', 'Odometer', 3, 1, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 16:38:27', 0);
 INSERT INTO `sys_menu` VALUES (37, 36, '水电表管理', 'waterElec:list', '/property/meter', 'Cpu', 1, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 16:38:27', 0);
 INSERT INTO `sys_menu` VALUES (38, 36, '水电费账单', 'waterElec:bill:list', '/property/bill', 'Document', 2, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-24 07:28:31', 0);
-INSERT INTO `sys_menu` VALUES (39, 36, '缴费管理', 'waterElec:pay:list', '/property/pay', 'Wallet', 3, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 16:38:27', 0);
 INSERT INTO `sys_menu` VALUES (40, 0, '财务管理', NULL, '/finance', 'Money', 4, 1, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (41, 40, '财务流水', 'finance:flow:list', '/finance/flow', 'List', 1, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (42, 40, '营收统计', 'finance:report:list', '/finance/report', 'TrendCharts', 2, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
@@ -2889,20 +3943,18 @@ INSERT INTO `sys_menu` VALUES (45, 37, '设备删除', 'waterElec:delete', NULL,
 INSERT INTO `sys_menu` VALUES (46, 37, '远程抄表', 'waterElec:read', NULL, NULL, 4, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (47, 37, '合闸断电', 'waterElec:switch', NULL, NULL, 5, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (48, 38, '生成账单', 'waterElec:bill:generate', NULL, NULL, 1, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
-INSERT INTO `sys_menu` VALUES (49, 39, '线下缴费', 'waterElec:pay:add', NULL, NULL, 1, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
-INSERT INTO `sys_menu` VALUES (50, 39, '退费', 'waterElec:pay:refund', NULL, NULL, 2, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (51, 41, '流水导出', 'finance:flow:export', NULL, NULL, 1, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (52, 36, '租户管理', 'tenant:list', '/property/tenant', 'User', 1, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (53, 36, '租赁管理', NULL, '/property/lease', 'Goods', 2, 1, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (54, 53, '铺位管理', 'lease:stall:list', '/property/lease/stall', 'OfficeBuilding', 1, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (54, 53, '摊位管理', 'lease:stall:list', '/property/lease/stall', 'OfficeBuilding', 1, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (55, 53, '租赁分类', 'lease:category:list', '/property/lease/category', 'Menu', 2, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (56, 53, '合同管理', 'lease:contract:list', '/property/lease/contract', 'Document', 3, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (57, 52, '租户新增', 'tenant:add', NULL, NULL, 1, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (58, 52, '租户编辑', 'tenant:edit', NULL, NULL, 2, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (59, 52, '租户删除', 'tenant:delete', NULL, NULL, 3, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (60, 54, '铺位新增', 'lease:stall:add', NULL, NULL, 1, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (61, 54, '铺位编辑', 'lease:stall:edit', NULL, NULL, 2, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (62, 54, '铺位删除', 'lease:stall:delete', NULL, NULL, 3, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (60, 54, '摊位新增', 'lease:stall:add', NULL, NULL, 1, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (61, 54, '摊位编辑', 'lease:stall:edit', NULL, NULL, 2, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (62, 54, '摊位删除', 'lease:stall:delete', NULL, NULL, 3, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (63, 55, '分类新增', 'lease:category:add', NULL, NULL, 1, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (64, 55, '分类编辑', 'lease:category:edit', NULL, NULL, 2, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (65, 55, '分类删除', 'lease:category:delete', NULL, NULL, 3, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
@@ -2967,6 +4019,54 @@ INSERT INTO `sys_menu` VALUES (127, 112, '导出', 'hr:salary:month:export', NUL
 INSERT INTO `sys_menu` VALUES (128, 113, '新增', 'hr:social:add', NULL, NULL, 1, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (129, 113, '编辑', 'hr:social:edit', NULL, NULL, 2, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (130, 113, '删除', 'hr:social:delete', NULL, NULL, 3, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (131, 40, '优惠阈值配置', 'discount:threshold:list', '/finance/discountThreshold', 'config', 10, 2, 1, 0, '2026-09-06 12:23:10', NULL, '2026-09-11 15:29:01', 0);
+INSERT INTO `sys_menu` VALUES (132, 131, '新增', 'discount:threshold:add', NULL, NULL, 1, 3, 1, 0, '2026-09-06 12:23:10', NULL, '2026-09-11 15:29:01', 0);
+INSERT INTO `sys_menu` VALUES (133, 131, '编辑', 'discount:threshold:edit', NULL, NULL, 2, 3, 1, 0, '2026-09-06 12:23:10', NULL, '2026-09-11 15:29:01', 0);
+INSERT INTO `sys_menu` VALUES (134, 131, '删除', 'discount:threshold:delete', NULL, NULL, 3, 3, 1, 0, '2026-09-06 12:23:10', NULL, '2026-09-11 15:29:01', 0);
+INSERT INTO `sys_menu` VALUES (135, 112, '薪酬级别', 'hr:salary:grade:list', '/hr/salary/grade', 'Rank', 6, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (136, 112, '薪资模板', 'hr:salary:rule:list', '/hr/salary/rule', 'EditPen', 7, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (137, 112, '薪资档案v2', 'hr:salary:archive:list', '/hr/salary/archive', 'DocumentChecked', 8, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (138, 112, '批量调薪', 'hr:salary:batch:list', '/hr/salary/batchAdjust', 'Sort', 9, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (139, 112, '年终奖管理', 'hr:salary:yearBonus:list', '/hr/salary/yearBonus', 'Present', 10, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (148, 135, '新增', 'hr:salary:grade:add', NULL, NULL, 1, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (149, 135, '编辑', 'hr:salary:grade:edit', NULL, NULL, 2, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (150, 135, '停用', 'hr:salary:grade:disable', NULL, NULL, 3, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (151, 136, '新增', 'hr:salary:rule:add', NULL, NULL, 1, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (152, 136, '编辑', 'hr:salary:rule:edit', NULL, NULL, 2, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (153, 136, '停用', 'hr:salary:rule:disable', NULL, NULL, 3, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (154, 136, '提交审批', 'hr:salary:rule:submit', NULL, NULL, 4, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (155, 138, '创建任务', 'hr:salary:batch:add', NULL, NULL, 1, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (156, 138, '提交审批', 'hr:salary:batch:submit', NULL, NULL, 2, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (157, 139, '新增', 'hr:salary:yearBonus:add', NULL, NULL, 1, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (158, 139, '编辑', 'hr:salary:yearBonus:edit', NULL, NULL, 2, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (159, 139, '提交审批', 'hr:salary:yearBonus:submit', NULL, NULL, 3, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (160, 8, '城市字典', 'hr:city:list', '/platform/city', 'Location', 1, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (161, 8, '险种字典', 'hr:insurance:list', '/platform/insuranceType', 'Tickets', 2, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (162, 8, '行业字典', 'hr:industry:list', '/platform/industry', 'Briefcase', 3, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (163, 8, '社保参数配置', 'hr:social:param:list', '/platform/socialParam', 'Setting', 4, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (164, 8, '公积金参数配置', 'hr:housing:fund:list', '/platform/housingFundConfig', 'Coin', 5, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (165, 113, '社保核算明细', 'hr:social:calc:list', '/hr/socialCalc', 'Document', 1, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (166, 113, '年度基数重算', 'hr:recalc:trigger', '/hr/annualRecalc', 'Refresh', 2, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (167, 160, '新增', 'hr:city:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (168, 160, '编辑', 'hr:city:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (169, 160, '删除', 'hr:city:delete', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (170, 161, '新增', 'hr:insurance:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (171, 161, '编辑', 'hr:insurance:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (172, 161, '删除', 'hr:insurance:delete', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (173, 162, '新增', 'hr:industry:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (174, 162, '编辑', 'hr:industry:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (175, 162, '删除', 'hr:industry:delete', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (176, 163, '新增', 'hr:social:param:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (177, 163, '编辑', 'hr:social:param:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (178, 163, '激活', 'hr:social:param:activate', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (179, 163, '停用', 'hr:social:param:deactivate', '', '', 4, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (180, 163, '删除', 'hr:social:param:delete', '', '', 5, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (181, 164, '新增', 'hr:housing:fund:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (182, 164, '编辑', 'hr:housing:fund:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (183, 164, '激活', 'hr:housing:fund:activate', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (184, 164, '删除', 'hr:housing:fund:delete', '', '', 4, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (185, 165, '导出', 'hr:social:calc:export', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (186, 166, '执行重算', 'hr:recalc:execute', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for sys_org
@@ -2988,23 +4088,23 @@ CREATE TABLE `sys_org`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '组织部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 27 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '组织部门表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_org
 -- ----------------------------
 INSERT INTO `sys_org` VALUES (1, 0, 0, '琰越控股集团', 1, 1, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (2, 0, 1, '总经办', 3, 1, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (2, 0, 1, '总经办', 3, 1, 1, 1, '2026-08-21 09:20:52', 1, '2026-09-07 11:10:43', 0);
 INSERT INTO `sys_org` VALUES (3, 0, 1, '财务部', 3, 2, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
 INSERT INTO `sys_org` VALUES (4, 0, 1, '人力资源部', 3, 3, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
 INSERT INTO `sys_org` VALUES (5, 0, 1, '技术中心', 3, 4, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (6, 0, 1, '飞宇汽车城', 2, 5, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (7, 6, 6, '飞宇‑销售部', 3, 1, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (8, 6, 6, '飞宇‑运维部', 3, 2, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (9, 6, 6, '飞宇‑综合管理部', 3, 3, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (10, 0, 1, '幼儿园', 2, 6, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (11, 10, 10, '幼儿园‑业务部', 3, 1, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (12, 10, 10, '幼儿园‑后勤保障部', 3, 2, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (6, 1, 1, '飞宇汽车城', 2, 5, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:07', 0);
+INSERT INTO `sys_org` VALUES (7, 1, 6, '飞宇‑销售部', 3, 1, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:10', 0);
+INSERT INTO `sys_org` VALUES (8, 1, 6, '飞宇‑运维部', 3, 2, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:13', 0);
+INSERT INTO `sys_org` VALUES (9, 1, 6, '飞宇‑综合管理部', 3, 3, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:15', 0);
+INSERT INTO `sys_org` VALUES (10, 2, 1, '幼儿园', 2, 6, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:19', 0);
+INSERT INTO `sys_org` VALUES (11, 2, 10, '幼儿园‑业务部', 3, 1, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:22', 0);
+INSERT INTO `sys_org` VALUES (12, 2, 10, '幼儿园‑后勤保障部', 3, 2, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:25', 0);
 
 -- ----------------------------
 -- Table structure for sys_permission_audit
@@ -3029,7 +4129,7 @@ CREATE TABLE `sys_permission_audit`  (
 -- ----------------------------
 -- Records of sys_permission_audit
 -- ----------------------------
-INSERT INTO `sys_permission_audit` VALUES (1, 0, 1, 1, NULL, '[\"user:delete\"]', '演示数据：申请开通用户删除权限，请复核', 0, NULL, '2026-08-18 12:51:36', NULL);
+INSERT INTO `sys_permission_audit` VALUES (1, 0, 1, 1, 1, '[\"user:delete\"]', '演示数据：申请开通用户删除权限，请复核', 2, '', '2026-08-18 12:51:36', '2026-09-07 13:02:56');
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -3049,13 +4149,17 @@ CREATE TABLE `sys_role`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_role_code_company`(`role_code` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role
 -- ----------------------------
 INSERT INTO `sys_role` VALUES (1, 0, '超级管理员', 'super_admin', '集团中台专属角色，拥有全部权限', 1, '2026-08-18 12:51:36', NULL, NULL, 0);
 INSERT INTO `sys_role` VALUES (2, 0, '审计员', 'auditor', '审计日志查看/导出与权限复核审批角色', 1, '2026-08-18 12:51:36', NULL, NULL, 0);
+INSERT INTO `sys_role` VALUES (3, 1, 'test', 'test1', '', 1, '2026-09-07 12:39:05', 1, '2026-09-07 12:39:05', 0);
+INSERT INTO `sys_role` VALUES (4, 0, '子公司经理', 'sub_manager', '子公司经理审批角色，用于OA请假/合同等流程节点', 1, '2026-09-10 19:53:15', NULL, NULL, 0);
+INSERT INTO `sys_role` VALUES (5, 0, '财务管理员', 'finance_admin', '财务审批角色，用于大额优惠/冲红等流程节点', 1, '2026-09-10 19:53:15', NULL, NULL, 0);
+INSERT INTO `sys_role` VALUES (6, 0, '集团财务', 'group_finance', '集团财务复核角色，用于合同终止等流程节点', 1, '2026-09-10 19:53:15', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for sys_role_menu_rel
@@ -3068,7 +4172,7 @@ CREATE TABLE `sys_role_menu_rel`  (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_role_menu`(`role_id` ASC, `menu_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 192 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色菜单权限关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 253 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色菜单权限关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role_menu_rel
@@ -3111,7 +4215,6 @@ INSERT INTO `sys_role_menu_rel` VALUES (35, 1, 35, '2026-08-18 12:51:36');
 INSERT INTO `sys_role_menu_rel` VALUES (64, 1, 36, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (65, 1, 37, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (66, 1, 38, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (67, 1, 39, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (68, 1, 40, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (69, 1, 41, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (70, 1, 42, '2026-08-18 15:53:31');
@@ -3121,8 +4224,6 @@ INSERT INTO `sys_role_menu_rel` VALUES (73, 1, 45, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (74, 1, 46, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (75, 1, 47, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (76, 1, 48, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (77, 1, 49, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (78, 1, 50, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (79, 1, 51, '2026-08-18 15:53:31');
 INSERT INTO `sys_role_menu_rel` VALUES (95, 1, 52, '2026-08-18 16:38:27');
 INSERT INTO `sys_role_menu_rel` VALUES (96, 1, 53, '2026-08-18 16:38:27');
@@ -3199,6 +4300,36 @@ INSERT INTO `sys_role_menu_rel` VALUES (188, 1, 127, '2026-08-25 17:55:15');
 INSERT INTO `sys_role_menu_rel` VALUES (189, 1, 128, '2026-08-25 17:55:15');
 INSERT INTO `sys_role_menu_rel` VALUES (190, 1, 129, '2026-08-25 17:55:15');
 INSERT INTO `sys_role_menu_rel` VALUES (191, 1, 130, '2026-08-25 17:55:15');
+INSERT INTO `sys_role_menu_rel` VALUES (195, 2, 37, '2026-09-07 12:26:16');
+INSERT INTO `sys_role_menu_rel` VALUES (196, 2, 43, '2026-09-07 12:26:16');
+INSERT INTO `sys_role_menu_rel` VALUES (197, 2, 44, '2026-09-07 12:26:16');
+INSERT INTO `sys_role_menu_rel` VALUES (198, 2, 45, '2026-09-07 12:26:16');
+INSERT INTO `sys_role_menu_rel` VALUES (199, 2, 46, '2026-09-07 12:26:16');
+INSERT INTO `sys_role_menu_rel` VALUES (200, 2, 47, '2026-09-07 12:26:16');
+INSERT INTO `sys_role_menu_rel` VALUES (201, 2, 36, '2026-09-07 12:26:16');
+INSERT INTO `sys_role_menu_rel` VALUES (214, 3, 37, '2026-09-07 12:54:12');
+INSERT INTO `sys_role_menu_rel` VALUES (215, 3, 52, '2026-09-07 12:54:12');
+INSERT INTO `sys_role_menu_rel` VALUES (216, 1, 131, '2026-09-11 15:27:47');
+INSERT INTO `sys_role_menu_rel` VALUES (217, 1, 132, '2026-09-11 15:27:47');
+INSERT INTO `sys_role_menu_rel` VALUES (218, 1, 133, '2026-09-11 15:27:47');
+INSERT INTO `sys_role_menu_rel` VALUES (219, 1, 134, '2026-09-11 15:27:47');
+INSERT INTO `sys_role_menu_rel` VALUES (236, 1, 135, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (237, 1, 136, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (238, 1, 137, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (239, 1, 138, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (240, 1, 139, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (241, 1, 148, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (242, 1, 149, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (243, 1, 150, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (244, 1, 151, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (245, 1, 152, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (246, 1, 153, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (247, 1, 154, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (248, 1, 155, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (249, 1, 156, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (250, 1, 157, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (251, 1, 158, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (252, 1, 159, '2026-09-11 15:29:28');
 
 -- ----------------------------
 -- Table structure for sys_ui_theme
@@ -3247,12 +4378,13 @@ CREATE TABLE `sys_user`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_username`(`username` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 0, 'admin', '$2a$10$0zgq2ilQLN0kC6XLyR17COxA./GDdftY659m/FOsGoHxOfGQMVtwS', '集团超级管理员', '', NULL, NULL, 1, 0, '2026-08-18 12:34:31', 0, '2026-08-26 07:25:05', 0);
+INSERT INTO `sys_user` VALUES (1, 0, 'admin', '$2a$10$0zgq2ilQLN0kC6XLyR17COxA./GDdftY659m/FOsGoHxOfGQMVtwS', '集团超级管理员', '13698668278', '36412314@qq.com', NULL, 1, 0, '2026-08-18 12:34:31', 0, '2026-08-26 07:25:05', 0);
+INSERT INTO `sys_user` VALUES (2, 0, 'test', '$2a$10$dC8NacyhYNPxnyUGHb066.0J/DQ89YSZpwxUqhtZKyDi5pStYwpc2', 'test', '', '', NULL, 1, 1, '2026-09-07 12:24:25', 1, '2026-09-07 12:25:00', 1);
 
 -- ----------------------------
 -- Table structure for sys_user_role_rel
@@ -3266,11 +4398,14 @@ CREATE TABLE `sys_user_role_rel`  (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_role`(`user_id` ASC, `role_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户角色关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户角色关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_role_rel
 -- ----------------------------
-INSERT INTO `sys_user_role_rel` VALUES (1, 1, 1, 1, '2026-08-18 12:51:36');
+INSERT INTO `sys_user_role_rel` VALUES (2, 1, 1, 0, '2026-09-07 11:17:42');
+INSERT INTO `sys_user_role_rel` VALUES (6, 1, 4, 1, '2026-09-10 19:53:38');
+INSERT INTO `sys_user_role_rel` VALUES (7, 1, 5, 1, '2026-09-10 19:53:38');
+INSERT INTO `sys_user_role_rel` VALUES (8, 1, 6, 1, '2026-09-10 19:53:38');
 
 SET FOREIGN_KEY_CHECKS = 1;

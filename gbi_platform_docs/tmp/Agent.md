@@ -4,6 +4,13 @@
 能力：代码分析、RESTful接口、BUG修复、SQL性能优化
 系统特性：单库多租户company_id隔离；Fabric画布；财务流水；敏感二次审核；统一审计日志
 
+🔴最高优先级工具选择约束（优先级高于所有其他规则）
+1.Java/Vue/JS源码修改，首选apply_patch增量补丁；apply_patch默认输出UTF-8 NO BOM。
+2.≤5处代码语法/少量行修复：强制使用apply_patch，禁止切换PowerShell、cmd、python、node临时脚本。
+3.仅当apply_patch返回【工具级报错】（diff解析失败、找不到目标行），才允许启用Shell降级流程。
+4.临时脚本（ps1/bat/py）统一存放固定目录 D:\Office\Project\gbi_platform\temp\，不再使用writable_root；任务结束必须删除临时脚本。禁止在业务源码目录、项目根目录生成任何临时脚本。
+5.BOM问题优先使用apply_patch重写文件清除；只有apply_patch工具报错，才允许使用PowerShell处理BOM。
+
 🔴全局红线禁止
 1.禁止虚构表/字段，未知结构优先读取实体、Mapper。
 2.禁止输出启动代理、Task工具类无效话术。
@@ -31,20 +38,17 @@
 5.文件编码强制UTF-8，禁止GBK。
 
 ## 🔴 文件写入硬约束（强制）
-
 ### 场景A：修复已知错误行（如函数体错位、缺少字段映射）
 - 读取文件 → 定位错误位置 → 用 WriteAllText 一次性完整覆盖重写
 - 禁止：逐行追加(>>)、局部替换、多次Write操作
-
 ### 场景B：写新文件
 - 用 WriteAllText 一次性写入全部内容
 - Windows PowerShell: `[IO.File]::WriteAllText($path, $content, (New-Object System.Text.UTF8Encoding $false))`
 - Linux/WSL: `cat > file <<'EOF'`
-
 ### 场景C：涉及引号/反引号混合的复杂内容（TypeScript/Java混用）
 - 禁止通过 `-Command`/`-c` 内联传递含引号的复杂字符串
 - 正确做法：
-  1. 用 WriteAllText 写入临时脚本文件到 writable_root
+  1. 用 WriteAllText 写入临时脚本文件到 D:\Office\Project\gbi_platform\temp\
   2. `powershell -File script.ps1` 执行
   3. 执行完毕后清理临时文件
 
@@ -54,16 +58,17 @@
 - 编译前必须确认实体文件无BOM（检查字节序标记 EF BB BF）
 
 ## 🔴 Shell 故障降级规范
-当连续 2 次 shell 命令失败时，必须切换策略，禁止重试同类命令：
+当连续 2 次 shell 命令失败时，必须切换策略，禁止重试同类命令。
+⚠️前置判断：如果是源码修改场景，先判断是否满足【可使用apply_patch】，满足则放弃shell，切回apply_patch。
 1. PowerShell 失败 → 立即尝试 cmd /c
-2. cmd 失败 → 写脚本文件到 writable_root，再执行
+2. cmd 失败 → 写脚本文件到 D:\Office\Project\gbi_platform\temp\，再执行
 3. 脚本文件写不进去 → 改用 mcp__cua_repl__js 或 node_repl
 4. 均失败 → 向用户说明环境限制，请求手动操作或批准替代方案
 
 ## 🔴 复杂引号命令处理规范
 涉及单引号+双引号+反引号混合的命令（如 TypeScript/Java 混用），
 禁止通过 -Command/-c 内联传递，必须：
-- 步骤1：用 WriteAllText 写入临时脚本文件（writable_root 下）
+- 步骤1：用 WriteAllText 写入临时脚本文件到 D:\Office\Project\gbi_platform\temp\
 - 步骤2：powershell -File 执行脚本
 - 步骤3：清理临时文件
 
@@ -77,6 +82,7 @@
 - 前端：gbi_platform_docs/前端视图页面开发规范.md
 - 业务测试：gbi_platform_docs/业务设计+测试文档合集.md
 - 应收应付审批：gbi_platform_docs/应收应付计划+统一审批引擎+优惠管理模块设计规范.md
+
 JDK21路径：C:\Users\Admin\jdk-21.0.12+8
 
 🔴财务业务强制约束
@@ -111,7 +117,6 @@ Step5：代码变更评审【核心】，禁止直接输出完整代码
 风险提示：并发、兼容、事务风险
 ---
 >缺少原始源码，必须提示用户粘贴源码，禁止编造代码。
-
 Step6：完整代码SQL输出，仅Step5评审通过后执行，附带部署注意事项
 Step7：测试用例清单，覆盖正常、边界、异常并发场景
 Step8：归档闭环，变更汇总、git提交建议
