@@ -94,6 +94,12 @@
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="128" />
         </el-form-item>
+        <el-form-item v-if="isSuperAdmin()" label="所属公司" prop="companyId">
+          <el-select v-model="form.companyId" placeholder="请选择公司" style="width: 100%">
+            <el-option label="集团总公司（全部）" :value="0" />
+            <el-option v-for="c in companyList" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="所属角色" prop="roleIds">
           <el-select v-model="form.roleIds" multiple placeholder="请选择角色" style="width: 100%">
             <el-option v-for="role in roleList" :key="role.id" :label="role.roleName" :value="role.id" />
@@ -124,12 +130,15 @@ import {
   resetUserPwdApi,
   changeUserStatusApi,
   getRoleListApi,
+  getOrgTreeApi,
   type UserDTO,
   type UserVO,
-  type RoleVO
+  type RoleVO,
+  type OrgVO
 } from '@/api/org'
 import { useTable } from '@/hooks/useTable'
 import { formatPhone, formatDateTime } from '@/utils/format'
+import { useUserStore } from '@/store/user'
 
 /* ---------------- 分页查询 ---------------- */
 const { query, records, total, loading, loadData, resetQuery } = useTable<UserVO>(getUserPageApi, {
@@ -148,6 +157,21 @@ const roleList = ref<RoleVO[]>([])
 
 async function loadRoles(): Promise<void> {
   roleList.value = await getRoleListApi()
+}
+
+/* ---------------- 公司下拉（仅超管可见） ---------------- */
+const companyList = ref<{ id: number; name: string }[]>([])
+const userStore = useUserStore()
+const isSuperAdmin = (): boolean => userStore.permissions?.includes('*:*:*') ?? false
+
+async function loadCompanies(): Promise<void> {
+  const tree = await getOrgTreeApi()
+  // 递归展平树，只取 orgType=2（子公司）节点
+  const allNodes = (nodes: OrgVO[]): OrgVO[] =>
+    nodes.flatMap(n => [n, ...(n.children || []).length ? allNodes(n.children!) : []])
+  companyList.value = allNodes(tree)
+    .filter(node => node.orgType === 2)
+    .map(node => ({ id: node.id!, name: node.orgName }))
 }
 
 /* ---------------- 新增/编辑 ---------------- */
@@ -176,15 +200,16 @@ const rules: FormRules = {
     { min: 6, max: 32, message: '密码长度 6-32 位', trigger: 'blur' }
   ],
   realName: [{ required: true, message: '请输入真实姓名', trigger: 'blur' }],
-  phone: [{validator: (rule, value, callback) => { if (value && !/^1[3-9]\\d{9}$/.test(value)) callback('手机号格式不正确'); else callback(); }, trigger: 'blur'}],
-  email: [{validator: (rule, value, callback) => { if (value && !/^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$/.test(value)) callback('邮箱格式不正确'); else callback(); }, trigger: 'blur'}]
+  phone: [{validator: (_rule, value, callback) => { if (value && !/^1[3-9]\d{9}$/.test(value)) callback('手机号格式不正确'); else callback(); }, trigger: 'blur'}],
+  email: [{validator: (_rule, value, callback) => { if (value && !/^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(value)) callback('邮箱格式不正确'); else callback(); }, trigger: 'blur'}]
 }
 
 function openDialog(_parentId?: number, row?: UserVO): void {
   formRef.value?.clearValidate()
+  const loggedInCompany = userStore.userInfo?.companyId ?? 0
   Object.assign(form, {
     id: row?.id,
-    companyId: row?.companyId ?? 0,
+    companyId: row?.companyId ?? loggedInCompany,
     username: row?.username ?? '',
     password: '',
     realName: row?.realName ?? '',
@@ -249,7 +274,7 @@ async function handleDelete(row: UserVO): Promise<void> {
   loadData()
 }
 
-onMounted(loadRoles)
+onMounted(() => { loadRoles(); loadCompanies() })
 </script>
 
 <style scoped>

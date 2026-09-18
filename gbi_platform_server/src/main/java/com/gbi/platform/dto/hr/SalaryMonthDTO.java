@@ -11,4 +11,5 @@ import java.util.List;
     private List<Long> employeeIds;
     @Schema(description="核算月份 yyyy-MM",requiredMode=Schema.RequiredMode.REQUIRED)
     @NotBlank(message="核算月份不能为空") private String salaryMonth;
+    @Schema(description="是否同步考勤扣款 0否 1是（默认1）") private Integer syncAttendance;
 }

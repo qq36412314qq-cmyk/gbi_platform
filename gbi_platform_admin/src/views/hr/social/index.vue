@@ -1,8 +1,8 @@
 <template>
   <div class="g-page-wrap">
+    <el-banner type="warning" style="margin-bottom:12px">社保台账功能已废弃，历史数据仅供查询。新数据请前往 <a href="/hr/social-calc/detail">核算明细</a> 页面查看。</el-banner>
     <div class="g-page-header">
-      <span class="g-page-title">社保公积金</span>
-      <AuthBtn permission="hr:social:add" type="primary" @click="openAdd">新增台账</AuthBtn>
+      <span class="g-page-title">社保公积金（废弃）</span>
     </div>
     <SearchBar :model="query" @search="loadData" @reset="handleReset">
       <el-form-item label="状态">
@@ -24,15 +24,14 @@
         <el-table-column prop="statusText" label="状态" width="80" align="center">
           <template #default="{ row }"><el-tag size="small" :type="row.status === 1 ? 'success' : 'info'">{{ row.statusText || '-' }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="操作" width="150" align="center" fixed="right">
+        <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
-            <AuthBtn permission="hr:social:edit" link type="primary" size="small" @click="openEdit(row)">编辑</AuthBtn>
-            <AuthBtn permission="hr:social:delete" link type="danger" size="small" @click="handleDelete(row)">删除</AuthBtn>
+            <span style="color:#909399;font-size:12px">（已废弃）</span>
           </template>
         </el-table-column>
       </el-table>
     </TablePage>
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑社保台账' : '新增社保台账'" width="560px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑社保台账（已废弃）' : '新增社保台账（已废弃）'" width="560px" :close-on-click-modal="false" disabled>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="员工ID" prop="employeeId"><el-input-number v-model="form.employeeId" style="width:100%" /></el-form-item>
         <el-form-item label="社保基数"><el-input-number v-model="form.socialSecurityBase" :precision="2" :min="0" style="width:100%" /></el-form-item>

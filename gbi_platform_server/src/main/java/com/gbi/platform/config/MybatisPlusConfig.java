@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
-import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
 import com.gbi.platform.common.security.LoginUser;
 import com.gbi.platform.common.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
@@ -42,8 +41,11 @@ public class MybatisPlusConfig {
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
-        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
-        interceptor.addInnerInterceptor(new TenantLineInnerInterceptor(new MyTenantLineHandler()));
+        PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
+        // 禁用JOIN优化：避免对含JSON列的表进行COUNT查询优化时触发jsqlparser解析异常
+        paginationInterceptor.setOptimizeJoin(false);
+        interceptor.addInnerInterceptor(paginationInterceptor);
+        interceptor.addInnerInterceptor(new SafeTenantLineInnerInterceptor(new MyTenantLineHandler()));
         return interceptor;
     }
 
@@ -60,7 +62,9 @@ public class MybatisPlusConfig {
         public boolean ignoreTable(String tableName) {
             LoginUser user = UserContext.getLoginUserOrNull();
             if (user == null || user.isSuperAdmin()) { return true; }
-            return GLOBAL_TABLES.contains(tableName.toLowerCase());
+            // 提取简单表名，忽略schema前缀（如"db_name.table_name" → "table_name"）
+            String simpleTableName = tableName.contains(".") ? tableName.substring(tableName.lastIndexOf('.') + 1) : tableName;
+            return GLOBAL_TABLES.contains(simpleTableName.toLowerCase());
         }
     }
 

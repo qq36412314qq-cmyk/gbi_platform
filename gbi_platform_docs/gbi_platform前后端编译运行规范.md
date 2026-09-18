@@ -32,6 +32,10 @@
 $pid = (netstat -ano | Select-String ":8080 " | Select-String "LISTENING" | ForEach-Object { $_ -split '\s+' | Select-Object -Last 1 } | Select-Object -First 1)
 if ($pid) { Stop-Process -Id $pid -Force; Write-Host "端口 8080 进程已停止" } else { Write-Host "端口 8080 未被占用" }
 ```
+**其他方式**：按进程名查找进程，避免误杀其他 Java 进程。
+```powershell
+Stop-Process -Name java -Force -ErrorAction SilentlyContinue
+```
 
 ### 1.3 编译打包
 

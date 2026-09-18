@@ -53,4 +53,10 @@ public class HrOrgController {
         orgService.deletePost(id);
         return Result.success();
     }
+
+    @Operation(summary = "按部门查询岗位列表")
+    @GetMapping("/post/byDept/{deptId}")
+    public Result<List<HrPostVO>> getPostByDept(@PathVariable Long deptId) {
+        return Result.success(orgService.getPostByDept(deptId));
+    }
 }

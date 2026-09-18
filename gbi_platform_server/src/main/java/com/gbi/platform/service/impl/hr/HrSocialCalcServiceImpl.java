@@ -13,6 +13,7 @@ import com.gbi.platform.service.hr.HrSocialCalcService;
 import com.gbi.platform.vo.hr.HrSocialCalcDetailVO;
 import com.gbi.platform.util.AuditLogUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.util.Map;
 /**
  * 社保核算服务实现
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HrSocialCalcServiceImpl implements HrSocialCalcService {
@@ -36,6 +38,8 @@ public class HrSocialCalcServiceImpl implements HrSocialCalcService {
     private final com.gbi.platform.mapper.hr.HrSalaryMonthMapper salaryMonthMapper;
     private final com.gbi.platform.mapper.hr.HrSocialParamMapper socialParamMapper;
     private final com.gbi.platform.mapper.hr.HrHousingFundConfigMapper housingFundConfigMapper;
+    private final com.gbi.platform.mapper.hr.HrSalaryArchiveMapper salaryArchiveMapper;
+    private final com.gbi.platform.mapper.hr.HrAttendanceRecordMapper attendanceRecordMapper;
     private final AuditLogUtil auditLogUtil;
 
     @Override
@@ -236,12 +240,252 @@ public class HrSocialCalcServiceImpl implements HrSocialCalcService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void generateMonthSalary(String salaryMonth, Long companyId) {
-        // TODO: 实现月度薪资核算逻辑
-        // 1. 查询该月所有薪资档案员工
-        // 2. 根据城市+险种查询对应费率
-        // 3. 计算各险种个人/单位金额
-        // 4. 计算个税
-        // 5. 写入hr_salary_month和hr_social_calc_detail
-        // 6. 审计日志
+        // 1. 查询该司所有当前薪资档案（isCurrent=1）
+        LambdaQueryWrapper<HrSalaryArchive> archiveWrapper = new LambdaQueryWrapper<HrSalaryArchive>()
+                .eq(HrSalaryArchive::getCompanyId, companyId)
+                .eq(HrSalaryArchive::getIsCurrent, 1)
+                .eq(HrSalaryArchive::getIsDelete, 0);
+        List<HrSalaryArchive> archives = salaryArchiveMapper.selectList(archiveWrapper);
+        if (archives == null || archives.isEmpty()) {
+            log.warn("generateMonthSalary: 公司{} 无当前薪资档案，跳过核算，月份={}", companyId, salaryMonth);
+            return;
+        }
+
+        // 2. 预先批量查询费率配置缓存
+        Map<String, Map<String, HrSocialParamConfig>> citySocialParamCache = new HashMap<>();
+        Map<String, HrHousingFundConfig> cityHousingConfigCache = new HashMap<>();
+
+        // 3. 逐个员工核算
+        int successCount = 0, failCount = 0;
+        for (HrSalaryArchive archive : archives) {
+            try {
+                // 查员工信息（城市编码、申报基数）
+                HrEmployee employee = employeeMapper.selectById(archive.getEmployeeId());
+                if (employee == null) { failCount++; continue; }
+                if (!companyId.equals(employee.getCompanyId())) { failCount++; continue; }
+
+                String cityCode = employee.getCityCode();
+                BigDecimal declareBase = employee.getSocialDeclareBase() != null
+                        ? employee.getSocialDeclareBase()
+                        : employee.getBasicSalary() != null ? employee.getBasicSalary().max(BigDecimal.ZERO) : BigDecimal.ZERO;
+                BigDecimal housingDeclareBase = employee.getHousingFundDeclareBase() != null
+                        ? employee.getHousingFundDeclareBase()
+                        : declareBase;
+
+                // 查社保费率配置
+                Map<String, HrSocialParamConfig> socialParams = citySocialParamCache.computeIfAbsent(cityCode, k -> {
+                    Map<String, HrSocialParamConfig> m = new HashMap<>();
+                    LambdaQueryWrapper<HrSocialParamConfig> spw = new LambdaQueryWrapper<HrSocialParamConfig>()
+                            .eq(HrSocialParamConfig::getCityCode, k)
+                            .eq(HrSocialParamConfig::getIsActive, 1)
+                            .eq(HrSocialParamConfig::getIsDelete, 0);
+                    socialParamMapper.selectList(spw).forEach(c -> m.put(c.getInsuranceCode(), c));
+                    return m;
+                });
+                // 查公积金费率配置
+                HrHousingFundConfig housingConfig = cityHousingConfigCache.computeIfAbsent(cityCode, k -> {
+                    LambdaQueryWrapper<HrHousingFundConfig> hw = new LambdaQueryWrapper<HrHousingFundConfig>()
+                            .eq(HrHousingFundConfig::getCityCode, k)
+                            .eq(HrHousingFundConfig::getIsActive, 1)
+                            .eq(HrHousingFundConfig::getIsDelete, 0)
+                            .last("LIMIT 1");
+                    return housingFundConfigMapper.selectOne(hw);
+                });
+
+                // clamp 基数
+                BigDecimal socialBase = clampBase(declareBase, socialParams);
+                BigDecimal housingBase = clampBase(housingDeclareBase, housingConfig);
+
+                // 计算各险种金额
+                HrSocialParamConfig pensionCfg = socialParams.get("PENSION");
+                HrSocialParamConfig medicalCfg = socialParams.get("MEDICAL");
+                HrSocialParamConfig unemploymentCfg = socialParams.get("UNEMPLOYMENT");
+                HrSocialParamConfig workInjuryCfg = socialParams.get("WORK_INJURY");
+                HrSocialParamConfig maternityCfg = socialParams.get("MATERNITY");
+                HrSocialParamConfig longCareCfg = socialParams.get("LONG_CARE");
+
+                BigDecimal pensionPersonal = calcRate(socialBase, pensionCfg != null ? pensionCfg.getPersonalRate() : null);
+                BigDecimal pensionCompany   = calcRate(socialBase, pensionCfg != null ? pensionCfg.getCompanyRate()  : null);
+                BigDecimal medicalPersonal  = calcRate(socialBase, medicalCfg != null ? medicalCfg.getPersonalRate() : null);
+                BigDecimal medicalCompany   = calcRate(socialBase, medicalCfg != null ? medicalCfg.getCompanyRate()  : null);
+                BigDecimal unemploymentPersonal = calcRate(socialBase, unemploymentCfg != null ? unemploymentCfg.getPersonalRate() : null);
+                BigDecimal unemploymentCompany  = calcRate(socialBase, unemploymentCfg != null ? unemploymentCfg.getCompanyRate()  : null);
+                BigDecimal workInjuryCompany    = calcRate(socialBase, workInjuryCfg != null ? workInjuryCfg.getCompanyRate()  : null);
+                BigDecimal maternityCompany     = calcRate(socialBase, maternityCfg != null ? maternityCfg.getCompanyRate()  : null);
+                BigDecimal longCarePersonal     = calcRate(socialBase, longCareCfg != null ? longCareCfg.getPersonalRate() : null);
+                BigDecimal longCareCompany      = calcRate(socialBase, longCareCfg != null ? longCareCfg.getCompanyRate()  : null);
+
+                BigDecimal housingFundPersonal = calcRate(housingBase, housingConfig != null ? housingConfig.getEmployeeRate() : null);
+                BigDecimal housingFundCompany  = calcRate(housingBase, housingConfig != null ? housingConfig.getCompanyRate()  : null);
+
+                // 汇总
+                BigDecimal socialTotalPersonal = pensionPersonal.add(medicalPersonal)
+                        .add(unemploymentPersonal).add(longCarePersonal);
+                BigDecimal socialTotalCompany  = pensionCompany.add(medicalCompany)
+                        .add(unemploymentCompany).add(workInjuryCompany).add(maternityCompany).add(longCareCompany);
+                BigDecimal housingTotal = housingFundPersonal.add(housingFundCompany);
+
+                // 应发工资
+                BigDecimal grossAmount = (archive.getBasicSalary() != null ? archive.getBasicSalary() : BigDecimal.ZERO)
+                        .add(archive.getPerformanceSalary() != null ? archive.getPerformanceSalary() : BigDecimal.ZERO)
+                        .add(archive.getPositionAllowance() != null ? archive.getPositionAllowance() : BigDecimal.ZERO)
+                        .add(archive.getOtherAllowance() != null ? archive.getOtherAllowance() : BigDecimal.ZERO);
+
+                // 个税（累计预扣法简化版：按当月应税所得计算）
+                BigDecimal taxableIncome = grossAmount
+                        .subtract(socialTotalPersonal)
+                        .subtract(housingFundPersonal)
+                        .subtract(new BigDecimal("5000"));
+                BigDecimal taxAmount = calcTax(taxableIncome.max(BigDecimal.ZERO));
+
+                // 实发
+                BigDecimal netAmount = grossAmount
+                        .subtract(socialTotalPersonal)
+                        .subtract(housingFundPersonal)
+                        .subtract(taxAmount)
+                        .subtract(BigDecimal.ZERO); // attendanceDeduction 由后续逻辑补充
+
+                // --- 写入 hr_social_calc_detail ---
+                HrSocialCalcDetail detail = new HrSocialCalcDetail();
+                detail.setCompanyId(companyId);
+                detail.setEmployeeId(archive.getEmployeeId());
+                detail.setEmployeeName(archive.getEmployeeName());
+                detail.setCityCode(cityCode);
+                detail.setSalaryMonth(salaryMonth);
+                detail.setBaseEffectiveYear(determineBaseEffectiveYear(salaryMonth));
+                detail.setSocialBase(socialBase);
+                detail.setHousingFundBase(housingBase);
+                detail.setPensionPersonal(pensionPersonal);  detail.setPensionRatePersonal(pensionCfg != null ? pensionCfg.getPersonalRate() : null);
+                detail.setPensionCompany(pensionCompany);    detail.setPensionRateCompany(pensionCfg != null ? pensionCfg.getCompanyRate() : null);
+                detail.setMedicalPersonal(medicalPersonal);  detail.setMedicalRatePersonal(medicalCfg != null ? medicalCfg.getPersonalRate() : null);
+                detail.setMedicalCompany(medicalCompany);    detail.setMedicalRateCompany(medicalCfg != null ? medicalCfg.getCompanyRate() : null);
+                detail.setUnemploymentPersonal(unemploymentPersonal); detail.setUnemploymentRatePersonal(unemploymentCfg != null ? unemploymentCfg.getPersonalRate() : null);
+                detail.setUnemploymentCompany(unemploymentCompany);   detail.setUnemploymentRateCompany(unemploymentCfg != null ? unemploymentCfg.getCompanyRate() : null);
+                detail.setWorkInjuryCompany(workInjuryCompany);     detail.setWorkInjuryRate(workInjuryCfg != null ? workInjuryCfg.getCompanyRate() : null);
+                detail.setMaternityCompany(maternityCompany);       detail.setMaternityRate(maternityCfg != null ? maternityCfg.getCompanyRate() : null);
+                detail.setLongCarePersonal(longCarePersonal);       detail.setLongCareRatePersonal(longCareCfg != null ? longCareCfg.getPersonalRate() : null);
+                detail.setLongCareCompany(longCareCompany);         detail.setLongCareRateCompany(longCareCfg != null ? longCareCfg.getCompanyRate() : null);
+                detail.setHousingFundPersonal(housingFundPersonal); detail.setHousingFundRate(housingConfig != null ? housingConfig.getEmployeeRate() : null);
+                detail.setHousingFundCompany(housingFundCompany);
+                detail.setRoundingDiff(BigDecimal.ZERO);
+                calcDetailMapper.insert(detail);
+
+                // --- 写入 / 更新 hr_salary_month ---
+                LambdaQueryWrapper<HrSalaryMonth> monthWrapper = new LambdaQueryWrapper<HrSalaryMonth>()
+                        .eq(HrSalaryMonth::getEmployeeId, archive.getEmployeeId())
+                        .eq(HrSalaryMonth::getSalaryMonth, salaryMonth)
+                        .eq(HrSalaryMonth::getCompanyId, companyId)
+                        .eq(HrSalaryMonth::getIsDelete, 0);
+                HrSalaryMonth existing = salaryMonthMapper.selectOne(monthWrapper);
+                HrSalaryMonth month = existing != null ? existing : new HrSalaryMonth();
+                month.setCompanyId(companyId);
+                month.setEmployeeId(archive.getEmployeeId());
+                month.setEmployeeName(archive.getEmployeeName());
+                month.setSalaryMonth(salaryMonth);
+                month.setBasicSalary(archive.getBasicSalary());
+                month.setPerformanceSalary(archive.getPerformanceSalary());
+                month.setAllowanceAmount((archive.getPositionAllowance() != null ? archive.getPositionAllowance() : BigDecimal.ZERO)
+                        .add(archive.getOtherAllowance() != null ? archive.getOtherAllowance() : BigDecimal.ZERO));
+                month.setSocialSecurity(socialTotalPersonal);
+                month.setHousingFund(housingFundPersonal);
+                month.setTaxAmount(taxAmount);
+                month.setDeductionAmount(BigDecimal.ZERO);
+                month.setGrossAmount(grossAmount);
+                month.setNetAmount(netAmount);
+                month.setPayStatus(0);
+                // 分项快照
+                month.setPensionPersonal(pensionPersonal);  month.setPensionCompany(pensionCompany);
+                month.setMedicalPersonal(medicalPersonal);  month.setMedicalCompany(medicalCompany);
+                month.setUnemploymentPersonal(unemploymentPersonal); month.setUnemploymentCompany(unemploymentCompany);
+                month.setWorkInjuryCompany(workInjuryCompany);
+                month.setMaternityCompany(maternityCompany);
+                month.setLongCarePersonal(longCarePersonal); month.setLongCareCompany(longCareCompany);
+                month.setHousingFundPersonal(housingFundPersonal); month.setHousingFundCompany(housingFundCompany);
+                month.setSocialBase(socialBase);
+                month.setHousingFundBase(housingBase);
+                month.setBaseEffectiveYear(detail.getBaseEffectiveYear());
+                month.setAttendanceDeduction(BigDecimal.ZERO); // 默认 0，后续考勤逻辑补充
+                month.setAbsentDeduction(BigDecimal.ZERO);
+                month.setLateDeduction(BigDecimal.ZERO);
+                month.setEarlyDeduction(BigDecimal.ZERO);
+                month.setUnpaidLeaveDeduction(BigDecimal.ZERO);
+                month.setMinWageProtected(0);
+                month.setSkipAttendance(0);
+                month.setCreateBy(existing != null ? existing.getCreateBy() : null);
+                if (existing == null) {
+                    salaryMonthMapper.insert(month);
+                } else {
+                    salaryMonthMapper.updateById(month);
+                }
+                successCount++;
+            } catch (Exception e) {
+                failCount++;
+                log.error("generateMonthSalary 员工核算失败: employeeId={}, salaryMonth={}", archive.getEmployeeId(), salaryMonth, e);
+            }
+        }
+        log.info("generateMonthSalary 完成: companyId={}, salaryMonth={}, total={}, success={}, fail={}",
+                companyId, salaryMonth, archives.size(), successCount, failCount);
+    }
+
+    /** clamp 基数到配置上下限 */
+    private BigDecimal clampBase(BigDecimal declareBase, Map<String, HrSocialParamConfig> params) {
+        if (params == null || declareBase == null) return BigDecimal.ZERO;
+        HrSocialParamConfig pensionCfg = params.get("PENSION");
+        if (pensionCfg == null) return declareBase;
+        BigDecimal base = declareBase;
+        if (pensionCfg.getBaseMin() != null) base = base.max(pensionCfg.getBaseMin());
+        if (pensionCfg.getBaseMax() != null) base = base.min(pensionCfg.getBaseMax());
+        return base.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** clamp 基数到公积金配置上下限 */
+    private BigDecimal clampBase(BigDecimal declareBase, HrHousingFundConfig config) {
+        if (config == null || declareBase == null) return BigDecimal.ZERO;
+        BigDecimal base = declareBase;
+        if (config.getBaseMin() != null) base = base.max(config.getBaseMin());
+        if (config.getBaseMax() != null) base = base.min(config.getBaseMax());
+        return base.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** 按比例计算金额 */
+    private BigDecimal calcRate(BigDecimal base, BigDecimal rate) {
+        if (base == null || base.compareTo(BigDecimal.ZERO) <= 0 || rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
+        return base.multiply(rate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+    }
+
+    /** 个税累计预扣法（简化单月版） */
+    private BigDecimal calcTax(BigDecimal taxableIncome) {
+        if (taxableIncome.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
+        BigDecimal amount = taxableIncome;
+        BigDecimal tax = BigDecimal.ZERO;
+        // 税率表（年累计应税所得）
+        // 税率表（年累计应税所得）：{上限, 税率, 速算扣除数}
+        Object[][] brackets = {
+                {36000L,  0.03,  0L},
+                {144000L, 0.10,  2520L},
+                {300000L, 0.20,  16920L},
+                {420000L, 0.25,  31920L},
+                {660000L, 0.30,  52920L},
+                {960000L, 0.35,  85920L},
+                {Long.MAX_VALUE, 0.45, 181920L}
+        };
+        for (Object[] b : brackets) {
+            long upper = ((Number) b[0]).longValue();
+            BigDecimal rate = new BigDecimal(b[1].toString());
+            BigDecimal deduction = new BigDecimal(((Number) b[2]).longValue());
+            if (amount.longValue() <= upper) {
+                tax = tax.add(amount.multiply(rate)).subtract(deduction);
+                break;
+            }
+            amount = amount.subtract(new BigDecimal(upper));
+        }
+        return tax.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** 根据月份推导基数生效年度（7月起效当年，6月及之前起效上一年） */
+    private String determineBaseEffectiveYear(String salaryMonth) {
+        int month = Integer.parseInt(salaryMonth.substring(5));
+        int year = Integer.parseInt(salaryMonth.substring(0, 4));
+        return month >= 7 ? String.valueOf(year) : String.valueOf(year - 1);
     }
 }

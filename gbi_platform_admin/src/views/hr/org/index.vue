@@ -16,6 +16,7 @@
         <el-table-column prop="postCode" label="岗位编码" width="130" align="center" />
         <el-table-column prop="postName" label="岗位名称" width="150" align="center" />
         <el-table-column prop="postLevel" label="岗位职级" width="120" align="center" />
+        <el-table-column prop="orgName" label="所属部门" width="400" show-overflow-tooltip />
         <el-table-column prop="statusText" label="状态" width="80" align="center">
           <template #default="{ row }"><el-tag size="small" :type="row.status === 1 ? 'success' : 'info'">{{ row.statusText || '-' }}</el-tag></template>
         </el-table-column>
@@ -33,6 +34,20 @@
         <el-form-item label="岗位编码" prop="postCode"><el-input v-model="postForm.postCode" placeholder="请输入" /></el-form-item>
         <el-form-item label="岗位名称" prop="postName"><el-input v-model="postForm.postName" placeholder="请输入" /></el-form-item>
         <el-form-item label="岗位职级"><el-input v-model="postForm.postLevel" placeholder="如：P3/M2" /></el-form-item>
+        <el-form-item label="所属组织" prop="deptId">
+          <el-tree-select
+            v-model="postForm.deptId"
+            :data="treeData"
+            :props="{ label: 'orgName', value: 'id', children: 'children' }"
+            check-strictly
+            node-key="id"
+            placeholder="请选择部门"
+            clearable
+            filterable
+            style="width:100%"
+            :render-after-expand="false"
+          />
+        </el-form-item>
         <el-form-item label="状态"><el-radio-group v-model="postForm.status"><el-radio :value="1">启用</el-radio><el-radio :value="0">停用</el-radio></el-radio-group></el-form-item>
         <el-form-item label="备注"><el-input v-model="postForm.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
       </el-form>
@@ -42,10 +57,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTable } from '@/hooks/useTable'
 import * as api from '@/api/hr'
+import { getOrgTreeApi } from '@/api/org'
 
 const { query, records, total, loading, loadData } = useTable(api.getPostPageApi, { pageNum: 1, pageSize: 20, status: undefined })
 const postDialogVisible = ref(false)
@@ -54,9 +70,32 @@ const postFormRef = ref()
 const postForm = reactive<api.PostDTO>({ postCode: '', postName: '', status: 1 })
 const postRules = { postCode: [{ required: true, message: '岗位编码不能为空' }], postName: [{ required: true, message: '岗位名称不能为空' }] }
 
+// 组织树数据（用于 el-tree-select，保留层级）
+const treeData = ref<any[]>([])
+
+const loadOrgTree = async () => {
+  try {
+    const list = await getOrgTreeApi()
+    treeData.value = markDisabledNodes(list)
+  } catch (e) {
+    console.error('[org] 加载组织树失败', e)
+  }
+}
+
+/** 为每个节点添加 disabled 字段：仅 orgType=3（部门）可选 */
+function markDisabledNodes(nodes: any[]): any[] {
+  return nodes.map(node => ({
+    ...node,
+    disabled: node.orgType !== 3,
+    children: node.children ? markDisabledNodes(node.children) : undefined
+  }))
+}
+
 const openAddPost = () => { Object.assign(postForm, { id: undefined, postCode: '', postName: '', postLevel: '', status: 1, remark: '' }); postDialogVisible.value = true }
-const openEditPost = (row: api.PostVO) => { Object.assign(postForm, { id: row.id, postCode: row.postCode, postName: row.postName, postLevel: row.postLevel, status: row.status, remark: row.remark }); postDialogVisible.value = true }
-const handleDeletePost = (row: api.PostVO) => { ElMessageBox.confirm('确认删除该岗位?', '提示').then(async () => { await api.deletePostApi(row.id!); ElMessage.success('删除成功'); loadData() }) }
+const openEditPost = (row: api.HrPostVO) => { Object.assign(postForm, { id: row.id, postCode: row.postCode, postName: row.postName, postLevel: row.postLevel, status: row.status, deptId: row.deptId, remark: row.remark }); postDialogVisible.value = true }
+const handleDeletePost = (row: api.HrPostVO) => { ElMessageBox.confirm('确认删除该岗位?', '提示').then(async () => { await api.deletePostApi(row.id!); ElMessage.success('删除成功'); loadData() }) }
 const handlePostSubmit = async () => { await postFormRef.value.validate(); postSubmitLoading.value = true; try { if (postForm.id) { await api.updatePostApi(postForm); ElMessage.success('编辑成功') } else { await api.addPostApi(postForm); ElMessage.success('新增成功') } postDialogVisible.value = false; loadData() } finally { postSubmitLoading.value = false } }
-const handleReset = () => { loadData() }
+const handleReset = () => { query.status = undefined; loadData() }
+
+onMounted(() => { loadOrgTree(); loadData() })
 </script>

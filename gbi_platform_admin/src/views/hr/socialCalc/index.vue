@@ -22,10 +22,17 @@
         <el-table-column prop="socialBase" label="社保基数" width="100" align="right" />
         <el-table-column prop="housingFundBase" label="公积金基数" width="110" align="right" />
         <el-table-column prop="pensionPersonal" label="养老个人" width="90" align="right" />
+        <el-table-column prop="pensionCompany" label="养老单位" width="90" align="right" />
         <el-table-column prop="medicalPersonal" label="医疗个人" width="90" align="right" />
+        <el-table-column prop="medicalCompany" label="医疗单位" width="90" align="right" />
         <el-table-column prop="unemploymentPersonal" label="失业个人" width="90" align="right" />
+        <el-table-column prop="unemploymentCompany" label="失业单位" width="90" align="right" />
+        <el-table-column prop="workInjuryCompany" label="工伤单位" width="90" align="right" />
+        <el-table-column prop="maternityCompany" label="生育单位" width="90" align="right" />
         <el-table-column prop="longCarePersonal" label="长护险个人" width="100" align="right" />
+        <el-table-column prop="longCareCompany" label="长护险单位" width="100" align="right" />
         <el-table-column prop="housingFundPersonal" label="公积金个人" width="100" align="right" />
+        <el-table-column prop="housingFundCompany" label="公积金单位" width="100" align="right" />
         <el-table-column prop="createTime" label="生成时间" width="160" align="center" />
       </el-table>
     </TablePage>

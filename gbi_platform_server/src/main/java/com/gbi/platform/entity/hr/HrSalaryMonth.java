@@ -26,6 +26,20 @@ public class HrSalaryMonth extends BaseEntity {
     private java.math.BigDecimal housingFund;
     private java.math.BigDecimal taxAmount;
     private java.math.BigDecimal deductionAmount;
+    /** 考勤扣款合计 */
+    private java.math.BigDecimal attendanceDeduction;
+    /** 旷工扣款 */
+    private java.math.BigDecimal absentDeduction;
+    /** 迟到扣款 */
+    private java.math.BigDecimal lateDeduction;
+    /** 早退扣款 */
+    private java.math.BigDecimal earlyDeduction;
+    /** 无薪事假扣款 */
+    private java.math.BigDecimal unpaidLeaveDeduction;
+    /** 是否触发最低工资保护 0否 1是 */
+    private Integer minWageProtected;
+    /** 是否跳过考勤（快照） */
+    private Integer skipAttendance;
     private java.math.BigDecimal grossAmount;
     private java.math.BigDecimal netAmount;
     /** 养老保险个人扣除 */

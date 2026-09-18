@@ -27,13 +27,11 @@
             <el-table-column label="绩效工资" width="90" align="right"><template #default="{ row }">{{ Number(row.performanceSalary).toFixed(2) }}</template></el-table-column>
             <el-table-column label="岗位津贴" width="90" align="right"><template #default="{ row }">{{ Number(row.positionAllowance).toFixed(2) }}</template></el-table-column>
             <el-table-column label="其他津贴" width="90" align="right"><template #default="{ row }">{{ Number(row.otherAllowance).toFixed(2) }}</template></el-table-column>
-            <el-table-column label="社保个人" width="90" align="right"><template #default="{ row }">{{ Number(row.socialSecurityPersonal).toFixed(2) }}</template></el-table-column>
-            <el-table-column label="公积金个人" width="90" align="right"><template #default="{ row }">{{ Number(row.housingFundPersonal).toFixed(2) }}</template></el-table-column>
             <el-table-column prop="effectiveDate" label="生效日期" width="105" align="center" />
             <el-table-column label="来源" width="95" align="center">
               <template #default="{ row }">{{ sourceTypeText(row.sourceType) }}</template>
             </el-table-column>
-            <el-table-column label="当前版本" width="85" align="center">
+            <el-table-column label="是否生效" width="85" align="center">
               <template #default="{ row }"><el-tag size="small" :type="row.isCurrent === 1 ? 'success' : 'info'">{{ row.isCurrent === 1 ? '是' : '历史' }}</el-tag></template>
             </el-table-column>
             <el-table-column prop="createTime" label="创建时间" width="155" align="center" />
@@ -63,13 +61,22 @@
             <el-table-column prop="employeeName" label="姓名" width="100" align="center" />
             <el-table-column prop="salaryMonth" label="薪资月份" width="110" align="center" />
             <el-table-column prop="grossAmount" label="应发金额" width="110" align="right" />
-            <el-table-column prop="netAmount" label="实发金额" width="110" align="right" />
+            <el-table-column prop="taxAmount" label="个税" width="90" align="right">
+              <template #default="{ row }">{{ Number(row.taxAmount ?? 0).toFixed(2) }}</template>
+            </el-table-column>
+            <el-table-column prop="attendanceDeduction" label="考勤扣款" width="100" align="right">
+              <template #default="{ row }">{{ Number(row.attendanceDeduction ?? 0).toFixed(2) }}</template>
+            </el-table-column>
+            <el-table-column prop="netAmount" label="实发金额" width="110" align="right">
+              <template #default="{ row }"><span style="color:#e6a23c;font-weight:600">{{ Number(row.netAmount).toFixed(2) }}</span></template>
+            </el-table-column>
             <el-table-column prop="payStatusText" label="发放状态" width="100" align="center">
               <template #default="{ row }"><el-tag size="small" :type="row.payStatus === 1 ? 'success' : 'info'">{{ row.payStatusText || '-' }}</el-tag></template>
             </el-table-column>
-            <el-table-column label="操作" width="120" align="center" fixed="right">
+            <el-table-column label="操作" width="180" align="center" fixed="right">
               <template #default="{ row }">
-                <AuthBtn permission="hr:salary:month:pay" link type="primary" size="small" @click="handlePay(row)" :disabled="row.payStatus === 1">发放</AuthBtn>
+                <AuthBtn permission="hr:salary:month:view" link type="primary" size="small" @click="openDetail(row)">明细</AuthBtn>
+                <AuthBtn permission="hr:salary:month:pay" link type="success" size="small" :disabled="row.payStatus !== 0" @click="handlePay(row)">发放</AuthBtn>
               </template>
             </el-table-column>
           </el-table>
@@ -77,34 +84,34 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog v-model="archiveDialogVisible" :title="archiveForm.id ? '编辑薪资档案' : '新增薪资档案'" width="520px" :close-on-click-modal="false">
+    <!-- 薪资档案弹窗 -->
+    <el-dialog v-model="archiveDialogVisible" :title="archiveForm.id ? '编辑薪资档案' : '新增薪资档案'" width="560px" :close-on-click-modal="false">
       <el-form ref="archiveFormRef" :model="archiveForm" :rules="archiveRules" label-width="110px">
         <el-form-item label="员工" prop="employeeId">
-          <el-select v-model="archiveForm.employeeId" filterable placeholder="请输入员工姓名搜索" style="width:100%">
-            <el-option v-for="item in employeeOptions" :key="item.id" :label="`${item.name} (${item.employeeNo})`" :value="item.id" />
+          <el-select v-model="archiveForm.employeeId" placeholder="请选择员工" filterable style="width:100%">
+            <el-option v-for="e in employeeOptions" :key="e.id" :label="e.name" :value="e.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="薪资模板" prop="ruleId">
-          <el-select v-model="archiveForm.ruleId" placeholder="请选择薪资模板" clearable style="width:100%" @change="handleRuleChange">
-            <el-option v-for="item in ruleOptions" :key="item.id" :label="item.ruleName" :value="item.id" />
+        <el-form-item label="薪资模板">
+          <el-select v-model="archiveForm.ruleId" placeholder="请选择" filterable style="width:100%" @change="handleRuleChange">
+            <el-option v-for="r in ruleOptions" :key="r.id" :label="r.ruleName" :value="r.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="基本工资"><el-input-number v-model="archiveForm.basicSalary" :precision="2" :min="0" style="width:100%" /></el-form-item>
         <el-form-item label="绩效工资"><el-input-number v-model="archiveForm.performanceSalary" :precision="2" :min="0" style="width:100%" /></el-form-item>
         <el-form-item label="岗位津贴"><el-input-number v-model="archiveForm.positionAllowance" :precision="2" :min="0" style="width:100%" /></el-form-item>
         <el-form-item label="其他津贴"><el-input-number v-model="archiveForm.otherAllowance" :precision="2" :min="0" style="width:100%" /></el-form-item>
-        <el-form-item label="社保个人"><el-input-number v-model="archiveForm.socialSecurityPersonal" :precision="2" :min="0" style="width:100%" /></el-form-item>
-        <el-form-item label="公积金个人"><el-input-number v-model="archiveForm.housingFundPersonal" :precision="2" :min="0" style="width:100%" /></el-form-item>
-        <el-form-item label="生效日期">
-          <el-date-picker v-model="archiveForm.effectiveDate" type="date" value-format="YYYY-MM-DD" style="width:100%" placeholder="请选择生效日期" />
-        </el-form-item>
+        <el-form-item label="生效日期"><el-date-picker v-model="archiveForm.effectiveDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
+        <el-form-item label="备注"><el-input v-model="archiveForm.remark" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <template #footer><el-button @click="archiveDialogVisible=false">取消</el-button><el-button type="primary" :loading="archiveSubmitLoading" @click="handleArchiveSubmit">确定</el-button></template>
     </el-dialog>
 
+    <!-- 生成月度薪资弹窗 -->
     <el-dialog v-model="generateDialogVisible" title="生成月度薪资" width="400px" :close-on-click-modal="false">
-      <el-form label-width="100px">
-        <el-form-item label="薪资月份"><el-date-picker v-model="generateMonth" type="month" value-format="YYYY-MM" style="width:100%" /></el-form-item>
+      <el-form label-width="120px">
+        <el-form-item label="核算月份"><el-date-picker v-model="generateMonth" type="month" value-format="YYYY-MM" style="width:100%" /></el-form-item>
+        <el-form-item label="同步考勤扣款"><el-switch v-model="syncAttendance" /></el-form-item>
       </el-form>
       <template #footer><el-button @click="generateDialogVisible=false">取消</el-button><el-button type="primary" :loading="generateLoading" @click="handleGenerate">确定</el-button></template>
     </el-dialog>
@@ -126,7 +133,7 @@ const { records: archiveRecords, total: archiveTotal, loading: archiveLoading, l
 const archiveDialogVisible = ref(false)
 const archiveSubmitLoading = ref(false)
 const archiveFormRef = ref()
-const archiveForm = reactive<api.SalaryArchiveDTO>({ employeeId: 0, basicSalary: 0, performanceSalary: 0, positionAllowance: 0, otherAllowance: 0, socialSecurityPersonal: 0, housingFundPersonal: 0 })
+const archiveForm = reactive<api.SalaryArchiveDTO>({ employeeId: 0, basicSalary: 0, performanceSalary: 0, positionAllowance: 0, otherAllowance: 0 })
 const archiveRules = { employeeId: [{ required: true, message: '员工不能为空' }] }
 const employeeOptions = ref<api.EmployeeVO[]>([])
 const ruleOptions = ref<salaryApi.HrSalaryRuleVO[]>([])
@@ -146,13 +153,10 @@ const handleRuleChange = (ruleId: number) => {
     archiveForm.performanceSalary = rule.performanceBase || 0
     archiveForm.positionAllowance = rule.positionAllowance || 0
     archiveForm.otherAllowance = rule.otherAllowance || 0
-    const salaryBase = (rule.basicSalary || 0) + (rule.performanceBase || 0) + (rule.positionAllowance || 0) + (rule.otherAllowance || 0)
-    archiveForm.socialSecurityPersonal = Math.round(salaryBase * (rule.socialSecurityRate || 0) / 100 * 100) / 100
-    archiveForm.housingFundPersonal = Math.round((rule.basicSalary || 0) * (rule.housingFundRate || 0) / 100 * 100) / 100
   }
 }
-const openAddArchive = () => { loadEmployeeOptions(); loadRuleOptions(); const today = new Date().toISOString().slice(0, 10); Object.assign(archiveForm, { id: undefined, basicSalary: 0, performanceSalary: 0, positionAllowance: 0, otherAllowance: 0, socialSecurityPersonal: 0, housingFundPersonal: 0, effectiveDate: today }); archiveDialogVisible.value = true }
-const openEditArchive = (row: api.SalaryArchiveVO) => { loadEmployeeOptions(); loadRuleOptions(); Object.assign(archiveForm, { id: row.id, employeeId: row.employeeId, ruleId: row.ruleId, basicSalary: row.basicSalary, performanceSalary: row.performanceSalary, positionAllowance: row.positionAllowance, otherAllowance: row.otherAllowance, socialSecurityPersonal: row.socialSecurityPersonal, housingFundPersonal: row.housingFundPersonal, effectiveDate: row.effectiveDate, gradeCode: row.gradeCode, gradeName: row.gradeName }); archiveDialogVisible.value = true }
+const openAddArchive = () => { loadEmployeeOptions(); loadRuleOptions(); const today = new Date().toISOString().slice(0, 10); Object.assign(archiveForm, { id: undefined, basicSalary: 0, performanceSalary: 0, positionAllowance: 0, otherAllowance: 0, effectiveDate: today }); archiveDialogVisible.value = true }
+const openEditArchive = (row: api.SalaryArchiveVO) => { loadEmployeeOptions(); loadRuleOptions(); Object.assign(archiveForm, { id: row.id, employeeId: row.employeeId, ruleId: row.ruleId, basicSalary: row.basicSalary, performanceSalary: row.performanceSalary, positionAllowance: row.positionAllowance, otherAllowance: row.otherAllowance, effectiveDate: row.effectiveDate, gradeCode: row.gradeCode, gradeName: row.gradeName }); archiveDialogVisible.value = true }
 const handleDeleteArchive = (row: api.SalaryArchiveVO) => { ElMessageBox.confirm('确认删除?', '提示').then(async () => { await api.deleteSalaryArchiveApi(row.id!); ElMessage.success('删除成功'); loadArchiveData() }) }
 const handleSubmitArchiveAudit = (row: api.SalaryArchiveVO) => { ElMessageBox.confirm('确认提交该档案变更审批?', '提示').then(async () => { await salaryApi.submitSalaryArchiveAuditApi(row.id!); ElMessage.success('已提交审批'); loadArchiveData() }) }
 const handleArchiveSubmit = async () => { await archiveFormRef.value.validate(); archiveSubmitLoading.value = true; try { if (archiveForm.id) { await api.updateSalaryArchiveApi(archiveForm); ElMessage.success('编辑成功') } else { await api.addSalaryArchiveApi(archiveForm); ElMessage.success('新增成功') } archiveDialogVisible.value = false; loadArchiveData() } finally { archiveSubmitLoading.value = false } }
@@ -162,9 +166,11 @@ const monthQuery = reactive({ pageNum: 1, pageSize: 20, employeeId: undefined as
 const { records: monthRecords, total: monthTotal, loading: monthLoading, loadData: loadMonthData } = useTable(api.getSalaryMonthPageApi, monthQuery)
 const generateDialogVisible = ref(false)
 const generateMonth = ref('')
+const syncAttendance = ref(true)
 const generateLoading = ref(false)
 const openGenerate = () => { generateMonth.value = new Date().toISOString().slice(0, 7); generateDialogVisible.value = true }
-const handleGenerate = async () => { generateLoading.value = true; try { await api.generateSalaryMonthApi({ employeeIds: [], salaryMonth: generateMonth.value }); ElMessage.success('生成成功'); generateDialogVisible.value = false; loadMonthData() } finally { generateLoading.value = false } }
+const handleGenerate = async () => { generateLoading.value = true; try { await api.generateSalaryMonthApi({ employeeIds: [], salaryMonth: generateMonth.value, syncAttendance: syncAttendance.value ? 1 : 0 }); ElMessage.success('生成成功'); generateDialogVisible.value = false; loadMonthData() } finally { generateLoading.value = false } }
 const handlePay = (row: api.SalaryMonthVO) => { ElMessageBox.confirm(`确认发放 ${row.employeeName} ${row.salaryMonth} 薪资?`, '提示').then(async () => { await api.paySalaryMonthApi(row.id!); ElMessage.success('发放成功'); loadMonthData() }) }
 const handleExportMonth = async () => { try { await api.exportSalaryMonthApi({ employeeId: monthQuery.employeeId, salaryMonth: monthQuery.salaryMonth }) } catch {} }
+const openDetail = (row: api.SalaryMonthVO) => { ElMessage.info(`员工: ${row.employeeName} | 月份: ${row.salaryMonth} | 应发: ${row.grossAmount} | 社保: ${row.socialSecurity} | 公积金: ${row.housingFund} | 个税: ${row.taxAmount} | 考勤扣款: ${row.attendanceDeduction ?? 0} | 实发: ${row.netAmount}`) }
 </script>

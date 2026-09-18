@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -53,13 +54,13 @@ public class HrAttendanceVO implements Serializable {
     private Integer absent;
 
     @Schema(description="请假扣减天数")
-    private String leaveDays;
+    private BigDecimal leaveDays;
 
     @Schema(description="应出勤天数")
-    private String workDays;
+    private Integer workDays;
 
     @Schema(description="实际出勤天数")
-    private String actualDays;
+    private Integer actualDays;
 
     @Schema(description="备注")
     private String remark;

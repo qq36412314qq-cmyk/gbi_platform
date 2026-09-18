@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
     @Schema(description="岗位编码") private String postCode;
     @Schema(description="岗位职级") private String postLevel;
     @Schema(description="所属部门ID") private Long deptId;
+    @Schema(description="所属部门名称") private String orgName;
     @Schema(description="状态 0禁用 1启用") private Integer status;
     @Schema(description="状态文本") private String statusText;
     @Schema(description="备注") private String remark;

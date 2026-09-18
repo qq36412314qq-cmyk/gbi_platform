@@ -31,27 +31,24 @@ public class SocialController {
         return Result.success(socialService.pageSocial(pageNum, pageSize, employeeId, status));
     }
 
-    @Operation(summary = "新增社保")
+    @Operation(summary = "新增社保（已废弃）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).HR_SOCIAL_ADD,'')")
     @PostMapping("/add")
     public Result<Void> add(@RequestBody SocialDTO dto) {
-        socialService.addSocial(dto);
-        return Result.success();
+        return Result.error("社保台账功能已废弃，请使用 /hr/social-calc/detail 查看核算明细");
     }
 
-    @Operation(summary = "编辑社保")
+    @Operation(summary = "编辑社保（已废弃）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).HR_SOCIAL_EDIT,'')")
     @PostMapping("/update")
     public Result<Void> update(@RequestBody SocialDTO dto) {
-        socialService.updateSocial(dto);
-        return Result.success();
+        return Result.error("社保台账功能已废弃，请使用 /hr/social-calc/detail 查看核算明细");
     }
 
-    @Operation(summary = "删除社保")
+    @Operation(summary = "删除社保（已废弃）")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).HR_SOCIAL_DELETE,'')")
     @PostMapping("/delete/{id}")
     public Result<Void> delete(@PathVariable Long id) {
-        socialService.deleteSocial(id);
-        return Result.success();
+        return Result.error("社保台账功能已废弃，请使用 /hr/social-calc/detail 查看核算明细");
     }
 }

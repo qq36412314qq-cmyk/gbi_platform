@@ -114,8 +114,8 @@
       </el-tab-pane>
     </el-tabs>
 
-    <!-- 入职申请对话框 -->
-    <el-dialog v-model="entryDialogVisible" title="入职申请" width="900px" :close-on-click-modal="false">
+    <!-- 入职申请弹窗 -->
+    <el-dialog v-model="entryDialogVisible" title="新增入职申请" width="800px" :close-on-click-modal="false">
       <el-form ref="entryFormRef" :model="entryForm" :rules="entryRules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -127,154 +127,116 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="入职日期" prop="entryDate"><el-date-picker v-model="entryForm.entryDate" type="date" value-format="YYYY-MM-DD" style="width:100%" placeholder="请选择" /></el-form-item>
+            <el-form-item label="入职日期" prop="entryDate"><el-date-picker v-model="entryForm.entryDate" type="date" placeholder="请选择" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="用工类型" prop="employmentType">
-              <el-select v-model="entryForm.employmentType" style="width:100%">
+              <el-select v-model="entryForm.employmentType" placeholder="请选择" style="width:100%">
                 <el-option label="正式" :value="1" /><el-option label="试用期" :value="2" /><el-option label="劳务派遣" :value="3" /><el-option label="临时工" :value="4" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="性别"><el-select v-model="entryForm.gender" placeholder="请选择" style="width:100%"><el-option label="男" :value="1" /><el-option label="女" :value="2" /></el-select></el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="出生日期"><el-date-picker v-model="entryForm.birthdate" type="date" value-format="YYYY-MM-DD" style="width:100%" placeholder="请选择" /></el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="手机号"><el-input v-model="entryForm.phone" placeholder="请输入" /></el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="身份证号"><el-input v-model="entryForm.idCardNo" placeholder="请输入" /></el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="所属组织" prop="orgId">
-              <el-select v-model="entryForm.orgId" placeholder="请选择组织" filterable style="width:100%" :loading="orgLoading">
-                <el-option v-for="o in orgList" :key="o.id" :label="o.orgName" :value="o.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="岗位" prop="postId">
-              <el-select v-model="entryForm.postId" placeholder="请选择岗位" filterable style="width:100%" :loading="postLoading">
-                <el-option v-for="p in postList" :key="p.id" :label="p.postName" :value="p.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="基本工资"><el-input-number v-model="entryForm.basicSalary" :precision="2" :min="0" style="width:100%" placeholder="请输入" /></el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="工资卡号"><el-input v-model="entryForm.bankAccount" placeholder="请输入" /></el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注"><el-input v-model="entryForm.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
-
+        <el-form-item label="所属组织" prop="orgId">
+          <el-tree-select
+            v-model="entryForm.orgId"
+            :data="orgTreeData"
+            :props="{ label: 'orgName', value: 'id', children: 'children' }"
+            check-strictly
+            node-key="id"
+            placeholder="请选择部门"
+            clearable
+            filterable
+            style="width:100%"
+            :render-after-expand="false"
+          />
+        </el-form-item>
+        <el-form-item label="目标岗位" prop="postId">
+          <el-select v-model="entryForm.postId" placeholder="请先选择所属组织" clearable filterable style="width:100%" :loading="postLoading">
+            <el-option v-for="post in filteredPostList" :key="post.id" :label="post.postName" :value="post.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="基本工资"><el-input-number v-model="entryForm.basicSalary" :precision="2" :min="0" placeholder="请输入" style="width:100%" /></el-form-item>
+        
         <!-- 工作经历 -->
-        <el-divider content-position="left">工作经历</el-divider>
-        <div style="margin-bottom: 8px">
-          <el-button type="primary" size="small" @click="addWorkExpRow">+ 新增工作经历</el-button>
-        </div>
-        <el-table :data="entryForm.workExps || []" border size="small" style="width: 100%">
-          <el-table-column label="公司名称" min-width="150">
-            <template #default="{ $index }">
-              <el-input v-model="entryForm.workExps[$index].companyName" placeholder="请输入" size="small" />
-            </template>
-          </el-table-column>
-          <el-table-column label="职位" width="120">
-            <template #default="{ $index }">
-              <el-input v-model="entryForm.workExps[$index].position" placeholder="请输入" size="small" />
-            </template>
-          </el-table-column>
-          <el-table-column label="部门" width="120">
-            <template #default="{ $index }">
-              <el-input v-model="entryForm.workExps[$index].department" placeholder="请输入" size="small" />
-            </template>
-          </el-table-column>
-          <el-table-column label="入职时间" width="110">
-            <template #default="{ $index }">
-              <el-date-picker v-model="entryForm.workExps[$index].startDate" type="date" value-format="YYYY-MM-DD" style="width:100%" size="small" placeholder="请选择" />
-            </template>
-          </el-table-column>
-          <el-table-column label="离职时间" width="110">
-            <template #default="{ $index }">
-              <el-date-picker v-model="entryForm.workExps[$index].endDate" type="date" value-format="YYYY-MM-DD" style="width:100%" size="small" placeholder="请选择" :disabled="entryForm.workExps[$index].isCurrent === 1" />
-            </template>
-          </el-table-column>
-          <el-table-column label="是否在职" width="90">
-            <template #default="{ $index }">
-              <el-radio-group v-model="entryForm.workExps[$index].isCurrent" size="small">
-                <el-radio :value="1">在职</el-radio>
-                <el-radio :value="0">离职</el-radio>
-              </el-radio-group>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="60" align="center">
-            <template #default="{ $index }">
-              <el-button type="danger" link size="small" @click="removeWorkExpRow($index)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
+        <el-form-item label="工作经历">
+          <div style="width:100%">
+            <el-table :data="workExps" border size="small" style="width:100%">
+              <el-table-column prop="companyName" label="公司名称" min-width="120">
+                <template #default="{ row, $index }">
+                  <el-input v-model="row.companyName" placeholder="公司名称" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="position" label="职位" width="100">
+                <template #default="{ row }">
+                  <el-input v-model="row.position" placeholder="职位" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="department" label="部门" width="100">
+                <template #default="{ row }">
+                  <el-input v-model="row.department" placeholder="部门" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="startDate" label="开始时间" width="100">
+                <template #default="{ row }">
+                  <el-date-picker v-model="row.startDate" type="date" placeholder="开始时间" value-format="YYYY-MM" size="small" style="width:100%" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="endDate" label="结束时间" width="100">
+                <template #default="{ row }">
+                  <el-date-picker v-model="row.endDate" type="date" placeholder="结束时间" value-format="YYYY-MM" size="small" style="width:100%" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="60" align="center">
+                <template #default="{ $index }">
+                  <el-button type="danger" link size="small" @click="removeWorkExpRow($index)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-button type="primary" link size="small" @click="addWorkExpRow" style="margin-top:8px">+ 添加工作经历</el-button>
+          </div>
+        </el-form-item>
+        
         <!-- 学业经历 -->
-        <el-divider content-position="left">学业经历</el-divider>
-        <div style="margin-bottom: 8px">
-          <el-button type="primary" size="small" @click="addEduExpRow">+ 新增学业经历</el-button>
-        </div>
-        <el-table :data="entryForm.eduExps || []" border size="small" style="width: 100%">
-          <el-table-column label="学校名称" min-width="150">
-            <template #default="{ $index }">
-              <el-input v-model="entryForm.eduExps[$index].schoolName" placeholder="请输入" size="small" />
-            </template>
-          </el-table-column>
-          <el-table-column label="学历" width="100">
-            <template #default="{ $index }">
-              <el-input v-model="entryForm.eduExps[$index].degree" placeholder="如：本科" size="small" />
-            </template>
-          </el-table-column>
-          <el-table-column label="专业" width="120">
-            <template #default="{ $index }">
-              <el-input v-model="entryForm.eduExps[$index].major" placeholder="请输入" size="small" />
-            </template>
-          </el-table-column>
-          <el-table-column label="教育形式" width="100">
-            <template #default="{ $index }">
-              <el-input v-model="entryForm.eduExps[$index].educationLevel" placeholder="如：全日制" size="small" />
-            </template>
-          </el-table-column>
-          <el-table-column label="入学时间" width="110">
-            <template #default="{ $index }">
-              <el-date-picker v-model="entryForm.eduExps[$index].startDate" type="date" value-format="YYYY-MM-DD" style="width:100%" size="small" placeholder="请选择" />
-            </template>
-          </el-table-column>
-          <el-table-column label="毕业时间" width="110">
-            <template #default="{ $index }">
-              <el-date-picker v-model="entryForm.eduExps[$index].graduationDate" type="date" value-format="YYYY-MM-DD" style="width:100%" size="small" placeholder="请选择" :disabled="entryForm.eduExps[$index].isGraduated === 1" />
-            </template>
-          </el-table-column>
-          <el-table-column label="是否毕业" width="90">
-            <template #default="{ $index }">
-              <el-radio-group v-model="entryForm.eduExps[$index].isGraduated" size="small">
-                <el-radio :value="1">已毕业</el-radio>
-                <el-radio :value="0">在读</el-radio>
-              </el-radio-group>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="60" align="center">
-            <template #default="{ $index }">
-              <el-button type="danger" link size="small" @click="removeEduExpRow($index)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <el-form-item label="学业经历">
+          <div style="width:100%">
+            <el-table :data="eduExps" border size="small" style="width:100%">
+              <el-table-column prop="schoolName" label="学校名称" min-width="120">
+                <template #default="{ row, $index }">
+                  <el-input v-model="row.schoolName" placeholder="学校名称" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="degree" label="学位" width="80">
+                <template #default="{ row }">
+                  <el-input v-model="row.degree" placeholder="学位" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="major" label="专业" width="100">
+                <template #default="{ row }">
+                  <el-input v-model="row.major" placeholder="专业" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="startDate" label="入学时间" width="100">
+                <template #default="{ row }">
+                  <el-date-picker v-model="row.startDate" type="date" placeholder="入学时间" value-format="YYYY-MM" size="small" style="width:100%" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="graduationDate" label="毕业时间" width="100">
+                <template #default="{ row }">
+                  <el-date-picker v-model="row.graduationDate" type="date" placeholder="毕业时间" value-format="YYYY-MM" size="small" style="width:100%" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="60" align="center">
+                <template #default="{ $index }">
+                  <el-button type="danger" link size="small" @click="removeEduExpRow($index)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-button type="primary" link size="small" @click="addEduExpRow" style="margin-top:8px">+ 添加学业经历</el-button>
+          </div>
+        </el-form-item>
+        
+        <el-form-item label="备注"><el-input v-model="entryForm.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="entryDialogVisible=false">取消</el-button>
@@ -282,59 +244,85 @@
       </template>
     </el-dialog>
 
-    <!-- 查看入职申请对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="入职申请详情" width="700px">
-      <el-descriptions v-if="viewRecord" :column="2" border>
-        <el-descriptions-item label="工号">{{ viewRecord.employeeNo }}</el-descriptions-item>
-        <el-descriptions-item label="姓名">{{ viewRecord.name }}</el-descriptions-item>
-        <el-descriptions-item label="入职日期">{{ viewRecord.entryDate }}</el-descriptions-item>
-        <el-descriptions-item label="用工类型">{{ employmentTypeText(viewRecord.employmentType) }}</el-descriptions-item>
-        <el-descriptions-item label="性别">{{ viewRecord.gender === 1 ? '男' : viewRecord.gender === 2 ? '女' : '-' }}</el-descriptions-item>
-        <el-descriptions-item label="出生日期">{{ viewRecord.birthdate || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="手机号">{{ viewRecord.phone || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="身份证号">{{ viewRecord.idCardNo || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="所属组织">{{ orgNameMap[viewRecord.orgId] || viewRecord.orgId || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="岗位">{{ postNameMap[viewRecord.postId] || viewRecord.postId || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="基本工资">{{ viewRecord.basicSalary ? '¥' + viewRecord.basicSalary : '-' }}</el-descriptions-item>
-        <el-descriptions-item label="工资卡号">{{ viewRecord.bankAccount || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ viewRecord.statusText }}</el-descriptions-item>
-        <el-descriptions-item label="流程实例ID">{{ viewRecord.flowInstanceId || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="备注" :span="2">{{ viewRecord.remark || '-' }}</el-descriptions-item>
+    <!-- 查看入职申请弹窗 -->
+    <el-dialog v-model="viewDialogVisible" title="入职申请详情" width="500px">
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="工号">{{ viewRecord?.employeeNo || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="姓名">{{ viewRecord?.name || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="入职日期">{{ viewRecord?.entryDate || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="用工类型">{{ employmentTypeText(viewRecord?.employmentType) }}</el-descriptions-item>
+        <el-descriptions-item label="目标组织">{{ orgNameMap[viewRecord?.orgId ?? 0] || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="目标岗位">{{ postNameMap[viewRecord?.postId ?? 0] || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="基本工资">{{ viewRecord?.basicSalary ? '¥' + viewRecord.basicSalary : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="工资卡号">{{ viewRecord?.bankAccount || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ viewRecord?.statusText }}</el-descriptions-item>
+        <el-descriptions-item label="流程实例ID">{{ viewRecord?.flowInstanceId || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ viewRecord?.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTable } from '@/hooks/useTable'
 import * as api from '@/api/hr'
+import { getOrgTreeApi } from '@/api/org'
 
 const activeTab = ref('entry')
 
-/* ---- 下拉选项数据 ---- */
-const orgList = ref<api.OrgFlatOption[]>([])
-const postList = ref<api.PostFlatOption[]>([])
-const orgLoading = ref(false)
-const postLoading = ref(false)
+/* ---- 组织树数据 ---- */
+const orgTreeData = ref<any[]>([])
 const orgNameMap = ref<Record<number, string>>({})
-const postNameMap = ref<Record<number, string>>({})
 
-const loadOptions = async () => {
-  orgLoading.value = true
+const loadOrgTree = async () => {
   try {
-    const list = await api.getOrgFlatListApi()
-    orgList.value = list
-    orgNameMap.value = Object.fromEntries(list.map(o => [o.id, o.orgName]))
-  } finally { orgLoading.value = false }
+    const list = await getOrgTreeApi()
+    orgTreeData.value = markDisabledNodes(list)
+    // 构建 orgId -> orgName 映射
+    const flatList: any[] = []
+    const collect = (nodes: any[]) => {
+      for (const n of nodes) {
+        flatList.push(n)
+        if (n.children) collect(n.children)
+      }
+    }
+    collect(list)
+    orgNameMap.value = Object.fromEntries(flatList.map((o: any) => [o.id, o.orgName]))
+  } catch (e) {
+    console.error('[transfer] 加载组织树失败', e)
+  }
+}
+
+/** 为每个节点添加 disabled 字段：仅 orgType=3（部门）可选 */
+function markDisabledNodes(nodes: any[]): any[] {
+  return nodes.map(node => ({
+    ...node,
+    disabled: node.orgType !== 3,
+    children: node.children ? markDisabledNodes(node.children) : undefined
+  }))
+}
+
+/* ---- 岗位列表数据 ---- */
+const allPostList = ref<api.HrPostVO[]>([])
+const postLoading = ref(false)
+
+const loadAllPosts = async () => {
   postLoading.value = true
   try {
     const result = await api.getPostFlatListApi()
-    postList.value = result
-    postNameMap.value = Object.fromEntries(result.map(p => [p.id, p.postName]))
-  } finally { postLoading.value = false }
+    allPostList.value = result
+  } finally {
+    postLoading.value = false
+  }
 }
+
+// 根据选定部门过滤岗位列表
+const filteredPostList = computed(() => {
+  if (!entryForm.orgId) return []
+  return allPostList.value.filter(p => p.deptId === entryForm.orgId)
+})
 
 /* ---- 入职申请 ---- */
 const entryQuery = reactive({ pageNum: 1, pageSize: 20, status: undefined as number | undefined })
@@ -343,7 +331,7 @@ const { records: entryRecords, total: entryTotal, loading: entryLoading, loadDat
 const entryDialogVisible = ref(false)
 const entrySubmitLoading = ref(false)
 const entryFormRef = ref()
-const entryForm = reactive<api.EntryApplyDTO>({ employeeNo: '', name: '', entryDate: '', employmentType: 1, workExps: [], eduExps: [] })
+const entryForm = reactive<api.EntryApplyDTO>({ employeeNo: '', name: '', entryDate: '', employmentType: 1 })
 const entryRules = {
   employeeNo: [{ required: true, message: '工号不能为空' }],
   name: [{ required: true, message: '姓名不能为空' }],
@@ -352,70 +340,41 @@ const entryRules = {
 
 const openAdd = (tab: string) => {
   if (tab === 'entry') {
-    Object.assign(entryForm, { employeeNo: '', name: '', entryDate: '', employmentType: 1, workExps: [], eduExps: [] })
+    Object.assign(entryForm, { employeeNo: '', name: '', entryDate: '', employmentType: 1, orgId: undefined, postId: undefined, basicSalary: undefined, remark: '' })
     entryDialogVisible.value = true
   }
 }
 
+// 工作经历/学业经历数据（临时存储，提交时序列化为experienceData）
+const workExps = ref<Array<{ companyName: string; position?: string; department?: string; startDate: string; endDate?: string; isCurrent?: number; reasonForLeaving?: string; remark?: string }>>([])
+const eduExps = ref<Array<{ schoolName: string; degree?: string; major?: string; educationLevel?: string; startDate: string; graduationDate?: string; isGraduated?: number; certificateNo?: string; remark?: string }>>([])
+
 // 工作经历行操作
-const addWorkExpRow = () => {
-  if (!entryForm.workExps) entryForm.workExps = []
-  entryForm.workExps.push({ companyName: '', startDate: '' })
-}
-const removeWorkExpRow = (index: number) => {
-  entryForm.workExps!.splice(index, 1)
-}
+const addWorkExpRow = () => { workExps.value.push({ companyName: '', startDate: '' }) }
+const removeWorkExpRow = (index: number) => { workExps.value.splice(index, 1) }
 
 // 学业经历行操作
-const addEduExpRow = () => {
-  if (!entryForm.eduExps) entryForm.eduExps = []
-  entryForm.eduExps.push({ schoolName: '', startDate: '' })
-}
-const removeEduExpRow = (index: number) => {
-  entryForm.eduExps!.splice(index, 1)
-}
+const addEduExpRow = () => { eduExps.value.push({ schoolName: '', startDate: '' }) }
+const removeEduExpRow = (index: number) => { eduExps.value.splice(index, 1) }
 
 const handleSubmitEntry = async () => {
   await entryFormRef.value.validate()
-  // 将workExps和eduExps序列化为JSON字符串写入experienceData字段
   const submitData = {
     ...entryForm,
-    experienceData: JSON.stringify({
-      workExps: (entryForm.workExps || []).map((w: any) => ({
-        companyName: w.companyName || '',
-        position: w.position || '',
-        department: w.department || '',
-        startDate: w.startDate || '',
-        endDate: w.endDate || null,
-        isCurrent: w.isCurrent ?? 0,
-        reasonForLeaving: w.reasonForLeaving || '',
-        remark: w.remark || ''
-      })),
-      eduExps: (entryForm.eduExps || []).map((e: any) => ({
-        schoolName: e.schoolName || '',
-        degree: e.degree || '',
-        major: e.major || '',
-        educationLevel: e.educationLevel || '',
-        startDate: e.startDate || '',
-        graduationDate: e.graduationDate || null,
-        isGraduated: e.isGraduated ?? 0,
-        certificateNo: e.certificateNo || '',
-        remark: e.remark || ''
-      }))
-    })
+    experienceData: JSON.stringify({ workExps: workExps.value, eduExps: eduExps.value })
   } as any
-  delete submitData.workExps
-  delete submitData.eduExps
   entrySubmitLoading.value = true
   try {
     await api.submitEntryApi(submitData)
     ElMessage.success('提交成功')
     entryDialogVisible.value = false
+    workExps.value = []
+    eduExps.value = []
     loadEntryData()
   } finally { entrySubmitLoading.value = false }
 }
 
-const handleRevokeEntry = (row: api.EntryApplyVO) => {
+const handleRevokeEntry = (row: api.HrEntryApplyVO) => {
   ElMessageBox.confirm('确认撤销该入职申请?', '提示').then(async () => {
     await api.revokeEntryApi(row.id!)
     ElMessage.success('撤销成功')
@@ -425,16 +384,19 @@ const handleRevokeEntry = (row: api.EntryApplyVO) => {
 
 /* ---- 查看入职申请 ---- */
 const viewDialogVisible = ref(false)
-const viewRecord = ref<api.EntryApplyVO | null>(null)
-const handleView = (row: api.EntryApplyVO) => { viewRecord.value = row; viewDialogVisible.value = true }
+const viewRecord = ref<api.HrEntryApplyVO | null>(null)
+const handleView = (row: api.HrEntryApplyVO) => { viewRecord.value = row; viewDialogVisible.value = true }
+
 const employmentTypeText = (type?: number) => {
   const map: Record<number, string> = { 1: '正式', 2: '试用期', 3: '劳务派遣', 4: '临时工' }
   return type != null ? map[type] : '-'
 }
+
 const entryStatusType = (status?: number) => {
   const map: Record<number, string> = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger', 4: 'info' }
   return status != null ? map[status] : ''
 }
+
 const transferStatusType = (status?: number) => entryStatusType(status)
 
 /* ---- 转正 / 调岗 / 离职（占位） ---- */
@@ -447,5 +409,29 @@ const { records: transferRecords, total: transferTotal, loading: transferLoading
 const resignQuery = reactive({ pageNum: 1, pageSize: 20, status: undefined as number | undefined })
 const { records: resignRecords, total: resignTotal, loading: resignLoading, loadData: loadResignData } = useTable(api.getResignPageApi, resignQuery)
 
-onMounted(() => { loadOptions(); loadEntryData() })
+const handleRevokeRegular = (row: api.HrRegularApplyVO) => {
+  ElMessageBox.confirm('确认撤销该转正申请?', '提示').then(async () => {
+    await api.revokeRegularApi(row.id!)
+    ElMessage.success('撤销成功')
+    loadRegularData()
+  })
+}
+
+const handleRevokeTransfer = (row: api.HrTransferApplyVO) => {
+  ElMessageBox.confirm('确认撤销该调岗申请?', '提示').then(async () => {
+    await api.revokeTransferApi(row.id!)
+    ElMessage.success('撤销成功')
+    loadTransferData()
+  })
+}
+
+const handleRevokeResign = (row: api.HrResignApplyVO) => {
+  ElMessageBox.confirm('确认撤销该离职申请?', '提示').then(async () => {
+    await api.revokeResignApi(row.id!)
+    ElMessage.success('撤销成功')
+    loadResignData()
+  })
+}
+
+onMounted(() => { loadOrgTree(); loadAllPosts(); loadEntryData() })
 </script>

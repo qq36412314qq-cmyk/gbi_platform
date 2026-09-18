@@ -62,8 +62,6 @@ public class SalaryArchiveFlowHandler implements FlowBizHandler {
         newVersion.setPerformanceSalary(archive.getPerformanceSalary());
         newVersion.setPositionAllowance(archive.getPositionAllowance());
         newVersion.setOtherAllowance(archive.getOtherAllowance());
-        newVersion.setSocialSecurityPersonal(archive.getSocialSecurityPersonal());
-        newVersion.setHousingFundPersonal(archive.getHousingFundPersonal());
         newVersion.setRemark(archive.getRemark());
         archiveMapper.insert(newVersion);
 

@@ -11,9 +11,18 @@ import java.util.List;
 @Mapper
 public interface HrAttendanceRecordMapper extends BaseMapper<HrAttendanceRecord> {
 
-    @Select("SELECT id, company_id, employee_id, employee_name, attendance_month, attendance_day, clock_in_time, clock_out_time, clock_type, late_minutes, early_minutes, absent, leave_days, work_days, actual_days, remark FROM hr_attendance_record WHERE company_id = #{companyId} AND is_delete = 0 <if test='employeeId != null'>AND employee_id = #{employeeId}</if> <if test='attendanceMonth != null'>AND attendance_month = #{attendanceMonth}</if> ORDER BY attendance_day DESC LIMIT #{offset}, #{pageSize}")
-    List<HrAttendanceRecord> selectPage(@Param("companyId") Long companyId, @Param("employeeId") Long employeeId, @Param("attendanceMonth") String attendanceMonth, @Param("offset") int offset, @Param("pageSize") int pageSize);
+    // 分页查询：由Service层使用LambdaQueryWrapper构建，避免@Select注解中动态SQL与租户插件冲突
 
-    @Select("SELECT COUNT(*) FROM hr_attendance_record WHERE company_id = #{companyId} AND is_delete = 0 <if test='employeeId != null'>AND employee_id = #{employeeId}</if> <if test='attendanceMonth != null'>AND attendance_month = #{attendanceMonth}</if>")
-    long countByCondition(@Param("companyId") Long companyId, @Param("employeeId") Long employeeId, @Param("attendanceMonth") String attendanceMonth);
+    /** 按员工+月份聚合考勤数据，供薪资核算调用 */
+    @Select("SELECT " +
+            "employee_id, " +
+            "SUM(COALESCE(absent,0)) AS total_absent, " +
+            "SUM(COALESCE(late_minutes,0)) AS total_late_minutes, " +
+            "SUM(COALESCE(early_minutes,0)) AS total_early_minutes, " +
+            "COALESCE(SUM(CASE WHEN leave_type = 0 THEN CAST(leave_days AS DECIMAL(10,2)) ELSE 0 END),0) AS unpaid_leave_days " +
+            "FROM hr_attendance_record " +
+            "WHERE company_id = #{companyId} AND attendance_month = #{attendanceMonth} AND is_delete = 0 " +
+            "GROUP BY employee_id")
+    java.util.List<java.util.Map<String, Object>> selectMonthSummary(
+            @Param("companyId") Long companyId, @Param("attendanceMonth") String attendanceMonth);
 }

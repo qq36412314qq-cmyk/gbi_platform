@@ -92,6 +92,11 @@ export function submitSalaryRuleAuditApi(id: number) {
   return post<void>('/hr/salary/rule/submitAudit/' + id)
 }
 
+/* ==================== 薪资档案 hr_salary_archive ==================== */
+export function submitSalaryArchiveAuditApi(id: number) {
+  return post<void>('/hr/salary/archive/submitAudit/' + id)
+}
+
 /* ==================== 批量调薪 hr_salary_batch_adjust ==================== */
 export interface HrSalaryBatchAdjustVO {
   id: number

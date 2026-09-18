@@ -32,13 +32,17 @@ public class HrAttendanceServiceImpl implements HrAttendanceService {
     @Override
     public PageVO<HrAttendanceVO> pageAttendance(AttendanceQueryDTO dto) {
         LoginUser loginUser = UserContext.getLoginUser();
-        long total = attendanceRecordMapper.countByCondition(loginUser.getCompanyId(), dto.getEmployeeId(), dto.getAttendanceMonth());
-        int offset = (int)((dto.getPageNum() - 1) * dto.getPageSize());
-        int pageSize = dto.getPageSize().intValue();
-        List<HrAttendanceRecord> records = attendanceRecordMapper.selectPage(loginUser.getCompanyId(), dto.getEmployeeId(), dto.getAttendanceMonth(), offset, pageSize);
-        List<HrAttendanceVO> voList = records.stream().map(this::toVO).collect(Collectors.toList());
-        long pages = total > 0 ? (total + pageSize - 1) / pageSize : 0;
-        return new PageVO<>(voList, total, dto.getPageNum(), dto.getPageSize(), pages);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<HrAttendanceRecord> page =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(dto.getPageNum(), dto.getPageSize());
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<HrAttendanceRecord> wrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<HrAttendanceRecord>()
+                        .eq(HrAttendanceRecord::getCompanyId, loginUser.getCompanyId())
+                        .eq(dto.getEmployeeId() != null, HrAttendanceRecord::getEmployeeId, dto.getEmployeeId())
+                        .eq(dto.getAttendanceMonth() != null, HrAttendanceRecord::getAttendanceMonth, dto.getAttendanceMonth())
+                        .orderByDesc(HrAttendanceRecord::getAttendanceDay);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<HrAttendanceRecord> result = attendanceRecordMapper.selectPage(page, wrapper);
+        List<HrAttendanceVO> voList = result.getRecords().stream().map(this::toVO).collect(Collectors.toList());
+        return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
     }
 
     @Override
@@ -65,8 +69,8 @@ public class HrAttendanceServiceImpl implements HrAttendanceService {
             attendance.setClockInTime(record.getClockTime());
             attendance.setClockType(toClockType(record));
             attendance.setLateMinutes(calcLateMinutes(record));
-            attendance.setWorkDays("1");
-            attendance.setActualDays("1");
+            attendance.setWorkDays(1);
+            attendance.setActualDays(1);
             attendanceRecordMapper.insert(attendance);
             count++;
         }
@@ -77,7 +81,13 @@ public class HrAttendanceServiceImpl implements HrAttendanceService {
     @Override
     public List<HrAttendanceVO> exportAttendance(Long employeeId, String attendanceMonth) {
         LoginUser loginUser = UserContext.getLoginUser();
-        return attendanceRecordMapper.selectPage(loginUser.getCompanyId(), employeeId, attendanceMonth, 0, 9999).stream().map(this::toVO).collect(Collectors.toList());
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<HrAttendanceRecord> wrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<HrAttendanceRecord>()
+                        .eq(HrAttendanceRecord::getCompanyId, loginUser.getCompanyId())
+                        .eq(employeeId != null, HrAttendanceRecord::getEmployeeId, employeeId)
+                        .eq(attendanceMonth != null, HrAttendanceRecord::getAttendanceMonth, attendanceMonth)
+                        .orderByDesc(HrAttendanceRecord::getAttendanceDay);
+        return attendanceRecordMapper.selectList(wrapper).stream().map(this::toVO).collect(Collectors.toList());
     }
 
     private HrAttendanceVO toVO(HrAttendanceRecord entity) {

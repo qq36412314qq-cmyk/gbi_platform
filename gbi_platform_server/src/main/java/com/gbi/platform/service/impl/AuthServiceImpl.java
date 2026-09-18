@@ -10,10 +10,12 @@ import com.gbi.platform.common.security.LoginUser;
 import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.dto.LoginDTO;
 import com.gbi.platform.entity.SysMenu;
+import com.gbi.platform.entity.SysOrg;
 import com.gbi.platform.entity.SysRole;
 import com.gbi.platform.entity.SysRoleMenuRel;
 import com.gbi.platform.entity.SysUser;
 import com.gbi.platform.entity.SysUserRoleRel;
+import com.gbi.platform.entity.hr.HrEmployee;
 import com.gbi.platform.mapper.SysMenuMapper;
 import com.gbi.platform.mapper.SysRoleMapper;
 import com.gbi.platform.mapper.SysRoleMenuRelMapper;
@@ -60,6 +62,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
 
     private final AuditLogUtil auditLogUtil;
+
+    private final com.gbi.platform.mapper.hr.HrEmployeeMapper employeeMapper;
 
 
     @Override
@@ -146,7 +150,17 @@ public class AuthServiceImpl implements AuthService {
                 permissions.addAll(perms);
             }
         }
-        return new LoginUser(user.getId(), user.getCompanyId(), user.getUsername(),
-                user.getRealName(), permissions, roleCodes);
+        // 关联员工档案，注入员工上下文
+        LoginUser loginUser = new LoginUser(user.getId(), user.getCompanyId(), user.getUsername(),
+                user.getRealName(), permissions, roleCodes, null, null, null);
+        if (user.getEmployeeId() != null) {
+            HrEmployee employee = employeeMapper.selectById(user.getEmployeeId());
+            if (employee != null) {
+                loginUser.setEmployeeId(employee.getId());
+                loginUser.setOrgId(employee.getOrgId());
+                loginUser.setPostId(employee.getPostId());
+            }
+        }
+        return loginUser;
     }
 }

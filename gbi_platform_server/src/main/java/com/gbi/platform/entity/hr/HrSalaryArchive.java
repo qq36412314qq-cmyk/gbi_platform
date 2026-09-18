@@ -31,7 +31,5 @@ public class HrSalaryArchive extends BaseEntity {
     private BigDecimal performanceSalary;
     private BigDecimal positionAllowance;
     private BigDecimal otherAllowance;
-    private BigDecimal socialSecurityPersonal;
-    private BigDecimal housingFundPersonal;
     private String remark;
 }

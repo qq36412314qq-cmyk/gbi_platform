@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 人力资源模块接口
  */
 import { get, post } from '@/utils/request'
@@ -181,31 +181,45 @@ export function deleteEduExpApi(id: number): Promise<void> {
   return post<void>(`/hr/employee/eduExp/delete/${id}`)
 }
 
-
 /* ==================== 下拉选项接口 ==================== */
-export interface OrgFlatOption { id: number; orgName: string }
-export interface PostFlatOption { id: number; postName: string; postCode: string }
+export interface OrgFlatOption { id: number; orgName: string; orgType?: number }
+export interface PostFlatOption { id: number; postName: string; postCode: string; deptId?: number; orgName?: string }
 export function getOrgFlatListApi(): Promise<OrgFlatOption[]> {
-  return get<OrgFlatOption[]>(`/org/tree`)
+  return get<OrgFlatOption[]>(`/org/tree`).then(list => flattenOrgTree(list))
+}
+
+function flattenOrgTree(nodes: any[]): OrgFlatOption[] {
+  const result: OrgFlatOption[] = []
+  function walk(list: any[]) {
+    for (const node of list) {
+      result.push({ id: node.id, orgName: node.orgName, orgType: node.orgType })
+      if (node.children && node.children.length > 0) {
+        walk(node.children)
+      }
+    }
+  }
+  walk(nodes)
+  return result
 }
 export function getPostFlatListApi(): Promise<PostFlatOption[]> {
-  return get<PageResult<PostVO>>(`/hr/org/post/page`, { pageNum: 1, pageSize: 500, status: 1 }).then(r => r.records)
+  return get<PageResult<HrPostVO>>(`/hr/org/post/page`, { pageNum: 1, pageSize: 500, status: 1 }).then(r => r.records)
 }
 
 /* ==================== 组织岗位 ==================== */
-export interface PostQueryDTO {
+export interface HrPostQueryDTO {
   pageNum: number
   pageSize: number
   status?: number
 }
 
-export interface PostVO {
+export interface HrPostVO {
   id: number
   companyId: number
   postName: string
   postCode: string
   postLevel?: string
   deptId?: number
+  orgName?: string
   status: number
   statusText?: string
   remark?: string
@@ -214,6 +228,7 @@ export interface PostVO {
 
 export interface PostDTO {
   id?: number
+  companyId: number
   postName: string
   postCode: string
   postLevel?: string
@@ -222,8 +237,8 @@ export interface PostDTO {
   remark?: string
 }
 
-export function getPostPageApi(params: PostQueryDTO): Promise<PageResult<PostVO>> {
-  return get<PageResult<PostVO>>('/hr/org/post/page', params)
+export function getPostPageApi(params: HrPostQueryDTO): Promise<PageResult<HrPostVO>> {
+  return get<PageResult<HrPostVO>>('/hr/org/post/page', params)
 }
 
 export function addPostApi(data: PostDTO): Promise<void> {
@@ -238,35 +253,56 @@ export function deletePostApi(id: number): Promise<void> {
   return post<void>(`/hr/org/post/delete/${id}`)
 }
 
-/* ==================== 入职申请 ==================== */
-export interface EntryApplyQueryDTO {
-  pageNum: number
-  pageSize: number
-  status?: number
+export function getPostByDeptApi(deptId: number): Promise<HrPostVO[]> {
+  return get<HrPostVO[]>(`/hr/org/post/byDept/${deptId}`)
 }
 
-export interface EntryApplyVO {
-  id: number
-  companyId: number
+/* ==================== 人事异动 ==================== */
+export interface HrEntryApplyVO {
+  id?: number
   employeeNo: string
   name: string
-  idCardNo?: string
-  phone?: string
-  gender?: number
-  birthdate?: string
   entryDate: string
   employmentType?: number
-  orgId?: number
-  postId?: number
-  basicSalary?: number
-  bankAccount?: string
-  autoCreateUser?: number
-  flowInstanceId?: number
+  employmentTypeText?: string
   status: number
   statusText?: string
   remark?: string
-  employmentTypeText?: string
-  experienceData?: string
+  createTime: string
+}
+
+export interface HrRegularApplyVO {
+  id?: number
+  employeeNo: string
+  employeeName: string
+  regularDate: string
+  status: number
+  statusText?: string
+  remark?: string
+  createTime: string
+}
+
+export interface HrTransferApplyVO {
+  id?: number
+  employeeNo: string
+  employeeName: string
+  transferDate: string
+  targetPostName?: string
+  status: number
+  statusText?: string
+  remark?: string
+  createTime: string
+}
+
+export interface HrResignApplyVO {
+  id?: number
+  employeeNo: string
+  employeeName: string
+  resignDate: string
+  status: number
+  statusText?: string
+  reason?: string
+  remark?: string
   createTime: string
 }
 
@@ -285,85 +321,13 @@ export interface EntryApplyDTO {
   bankAccount?: string
   autoCreateUser?: number
   remark?: string
-  workExps?: WorkExpDTO[]
-  eduExps?: EduExpDTO[]
-}
-
-export function getEntryPageApi(params: EntryApplyQueryDTO): Promise<PageResult<EntryApplyVO>> {
-  return get<PageResult<EntryApplyVO>>('/hr/transfer/entry/page', params)
-}
-
-export function submitEntryApi(data: EntryApplyDTO): Promise<number> {
-  return post<number>('/hr/transfer/entry/submit', data)
-}
-
-export function revokeEntryApi(id: number): Promise<void> {
-  return post<void>(`/hr/transfer/entry/revoke/${id}`)
-}
-
-export function getEntryDetailApi(id: number): Promise<EntryApplyVO> {
-}
-
-/* =================== 转正申请 ==================== */
-export interface RegularApplyQueryDTO {
-  pageNum: number
-  pageSize: number
-  status?: number
-}
-
-export interface RegularApplyVO {
-  id: number
-  companyId: number
-  employeeId: number
-  employeeName: string
-  regularDate: string
-  remark?: string
-  flowInstanceId?: number
-  status: number
-  statusText?: string
-  createTime: string
+  experienceData?: string
 }
 
 export interface RegularApplyDTO {
   employeeId: number
   regularDate: string
   remark?: string
-}
-
-export function getRegularPageApi(params: RegularApplyQueryDTO): Promise<PageResult<RegularApplyVO>> {
-  return get<PageResult<RegularApplyVO>>('/hr/transfer/regular/page', params)
-}
-
-export function submitRegularApi(data: RegularApplyDTO): Promise<number> {
-  return post<number>('/hr/transfer/regular/submit', data)
-}
-
-export function revokeRegularApi(id: number): Promise<void> {
-  return post<void>(`/hr/transfer/regular/revoke/${id}`)
-}
-
-/* ==================== 调岗申请 ==================== */
-export interface TransferApplyQueryDTO {
-  pageNum: number
-  pageSize: number
-  status?: number
-}
-
-export interface TransferApplyVO {
-  id: number
-  companyId: number
-  employeeId: number
-  employeeName: string
-  oldOrgId?: number
-  oldPostId?: number
-  newOrgId: number
-  newPostId: number
-  newPostLevel?: string
-  transferDate: string
-  reason?: string
-  flowInstanceId?: number
-  status: number
-  statusText?: string
 }
 
 export interface TransferApplyDTO {
@@ -374,41 +338,6 @@ export interface TransferApplyDTO {
   reason?: string
 }
 
-export function getTransferPageApi(params: TransferApplyQueryDTO): Promise<PageResult<TransferApplyVO>> {
-  return get<PageResult<TransferApplyVO>>('/hr/transfer/transfer/page', params)
-}
-
-export function submitTransferApi(data: TransferApplyDTO): Promise<number> {
-  return post<number>('/hr/transfer/transfer/submit', data)
-}
-
-export function revokeTransferApi(id: number): Promise<void> {
-  return post<void>(`/hr/transfer/transfer/revoke/${id}`)
-}
-
-/* ==================== 离职申请 ==================== */
-export interface ResignApplyQueryDTO {
-  pageNum: number
-  pageSize: number
-  status?: number
-}
-
-export interface ResignApplyVO {
-  id: number
-  companyId: number
-  employeeId: number
-  employeeName: string
-  resignDate: string
-  resignType?: number
-  resignTypeText?: string
-  reason?: string
-  handoverRemark?: string
-  flowInstanceId?: number
-  status: number
-  statusText?: string
-  createTime: string
-}
-
 export interface ResignApplyDTO {
   employeeId: number
   resignDate: string
@@ -417,12 +346,48 @@ export interface ResignApplyDTO {
   handoverRemark?: string
 }
 
-export function getResignPageApi(params: ResignApplyQueryDTO): Promise<PageResult<ResignApplyVO>> {
-  return get<PageResult<ResignApplyVO>>('/hr/transfer/resign/page', params)
+export function getEntryPageApi(params: { pageNum: number; pageSize: number; status?: number }): Promise<PageResult<HrEntryApplyVO>> {
+  return get<PageResult<HrEntryApplyVO>>('/hr/transfer/entry/page', params)
 }
 
-export function submitResignApi(data: ResignApplyDTO): Promise<number> {
-  return post<number>('/hr/transfer/resign/submit', data)
+export function getRegularPageApi(params: { pageNum: number; pageSize: number; status?: number }): Promise<PageResult<HrRegularApplyVO>> {
+  return get<PageResult<HrRegularApplyVO>>('/hr/transfer/regular/page', params)
+}
+
+export function getTransferPageApi(params: { pageNum: number; pageSize: number; status?: number }): Promise<PageResult<HrTransferApplyVO>> {
+  return get<PageResult<HrTransferApplyVO>>('/hr/transfer/transfer/page', params)
+}
+
+export function getResignPageApi(params: { pageNum: number; pageSize: number; status?: number }): Promise<PageResult<HrResignApplyVO>> {
+  return get<PageResult<HrResignApplyVO>>('/hr/transfer/resign/page', params)
+}
+
+export function submitEntryApi(data: EntryApplyDTO): Promise<void> {
+  return post<void>('/hr/transfer/entry/submit', data)
+}
+
+export function submitRegularApi(data: RegularApplyDTO): Promise<void> {
+  return post<void>('/hr/transfer/regular/submit', data)
+}
+
+export function submitTransferApi(data: TransferApplyDTO): Promise<void> {
+  return post<void>('/hr/transfer/transfer/submit', data)
+}
+
+export function submitResignApi(data: ResignApplyDTO): Promise<void> {
+  return post<void>('/hr/transfer/resign/submit', data)
+}
+
+export function revokeEntryApi(id: number): Promise<void> {
+  return post<void>(`/hr/transfer/entry/revoke/${id}`)
+}
+
+export function revokeRegularApi(id: number): Promise<void> {
+  return post<void>(`/hr/transfer/regular/revoke/${id}`)
+}
+
+export function revokeTransferApi(id: number): Promise<void> {
+  return post<void>(`/hr/transfer/transfer/revoke/${id}`)
 }
 
 export function revokeResignApi(id: number): Promise<void> {
@@ -494,8 +459,6 @@ export interface SalaryArchiveVO {
   performanceSalary: number
   positionAllowance: number
   otherAllowance: number
-  socialSecurityPersonal: number
-  housingFundPersonal: number
   remark?: string
   createTime: string
 }
@@ -508,8 +471,6 @@ export interface SalaryArchiveDTO {
   performanceSalary?: number
   positionAllowance?: number
   otherAllowance?: number
-  socialSecurityPersonal?: number
-  housingFundPersonal?: number
   effectiveDate?: string
   remark?: string
 }
@@ -551,6 +512,12 @@ export interface SalaryMonthVO {
   housingFund: number
   taxAmount: number
   deductionAmount: number
+  attendanceDeduction?: number
+  absentDeduction?: number
+  lateDeduction?: number
+  earlyDeduction?: number
+  unpaidLeaveDeduction?: number
+  minWageProtected?: number
   grossAmount: number
   netAmount: number
   payStatus: number
@@ -565,6 +532,7 @@ export interface SalaryMonthVO {
 export interface SalaryMonthDTO {
   employeeIds: number[]
   salaryMonth: string
+  syncAttendance?: number
 }
 
 export function getSalaryMonthPageApi(params: SalaryMonthQueryDTO): Promise<PageResult<SalaryMonthVO>> {

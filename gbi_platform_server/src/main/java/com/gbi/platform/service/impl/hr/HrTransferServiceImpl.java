@@ -7,6 +7,7 @@ import com.gbi.platform.common.exception.BizException;
 import com.gbi.platform.common.security.LoginUser;
 import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.dto.hr.*;
+import com.gbi.platform.entity.SysUser;
 import com.gbi.platform.entity.hr.*;
 import com.gbi.platform.mapper.hr.*;
 import com.gbi.platform.service.hr.HrEmployeeService;
@@ -36,6 +37,7 @@ public class HrTransferServiceImpl implements HrTransferService {
     private final HrEmployeeService hrEmployeeService;
     private final FlowEngineService flowEngineService;
     private final AuditLogUtil auditLogUtil;
+    private final com.gbi.platform.mapper.SysUserMapper sysUserMapper;
 
     @Override
     public PageVO<HrEntryApplyVO> pageEntry(Long pageNum, Long pageSize, Integer status) {
@@ -343,6 +345,15 @@ public class HrTransferServiceImpl implements HrTransferService {
             employee.setEmployeeStatus(3);
             employee.setResignDate(apply.getResignDate());
             employeeMapper.updateById(employee);
+
+            // 方案B：自动停用关联账号
+            if (employee.getUserId() != null) {
+                SysUser user = sysUserMapper.selectById(employee.getUserId());
+                if (user != null) {
+                    user.setStatus(0); // 停用账号
+                    sysUserMapper.updateById(user);
+                }
+            }
         }
         apply.setStatus(CommonConst.APPLY_STATUS_PASS);
         resignApplyMapper.updateById(apply);

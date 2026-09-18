@@ -103,23 +103,53 @@
   - 后端EntryApplyDTO暂不支持workExps/eduExps字段，前端数据会静默忽略
   - 如需完整功能，需同步修改后端DTO和Service层
 
-## 【2026-09-15 11:00:00】入职申请经历数据持久化：审批通过后写入员工子表
+## 【2026-09-15 14:00:00】薪酬社保核算体系 v2.0 + 考勤联动规范 v1.0 升级实施
 
-- 用户原始需求：入职申请提交的工作经历和学业经历数据，在审批通过后写入hr_employee_work_exp和hr_employee_edu_exp表
+- 用户原始需求：根据《薪酬社保核算体系升级方案-v2.0.md》和《薪酬核算考勤联动规范.md》实施全链路升级
 - 修改涉及文件：
-  - gbi_platform_docs/attachments/sql/upgrade_v2.9_entry_experience.sql（新建）
-  - gbi_platform_server/src/main/java/com/gbi/platform/dto/hr/EntryApplyDTO.java（修改）
-  - gbi_platform_server/src/main/java/com/gbi/platform/entity/hr/HrEntryApply.java（修改）
-  - gbi_platform_server/src/main/java/com/gbi/platform/vo/hr/HrEntryApplyVO.java（修改）
-  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrEmployeeServiceImpl.java（修改）
-  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrTransferServiceImpl.java（修改）
+  - gbi_platform_server/src/main/java/com/gbi/platform/entity/hr/HrSalaryArchive.java（删除socialSecurityPersonal/housingFundPersonal）
+  - gbi_platform_server/src/main/java/com/gbi/platform/entity/hr/HrSalaryRule.java（新增skipAttendance/latePenaltyRate/earlyPenaltyRate）
+  - gbi_platform_server/src/main/java/com/gbi/platform/entity/hr/HrAttendanceRecord.java（新增leaveType/leaveDaysDetail）
+  - gbi_platform_server/src/main/java/com/gbi/platform/entity/hr/HrSalaryMonth.java（新增考勤扣款相关字段）
+  - gbi_platform_server/src/main/java/com/gbi/platform/dto/hr/SalaryArchiveDTO.java（删除社保字段）
+  - gbi_platform_server/src/main/java/com/gbi/platform/dto/hr/SalaryMonthDTO.java（新增syncAttendance）
+  - gbi_platform_server/src/main/java/com/gbi/platform/vo/hr/HrSalaryArchiveVO.java（删除社保字段）
+  - gbi_platform_server/src/main/java/com/gbi/platform/vo/hr/HrSalaryMonthVO.java（新增考勤扣款字段）
+  - gbi_platform_server/src/main/java/com/gbi/platform/mapper/hr/HrAttendanceRecordMapper.java（新增selectMonthSummary聚合查询）
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrSocialCalcServiceImpl.java（完整实现generateMonthSalary）
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrSalaryServiceImpl.java（委托核算服务+考勤扣款+最低工资保护）
+  - gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/SocialController.java（写操作返回废弃提示）
+  - gbi_platform_admin/src/api/hr.ts（类型定义更新）
+  - gbi_platform_admin/src/views/hr/salary/index.vue（档案移除社保列、月度新增个税/考勤扣款列、生成弹窗加考勤开关）
+  - gbi_platform_admin/src/views/hr/social/index.vue（废弃模式：隐藏新增按钮、禁用操作列）
+  - gbi_platform_admin/src/views/hr/socialCalc/index.vue（补充分项单位字段）
 - 变更摘要：
-  1. SQL：hr_entry_apply表新增experience_data TEXT字段存储JSON数据
-  2. 后端DTO/Entity/VO：新增experienceData字段，含完整JSON格式示例注释
-  3. HrTransferServiceImpl.submitEntry()：保存前端提交的JSON数据到申请单
-  4. HrEmployeeServiceImpl.createFromEntry()：审批通过后解析JSON并批量写入子表
-  5. JSON解析失败不影响主流程，仅记录日志降级处理
+  1. 废除 hr_salary_archive 中静态快照字段 socialSecurityPersonal/housingFundPersonal，社保公积金改为运行时动态计算
+  2. 完整实现 HrSocialCalcServiceImpl.generateMonthSalary()：读档案→查城市费率→clamp基数→分项计算→写 calc_detail + salary_month
+  3. HrSalaryServiceImpl.generateMonth() 委托核算服务，并新增可选考勤扣款逻辑（旷工/迟到/早退/事假 + 最低工资保护）
+  4. SocialController 写操作全部返回废弃提示，查询接口保留
+  5. 前端薪资档案页移除社保/公积金列；月度薪资页新增个税、考勤扣款列及明细入口；生成弹窗增加同步考勤复选框
+  6. 社保核算明细页补全养老/医疗/失业/工伤/生育/长护/公积金的个人+单位分项显示
 - 风险与注意事项：
-  - 需先执行upgrade_v2.9_entry_experience.sql添加数据库字段
-  - JSON格式固定为{"workExps":[...],"eduExps":[...]}，详见代码注释
-  - 解析异常时降级处理，员工档案仍可正常创建
+  - 需先执行 SQL 升级脚本（用户已手动完成）：hr_attendance_record 新增 leave_type 等字段、hr_salary_rule 新增 skipAttendance、hr_salary_month 新增考勤扣款列、sys_city 新增 min_wage
+  - 首次运行 generateMonthSalary() 会覆盖当月所有 hr_salary_month 记录（已存在的走 update）
+  - 考勤扣款默认不启用，需生成时勾选"同步考勤扣款"
+  - 新员工入职当月15日后为首次生成薪资时豁免最低工资保护
+
+## 【2026-09-15 15:00:00】创建 v2.9 薪酬社保核算体系升级 SQL 脚本
+
+- 用户原始需求：根据《薪酬社保核算体系升级方案-v2.0.md》创建缺失的 SQL 升级脚本，包含 hr_salary_archive 字段清理、hr_social_security 废弃标记、hr_social_calc_detail 索引补充
+- 修改涉及文件：
+  - gbi_platform_docs/attachments/sql/upgrade_v2.9_salary_social_fix.sql（新建）
+- 变更摘要：
+  1. DROP hr_salary_archive 的 social_security_personal / housing_fund_personal 两个静态快照字段
+  2. 对 hr_salary_archive 全部字段补充完整注释（MySQL ALTER TABLE MODIFY COLUMN）
+  3. hr_social_security 新增 deprecated 列，存量记录全量标记为已废弃
+  4. hr_social_calc_detail 新增 idx_company_month 索引（company_id + salary_month + is_delete）
+  5. 附带可选的历史手工台账数据迁移 SQL（注释形式，供参考）
+- 风险与注意事项：
+  - DROP 字段前需确认无外键引用（本表无外键，安全）
+  - deprecated 标记后前端 SocialController 已返回废弃提示，旧数据仍可查询
+  - 该脚本需在 v2.10 之前执行
+
+

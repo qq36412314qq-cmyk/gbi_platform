@@ -63,7 +63,7 @@
                     <el-table-column prop="schoolName" label="学校名称" min-width="150" />
                     <el-table-column prop="degree" label="学历" width="100" />
                     <el-table-column prop="major" label="专业" width="120" />
-                    <el-table-column prop="educationLevel" label="教育形式" width="100" />
+                    <!-- <el-table-column prop="educationLevel" label="教育形式" width="100" /> -->
                     <el-table-column prop="startDate" label="入学时间" width="110" />
                     <el-table-column prop="graduationDate" label="毕业时间" width="110" />
                     <el-table-column prop="isGraduatedText" label="状态" width="80" align="center">
@@ -146,7 +146,7 @@
         <el-form-item label="学校名称" prop="schoolName"><el-input v-model="eduForm.schoolName" placeholder="请输入学校名称" /></el-form-item>
         <el-form-item label="学历"><el-input v-model="eduForm.degree" placeholder="如：本科/硕士/博士" /></el-form-item>
         <el-form-item label="专业"><el-input v-model="eduForm.major" placeholder="请输入专业" /></el-form-item>
-        <el-form-item label="教育形式"><el-input v-model="eduForm.educationLevel" placeholder="如：全日制/在职/自考" /></el-form-item>
+        <!-- <el-form-item label="教育形式"><el-input v-model="eduForm.educationLevel" placeholder="如：全日制/在职/自考" /></el-form-item> -->
         <el-form-item label="入学时间" prop="startDate"><el-date-picker v-model="eduForm.startDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
         <el-form-item label="毕业时间"><el-date-picker v-model="eduForm.graduationDate" type="date" value-format="YYYY-MM-DD" style="width:100%" :disabled="eduForm.isGraduated === 1" /></el-form-item>
         <el-form-item label="是否毕业">

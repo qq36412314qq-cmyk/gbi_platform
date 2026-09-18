@@ -39,6 +39,15 @@ public class LoginUser implements Serializable {
     /** 角色编码集合 */
     private List<String> roleCodes;
 
+    /** 关联员工ID */
+    private Long employeeId;
+
+    /** 所属组织ID */
+    private Long orgId;
+
+    /** 岗位ID */
+    private Long postId;
+
     /**
      * 是否超级管理员（集团全局）
      */

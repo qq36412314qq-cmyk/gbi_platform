@@ -37,4 +37,7 @@ public class SysUser extends BaseEntity {
 
     /** 账号状态 0禁用 1正常 */
     private Integer status;
+
+    /** 关联hr_employee.id（登录账号关联的员工档案） */
+    private Long employeeId;
 }

@@ -19,6 +19,8 @@ import com.gbi.platform.mapper.hr.HrEmployeeMapper;
 import com.gbi.platform.mapper.hr.HrEntryApplyMapper;
 import com.gbi.platform.mapper.hr.HrEmployeeEduExpMapper;
 import com.gbi.platform.mapper.hr.HrEmployeeWorkExpMapper;
+import com.gbi.platform.mapper.SysUserMapper;
+import com.gbi.platform.entity.SysUser;
 import com.gbi.platform.service.hr.HrEmployeeService;
 import com.gbi.platform.vo.hr.EduExpVO;
 import com.gbi.platform.vo.hr.HrEmployeeVO;
@@ -76,6 +78,7 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
     private final HrEmployeeEduExpMapper eduExpMapper;
     private final AuditLogUtil auditLogUtil;
     private final ObjectMapper objectMapper;
+    private final SysUserMapper sysUserMapper;
 
     @Override
     public PageVO<HrEmployeeVO> page(Long pageNum, Long pageSize, String name, String employeeNo, Integer employeeStatus) {
@@ -226,6 +229,34 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
 
         // 写入工作经历和学业经历
         writeExperienceData(apply, employee.getId());
+
+        // 自动创建系统账号
+        if (Integer.valueOf(1).equals(apply.getAutoCreateUser())) {
+            createSysUser(apply, employee);
+        }
+    }
+
+    /**
+     * 根据入职申请自动创建系统登录账号
+     */
+    private void createSysUser(HrEntryApply apply, HrEmployee employee) {
+        try {
+            SysUser user = new SysUser();
+            user.setCompanyId(apply.getCompanyId());
+            user.setUsername(apply.getEmployeeNo()); // 工号作为登录账号
+            user.setRealName(apply.getName());
+            user.setPhone(apply.getPhone());
+            user.setStatus(CommonConst.STATUS_ENABLED);
+            user.setEmployeeId(employee.getId()); // 关联员工档案
+            // 默认密码：123456（加密存储）
+            user.setPassword("$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi");
+            sysUserMapper.insert(user);
+            employee.setUserId(user.getId());
+            employeeMapper.updateById(employee);
+            log.info("自动创建系统账号成功：userId={}, employeeId={}, employeeNo={}", user.getId(), employee.getId(), apply.getEmployeeNo());
+        } catch (Exception e) {
+            log.error("自动创建系统账号失败：entryApplyId={}, employeeId={}, error={}", apply.getId(), employee.getId(), e.getMessage(), e);
+        }
     }
 
     /**

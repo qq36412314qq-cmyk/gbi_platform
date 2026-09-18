@@ -32,4 +32,7 @@ public class HrCity extends BaseEntity {
 
     /** 备注 */
     private String remark;
+
+    /** 当月最低工资标准（元），0表示未配置不执行保护 */
+    private java.math.BigDecimal minWage;
 }

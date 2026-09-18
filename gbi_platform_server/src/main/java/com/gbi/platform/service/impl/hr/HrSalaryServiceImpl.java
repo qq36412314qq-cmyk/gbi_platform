@@ -1,4 +1,4 @@
-﻿package com.gbi.platform.service.impl.hr;
+package com.gbi.platform.service.impl.hr;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -21,9 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
-
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,6 +38,10 @@ public class HrSalaryServiceImpl implements HrSalaryService {
     private final HrEmployeeMapper employeeMapper;
     private final AuditLogUtil auditLogUtil;
     private final com.gbi.platform.service.FlowEngineService flowEngineService;
+    private final com.gbi.platform.service.hr.HrSocialCalcService socialCalcService;
+    private final com.gbi.platform.mapper.hr.HrAttendanceRecordMapper attendanceRecordMapper;
+    private final com.gbi.platform.mapper.hr.HrSalaryRuleMapper salaryRuleMapper;
+    private final com.gbi.platform.mapper.hr.HrCityMapper cityMapper;
 
     @Override
     public PageVO<HrSalaryArchiveVO> pageArchive(Long pageNum, Long pageSize, Long employeeId) {
@@ -74,8 +80,14 @@ public class HrSalaryServiceImpl implements HrSalaryService {
         archive.setGradeName(dto.getGradeName());
         archive.setRuleId(dto.getRuleId());
         archive.setRuleName(dto.getRuleName());
-        // 版本化字段赋默认值
-        archive.setVersionNo(dto.getVersionNo() != null ? dto.getVersionNo() : 1);
+        // 版本化字段赋默认值：查询该员工最大版本号后+1
+        LambdaQueryWrapper<HrSalaryArchive> versionQuery = new LambdaQueryWrapper<HrSalaryArchive>()
+                .eq(HrSalaryArchive::getEmployeeId, dto.getEmployeeId())
+                .eq(HrSalaryArchive::getCompanyId, loginUser.getCompanyId())
+                .orderByDesc(HrSalaryArchive::getVersionNo)
+                .last("LIMIT 1");
+        HrSalaryArchive maxVersionArchive = salaryArchiveMapper.selectOne(versionQuery);
+        archive.setVersionNo(maxVersionArchive != null ? maxVersionArchive.getVersionNo() + 1 : 1);
         archive.setSourceType(dto.getSourceType() != null ? dto.getSourceType() : 2);
         archive.setSourceId(dto.getSourceId());
         archive.setEffectiveDate(dto.getEffectiveDate() != null ? dto.getEffectiveDate() : LocalDate.now());
@@ -84,8 +96,6 @@ public class HrSalaryServiceImpl implements HrSalaryService {
         archive.setPerformanceSalary(dto.getPerformanceSalary());
         archive.setPositionAllowance(dto.getPositionAllowance());
         archive.setOtherAllowance(dto.getOtherAllowance());
-        archive.setSocialSecurityPersonal(dto.getSocialSecurityPersonal());
-        archive.setHousingFundPersonal(dto.getHousingFundPersonal());
         archive.setRemark(dto.getRemark());
         archive.setCreateBy(loginUser.getUserId());
         salaryArchiveMapper.insert(archive);
@@ -105,8 +115,6 @@ public class HrSalaryServiceImpl implements HrSalaryService {
         archive.setPerformanceSalary(dto.getPerformanceSalary());
         archive.setPositionAllowance(dto.getPositionAllowance());
         archive.setOtherAllowance(dto.getOtherAllowance());
-        archive.setSocialSecurityPersonal(dto.getSocialSecurityPersonal());
-        archive.setHousingFundPersonal(dto.getHousingFundPersonal());
         archive.setRemark(dto.getRemark());
         archive.setUpdateBy(UserContext.getLoginUser().getUserId());
         salaryArchiveMapper.updateById(archive);
@@ -151,29 +159,139 @@ public class HrSalaryServiceImpl implements HrSalaryService {
     @Transactional(rollbackFor = Exception.class)
     public void generateMonth(SalaryMonthDTO dto) {
         LoginUser loginUser = UserContext.getLoginUser();
-        for (Long empId : dto.getEmployeeIds()) {
-            HrEmployee employee = employeeMapper.selectById(empId);
-            if (employee == null || !loginUser.getCompanyId().equals(employee.getCompanyId())) continue;
-            HrSalaryArchive archive = salaryArchiveMapper.selectOne(
-                    new LambdaQueryWrapper<HrSalaryArchive>()
-                            .eq(HrSalaryArchive::getEmployeeId, empId)
-                            .eq(HrSalaryArchive::getCompanyId, loginUser.getCompanyId()));
-            HrSalaryMonth month = new HrSalaryMonth();
-            month.setCompanyId(loginUser.getCompanyId());
-            month.setEmployeeId(empId);
-            month.setEmployeeName(employee.getName());
-            month.setSalaryMonth(dto.getSalaryMonth());
-            month.setBasicSalary(archive != null ? archive.getBasicSalary() : employee.getBasicSalary());
-            month.setPerformanceSalary(archive != null ? archive.getPerformanceSalary() : BigDecimal.ZERO);
-            month.setAllowanceAmount(archive != null ? archive.getPositionAllowance().add(archive.getOtherAllowance()) : BigDecimal.ZERO);
-            month.setSocialSecurity(archive != null ? archive.getSocialSecurityPersonal() : BigDecimal.ZERO);
-            month.setHousingFund(archive != null ? archive.getHousingFundPersonal() : BigDecimal.ZERO);
-            month.setGrossAmount(month.getBasicSalary().add(month.getPerformanceSalary()).add(month.getAllowanceAmount()));
-            month.setNetAmount(month.getGrossAmount().subtract(month.getSocialSecurity()).subtract(month.getHousingFund()));
-            month.setPayStatus(0);
-            month.setCreateBy(loginUser.getUserId());
-            salaryMonthMapper.insert(month);
+        // 委托给核算服务统一计算社保+公积金分项，生成 hr_salary_month + hr_social_calc_detail
+        socialCalcService.generateMonthSalary(dto.getSalaryMonth(), loginUser.getCompanyId());
+
+        // 若启用考勤扣款，追加考勤计算
+        boolean syncAttendance = dto.getSyncAttendance() != null && dto.getSyncAttendance() == 1;
+        if (!syncAttendance) return;
+
+        String salaryMonth = dto.getSalaryMonth();
+        // 聚合当月考勤数据（Map: employeeId -> summary）
+        List<Map<String, Object>> summaries = attendanceRecordMapper.selectMonthSummary(loginUser.getCompanyId(), salaryMonth);
+        Map<Long, Map<String, Object>> summaryMap = new HashMap<>();
+        for (Map<String, Object> row : summaries) {
+            Long empId = ((Number) row.get("employee_id")).longValue();
+            summaryMap.put(empId, row);
         }
+
+        // 逐条更新 hr_salary_month 考勤扣款
+        LambdaQueryWrapper<HrSalaryMonth> monthWrapper = new LambdaQueryWrapper<HrSalaryMonth>()
+                .eq(HrSalaryMonth::getCompanyId, loginUser.getCompanyId())
+                .eq(HrSalaryMonth::getSalaryMonth, salaryMonth)
+                .eq(HrSalaryMonth::getIsDelete, 0);
+        List<HrSalaryMonth> months = salaryMonthMapper.selectList(monthWrapper);
+        for (HrSalaryMonth month : months) {
+            Map<String, Object> att = summaryMap.get(month.getEmployeeId());
+            if (att == null) {
+                log.warn("generateMonth 考勤聚合无记录: employeeId={}, month={}", month.getEmployeeId(), salaryMonth);
+                continue;
+            }
+            HrSalaryRule rule = salaryRuleMapper.selectOne(new LambdaQueryWrapper<HrSalaryRule>()
+                    .eq(HrSalaryRule::getCompanyId, loginUser.getCompanyId())
+                    .eq(HrSalaryRule::getId, getRuleId(month.getEmployeeId(), loginUser.getCompanyId())));
+            boolean skipAttendance = rule != null && rule.getSkipAttendance() != null && rule.getSkipAttendance() == 1;
+            month.setSkipAttendance(skipAttendance ? 1 : 0);
+            if (skipAttendance) {
+                month.setAttendanceDeduction(BigDecimal.ZERO);
+                month.setAbsentDeduction(BigDecimal.ZERO);
+                month.setLateDeduction(BigDecimal.ZERO);
+                month.setEarlyDeduction(BigDecimal.ZERO);
+                month.setUnpaidLeaveDeduction(BigDecimal.ZERO);
+                salaryMonthMapper.updateById(month);
+                continue;
+            }
+
+            BigDecimal dailyWage = (month.getBasicSalary() != null ? month.getBasicSalary() : BigDecimal.ZERO)
+                    .divide(new BigDecimal("21.75"), 4, RoundingMode.HALF_UP);
+            BigDecimal totalAbsent = att.get("total_absent") != null ? new BigDecimal(att.get("total_absent").toString()) : BigDecimal.ZERO;
+            BigDecimal totalLateMin  = att.get("total_late_minutes") != null ? new BigDecimal(att.get("total_late_minutes").toString()) : BigDecimal.ZERO;
+            BigDecimal totalEarlyMin = att.get("total_early_minutes") != null ? new BigDecimal(att.get("total_early_minutes").toString()) : BigDecimal.ZERO;
+            BigDecimal unpaidLeave   = att.get("unpaid_leave_days") != null ? new BigDecimal(att.get("unpaid_leave_days").toString()) : BigDecimal.ZERO;
+
+            // 默认费率倍数
+            BigDecimal lateRate  = rule != null && rule.getLatePenaltyRate() != null ? rule.getLatePenaltyRate() : new BigDecimal("1.00");
+            BigDecimal earlyRate = rule != null && rule.getEarlyPenaltyRate() != null ? rule.getEarlyPenaltyRate() : new BigDecimal("1.00");
+
+            BigDecimal absentDed = totalAbsent.multiply(dailyWage).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal lateDed   = totalLateMin.multiply(dailyWage).divide(new BigDecimal("480"), 4, RoundingMode.HALF_UP).multiply(lateRate).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal earlyDed  = totalEarlyMin.multiply(dailyWage).divide(new BigDecimal("480"), 4, RoundingMode.HALF_UP).multiply(earlyRate).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal unpaidDed = unpaidLeave.multiply(dailyWage).setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal attendanceDed = absentDed.add(lateDed).add(earlyDed).add(unpaidDed);
+            month.setAbsentDeduction(absentDed);
+            month.setLateDeduction(lateDed);
+            month.setEarlyDeduction(earlyDed);
+            month.setUnpaidLeaveDeduction(unpaidDed);
+            month.setAttendanceDeduction(attendanceDed);
+
+            // 最低工资保护
+            month.setMinWageProtected(applyMinWageProtection(month, dailyWage));
+
+            // 重新计算 netAmount
+            BigDecimal net = month.getGrossAmount()
+                    .subtract(month.getSocialSecurity() != null ? month.getSocialSecurity() : BigDecimal.ZERO)
+                    .subtract(month.getHousingFund() != null ? month.getHousingFund() : BigDecimal.ZERO)
+                    .subtract(month.getTaxAmount() != null ? month.getTaxAmount() : BigDecimal.ZERO)
+                    .subtract(attendanceDed)
+                    .subtract(month.getDeductionAmount() != null ? month.getDeductionAmount() : BigDecimal.ZERO);
+            if (net.compareTo(BigDecimal.ZERO) <= 0) {
+                log.warn("generateMonth 员工{} {}月netAmount<=0，强制置0.01", month.getEmployeeId(), salaryMonth);
+                net = new BigDecimal("0.01");
+            }
+            month.setNetAmount(net);
+            salaryMonthMapper.updateById(month);
+        }
+    }
+
+    /** 从 employee 关联的薪资档案中取 ruleId（简化：直接查档案） */
+    private Long getRuleId(Long employeeId, Long companyId) {
+        HrSalaryArchive archive = salaryArchiveMapper.selectOne(new LambdaQueryWrapper<HrSalaryArchive>()
+                .eq(HrSalaryArchive::getEmployeeId, employeeId)
+                .eq(HrSalaryArchive::getCompanyId, companyId)
+                .eq(HrSalaryArchive::getIsCurrent, 1)
+                .last("LIMIT 1"));
+        return archive != null ? archive.getRuleId() : null;
+    }
+
+    /** 最低工资保护逻辑，返回 0 或 1 */
+    private int applyMinWageProtection(HrSalaryMonth month, BigDecimal dailyWage) {
+        // 获取员工信息判断是否首月
+        HrEmployee emp = employeeMapper.selectById(month.getEmployeeId());
+        if (emp == null || emp.getEntryDate() == null) return 0;
+        // 首月不满整月豁免：entryDate 在当月15日之后
+        String[] parts = month.getSalaryMonth().split("-");
+        int year = Integer.parseInt(parts[0]);
+        int monthNum = Integer.parseInt(parts[1]);
+        java.time.LocalDate entry = emp.getEntryDate();
+        if (entry.getYear() == year && entry.getMonthValue() == monthNum && entry.getDayOfMonth() >= 15) {
+            return 0; // 首月不满整月，豁免
+        }
+        // 查城市最低工资
+        HrCity city = cityMapper.selectOne(new LambdaQueryWrapper<HrCity>()
+                .eq(HrCity::getCityCode, emp.getCityCode())
+                .eq(HrCity::getIsDelete, 0)
+                .last("LIMIT 1"));
+        if (city == null || city.getMinWage() == null || city.getMinWage().compareTo(BigDecimal.ZERO) <= 0) return 0;
+
+        BigDecimal social = month.getSocialSecurity() != null ? month.getSocialSecurity() : BigDecimal.ZERO;
+        BigDecimal housing = month.getHousingFund() != null ? month.getHousingFund() : BigDecimal.ZERO;
+        BigDecimal tax = month.getTaxAmount() != null ? month.getTaxAmount() : BigDecimal.ZERO;
+        BigDecimal gross = month.getGrossAmount() != null ? month.getGrossAmount() : BigDecimal.ZERO;
+        BigDecimal netBeforeProtection = gross.subtract(social).subtract(housing).subtract(tax)
+                .subtract(month.getAttendanceDeduction() != null ? month.getAttendanceDeduction() : BigDecimal.ZERO);
+        if (netBeforeProtection.compareTo(city.getMinWage()) >= 0) return 0;
+
+        // 触发保护：允许最大扣款 = gross - social - housing - minWage
+        BigDecimal maxAllowedDed = gross.subtract(social).subtract(housing).subtract(city.getMinWage());
+        BigDecimal currentDed = month.getAttendanceDeduction() != null ? month.getAttendanceDeduction() : BigDecimal.ZERO;
+        if (currentDed.compareTo(maxAllowedDed) > 0) {
+            month.setAttendanceDeduction(maxAllowedDed.max(BigDecimal.ZERO));
+            // 重新计算 netAmount
+            month.setNetAmount(gross.subtract(social).subtract(housing).subtract(tax).subtract(month.getAttendanceDeduction()));
+            return 1;
+        }
+        return 0;
     }
 
     @Override
@@ -219,8 +337,6 @@ public class HrSalaryServiceImpl implements HrSalaryService {
         vo.setPerformanceSalary(entity.getPerformanceSalary());
         vo.setPositionAllowance(entity.getPositionAllowance());
         vo.setOtherAllowance(entity.getOtherAllowance());
-        vo.setSocialSecurityPersonal(entity.getSocialSecurityPersonal());
-        vo.setHousingFundPersonal(entity.getHousingFundPersonal());
         vo.setRemark(entity.getRemark());
         vo.setCreateTime(entity.getCreateTime());
         return vo;
@@ -240,6 +356,12 @@ public class HrSalaryServiceImpl implements HrSalaryService {
         vo.setHousingFund(entity.getHousingFund());
         vo.setTaxAmount(entity.getTaxAmount());
         vo.setDeductionAmount(entity.getDeductionAmount());
+        vo.setAttendanceDeduction(entity.getAttendanceDeduction());
+        vo.setAbsentDeduction(entity.getAbsentDeduction());
+        vo.setLateDeduction(entity.getLateDeduction());
+        vo.setEarlyDeduction(entity.getEarlyDeduction());
+        vo.setUnpaidLeaveDeduction(entity.getUnpaidLeaveDeduction());
+        vo.setMinWageProtected(entity.getMinWageProtected());
         vo.setGrossAmount(entity.getGrossAmount());
         vo.setNetAmount(entity.getNetAmount());
         vo.setPayStatus(entity.getPayStatus());

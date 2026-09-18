@@ -12,13 +12,14 @@ export interface OrgDTO {
   companyId?: number
   parentId: number
   orgName: string
-  orgType: number
+  orgType?: number
   sortOrder: number
   status: number
 }
 
 export interface OrgVO extends OrgDTO {
   id: number
+  orgType?: number
   createTime?: string
   children?: OrgVO[]
 }

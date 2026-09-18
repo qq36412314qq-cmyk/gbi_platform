@@ -25,8 +25,6 @@ import java.time.LocalDateTime;
     @Schema(description="绩效工资") private BigDecimal performanceSalary;
     @Schema(description="岗位津贴") private BigDecimal positionAllowance;
     @Schema(description="其他补贴") private BigDecimal otherAllowance;
-    @Schema(description="社保个人扣款") private BigDecimal socialSecurityPersonal;
-    @Schema(description="公积金个人扣款") private BigDecimal housingFundPersonal;
     @Schema(description="备注") private String remark;
     @Schema(description="创建时间") private LocalDateTime createTime;
 }
