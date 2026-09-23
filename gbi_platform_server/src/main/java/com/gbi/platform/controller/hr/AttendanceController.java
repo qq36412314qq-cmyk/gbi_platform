@@ -38,7 +38,7 @@ public class AttendanceController {
 
     @Operation(summary = "导出考勤")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).HR_ATTENDANCE_EXPORT,'')")
-    @PostMapping("/export")
+    @GetMapping("/export")
     public Result<List<HrAttendanceVO>> export(
             @RequestParam(required = false) Long employeeId,
             @RequestParam(required = false) String attendanceMonth) {

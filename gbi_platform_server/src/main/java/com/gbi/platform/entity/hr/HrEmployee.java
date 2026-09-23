@@ -49,4 +49,8 @@ public class HrEmployee extends BaseEntity {
     private java.math.BigDecimal socialSecurityBase;
     private java.math.BigDecimal basicSalary;
     private String remark;
+    /** 免冠照片对应的sys_file.id */
+    private Long photoFileId;
+    /** 附件内容（富文本HTML） */
+    private String attachmentContent;
 }

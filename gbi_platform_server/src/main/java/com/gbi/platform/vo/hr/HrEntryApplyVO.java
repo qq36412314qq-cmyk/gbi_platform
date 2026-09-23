@@ -83,4 +83,19 @@ public class HrEntryApplyVO implements Serializable {
 
     @Schema(description = "工作经历和学业经历JSON数据")
     private String experienceData;
+
+    @Schema(description = "目标组织名称（关联查询）")
+    private String orgName;
+
+    @Schema(description = "目标岗位名称（关联查询）")
+    private String postName;
+
+    @Schema(description = "免冠照片对应的sys_file.id")
+    private Long photoFileId;
+
+    @Schema(description = "免冠照片可直访预览URL（本地/云存储均返回绝对路径）")
+    private String photoPreviewUrl;
+
+    @Schema(description = "附件内容（富文本HTML）")
+    private String attachmentContent;
 }

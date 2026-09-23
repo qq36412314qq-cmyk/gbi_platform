@@ -41,6 +41,9 @@ export interface EmployeeVO {
   socialSecurityBase?: number
   basicSalary?: number
   remark?: string
+  photoFileId?: number
+  photoPreviewUrl?: string
+  attachmentContent?: string
   createTime: string
 }
 
@@ -61,6 +64,8 @@ export interface EmployeeDTO {
   socialSecurityBase?: number
   basicSalary?: number
   remark?: string
+  photoFileId?: number
+  attachmentContent?: string
 }
 
 export function getEmployeePageApi(params: EmployeeQueryDTO): Promise<PageResult<EmployeeVO>> {
@@ -269,6 +274,10 @@ export interface HrEntryApplyVO {
   statusText?: string
   remark?: string
   createTime: string
+  /** 免冠照片可直访预览URL */
+  photoPreviewUrl?: string
+  /** 附件内容（富文本HTML） */
+  attachmentContent?: string
 }
 
 export interface HrRegularApplyVO {
@@ -322,6 +331,10 @@ export interface EntryApplyDTO {
   autoCreateUser?: number
   remark?: string
   experienceData?: string
+  /** 免冠照片对应的 sys_file.id */
+  photoFileId?: number
+  /** 附件内容（富文本HTML） */
+  attachmentContent?: string
 }
 
 export interface RegularApplyDTO {

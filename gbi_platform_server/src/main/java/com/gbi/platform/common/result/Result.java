@@ -1,7 +1,5 @@
 package com.gbi.platform.common.result;
 
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -11,7 +9,6 @@ import java.io.Serializable;
  *
  * @author gbi
  */
-@Data
 public class Result<T> implements Serializable {
 
     @Serial
@@ -34,6 +31,13 @@ public class Result<T> implements Serializable {
         this.msg = msg;
         this.data = data;
     }
+
+    public Integer getCode() { return code; }
+    public void setCode(Integer code) { this.code = code; }
+    public String getMsg() { return msg; }
+    public void setMsg(String msg) { this.msg = msg; }
+    public T getData() { return data; }
+    public void setData(T data) { this.data = data; }
 
     public static <T> Result<T> success() {
         return new Result<>(ResultCode.SUCCESS.getCode(), ResultCode.SUCCESS.getMsg(), null);

@@ -13,53 +13,77 @@
 
 <script setup lang="ts">
 /**
- * Sidebar 侧边栏：基于 constantRoutes 完整目录渲染，支持多一级模块切换
- * 目录级：中台管理 / 物业管理 / 财务管理；子菜单按权限递归过滤，无可见子菜单的目录自动隐藏
- * 支持三级菜单（如 物业管理 -> 租赁管理 -> 铺位管理），由 SidebarItem 递归渲染
+ * Sidebar 侧边栏：基于 permissionStore.menuTree 渲染（完整树形结构）
+ * v2.11 动态路由扁平化后，dynamicRoutes 没有 children，
+ *      所以侧边栏必须从 menuTree（原始 MenuVO 树）转换渲染
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { constantRoutes } from '@/router'
+import { usePermissionStore } from '@/store/permission'
 import { useUserStore } from '@/store/user'
+import type { MenuVO } from '@/api/org'
 import SidebarItem from './SidebarItem.vue'
 
 defineProps<{ isCollapse: boolean }>()
 
 const route = useRoute()
 const userStore = useUserStore()
+const permissionStore = usePermissionStore()
 
 const activeMenu = computed(() => route.path)
 
 /**
- * 递归过滤无权限菜单并拼接完整路径
- * @param routes 当前层级路由
- * @param parentPath 父级完整路径（子路由为相对路径时拼接）
+ * 把后端 MenuVO 树 转成 SidebarItem 能消费的 RouteRecordRaw 树
+ * 过滤规则：
+ *   - menuType=3（按钮）：跳过，不渲染在侧边栏
+ *   - visible=0：隐藏，跳过
+ *   - 无权限（permission 存在且 userStore 没有）：跳过
+ *   - menuType=2（页面）但 path 为空：跳过（没法跳转）
+ *   - menuType=1（目录）子节点全被过滤：整个目录跳过
  */
-function filterMenus(routes: RouteRecordRaw[], parentPath: string): RouteRecordRaw[] {
+function convertMenuTree(nodes: MenuVO[]): RouteRecordRaw[] {
   const result: RouteRecordRaw[] = []
-  for (const r of routes) {
-    const perm = r.meta?.permission as string | undefined
-    if (perm && !userStore.hasPermission(perm)) {
-      continue
+  for (const n of nodes) {
+    // 按钮权限不渲染
+    if (n.menuType === 3) continue
+    // 隐藏菜单不渲染
+    if (n.visible === 0) continue
+    // 权限校验
+    if (n.permission && !userStore.hasPermission(n.permission)) continue
+    // 页面菜单必须有 path
+    if (n.menuType === 2 && (!n.path || !n.path.startsWith('/'))) continue
+
+    // 递归处理子节点
+    const children = n.children ? convertMenuTree(n.children) : []
+
+    // 目录节点：如果子节点全被过滤，整个目录也跳过
+    if (n.menuType === 1 && children.length === 0) continue
+
+    const route: RouteRecordRaw = {
+      path: n.path || '',
+      meta: {
+        title: n.menuName,
+        icon: n.icon || undefined,
+        permission: n.permission || undefined,
+      },
     }
-    const fullPath = r.path.startsWith('/') ? r.path : `${parentPath}/${r.path}`
-    const children = r.children ? filterMenus(r.children, fullPath) : []
-    result.push({ ...r, path: fullPath, children })
+    if (children.length > 0) {
+      route.children = children
+    }
+    result.push(route)
   }
   return result
 }
 
 /**
- * 一级目录渲染全部可见模块（排除根路径/登录/错误页），子级递归过滤
+ * 从 permissionStore.menuTree 读取原始树形菜单
+ * 如果 menuTree 还没加载（极端场景），返回空数组（Layout 仍正常渲染，只是菜单为空）
  */
 const visibleMenus = computed(() => {
-  return constantRoutes
-    .filter((r) => {
-      return r.path.startsWith('/') && r.path !== '/' && r.path !== '/login' && r.path !== '/403' && r.meta?.title
-    })
-    .map((r) => ({ ...r, children: filterMenus(r.children || [], r.path) }))
-    .filter((r) => r.children.length > 0) as RouteRecordRaw[]
+  const tree = permissionStore.menuTree
+  if (!tree || tree.length === 0) return []
+  return convertMenuTree(tree)
 })
 </script>
 

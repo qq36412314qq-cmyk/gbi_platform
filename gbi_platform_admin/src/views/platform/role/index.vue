@@ -191,27 +191,26 @@ async function openMenuDialog(row: RoleVO): Promise<void> {
   if (menuTree.value.length === 0) {
     menuTree.value = await getMenuTreeApi()
   }
-  // 回显已授权菜单（过滤掉父级文件夹节点，防止子节点全选）
-  const checkedIds = (await getRoleMenusApi(row.id)).filter(
-    (id) => !menuTree.value.some((n) => n.id === id && n.children && n.children.length > 0)
-  )
+  // 回显已授权菜单（包含 page 级和 button 级，半选中状态由 el-tree 自动计算）
+  const checkedIds = await getRoleMenusApi(row.id)
   menuTreeRef.value?.setCheckedKeys(checkedIds)
 }
+
 async function handleSaveMenus(): Promise<void> {
   if (!currentRole.value || !menuTreeRef.value) {
     return
   }
   menuSubmitLoading.value = true
   try {
-    const checkedKeys = menuTreeRef.value.getCheckedKeys(false) as number[]
-    // 只授权叶节点（有 permission 的实际菜单），过滤掉父级分组节点
-    const leafNodeIds = new Set(menuTree.value.flatMap((node) => node.children ? node.children.map((c) => c.id) : [node.id]))
-    const filteredCheckedKeys = checkedKeys.filter((id) => leafNodeIds.has(id))
-    // 过滤掉 halfCheckedKeys 中的父节点（folder类型），只保留叶节点，避免再次写入脏数据
-    const halfCheckedIdSet = new Set(menuTree.value.flatMap((node) => node.children ? node.children.map((c) => c.id) : [node.id]))
-    const halfCheckedKeys = (menuTreeRef.value.getHalfCheckedKeys() as number[]).filter((id) => halfCheckedIdSet.has(id))
-    // 已过滤父节点，仅提交叶节点
-    await saveRoleMenusApi(currentRole.value.id, [...filteredCheckedKeys, ...halfCheckedKeys])
+    // el-tree checkbox 层级语义：
+    // - getCheckedKeys(): 完全选中的节点（父或子）
+    // - getHalfCheckedKeys(): 半选中的父节点（子节点部分被勾选）
+    // 只勾按钮子节点时，page 级父节点是半选中，必须一并保存，
+    // 否则 role 缺少 page 级权限标识（如 lease:stall:list），导致路由守卫 403
+    const checkedKeys = menuTreeRef.value.getCheckedKeys() as number[]
+    const halfCheckedKeys = menuTreeRef.value.getHalfCheckedKeys() as number[]
+    const menuIds = [...new Set([...checkedKeys, ...halfCheckedKeys])]
+    await saveRoleMenusApi(currentRole.value.id, menuIds)
     ElMessage.success('授权成功')
     menuDialogVisible.value = false
   } finally {

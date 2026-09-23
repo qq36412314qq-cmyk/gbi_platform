@@ -38,6 +38,7 @@ public class HrTransferServiceImpl implements HrTransferService {
     private final FlowEngineService flowEngineService;
     private final AuditLogUtil auditLogUtil;
     private final com.gbi.platform.mapper.SysUserMapper sysUserMapper;
+    private final com.gbi.platform.service.FileService fileService;
 
     @Override
     public PageVO<HrEntryApplyVO> pageEntry(Long pageNum, Long pageSize, Integer status) {
@@ -383,6 +384,14 @@ public class HrTransferServiceImpl implements HrTransferService {
         vo.setRemark(entity.getRemark());
         vo.setCreateTime(entity.getCreateTime());
         vo.setExperienceData(entity.getExperienceData());
+        vo.setPhotoFileId(entity.getPhotoFileId());
+        if (entity.getPhotoFileId() != null && entity.getPhotoFileId() > 0) {
+            try {
+                vo.setPhotoPreviewUrl(fileService.getPreviewUrl(entity.getPhotoFileId()));
+            } catch (Exception e) {
+                log.warn("[toEntryVO] 获取照片预览URL失败 - photoFileId={}", entity.getPhotoFileId(), e);
+            }
+        }
         return vo;
     }
 

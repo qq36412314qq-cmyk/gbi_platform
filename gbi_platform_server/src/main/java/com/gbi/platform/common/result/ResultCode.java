@@ -1,16 +1,11 @@
 package com.gbi.platform.common.result;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 /**
  * 统一错误码常量（对齐《后端编码规范》《API & 日志规范》）
  * 200 成功 / 400 参数错误 / 401 未登录 / 403 无权限 / 404 数据不存在 / 500 业务异常 / 5001 第三方异常 / 5002 幂等重复
  *
  * @author gbi
  */
-@Getter
-@AllArgsConstructor
 public enum ResultCode {
 
     /** 成功 */
@@ -40,4 +35,12 @@ public enum ResultCode {
     private final Integer code;
 
     private final String msg;
+
+    ResultCode(Integer code, String msg) {
+        this.code = code;
+        this.msg = msg;
+    }
+
+    public Integer getCode() { return code; }
+    public String getMsg() { return msg; }
 }

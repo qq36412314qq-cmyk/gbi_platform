@@ -27,6 +27,13 @@ export default defineConfig(({ mode }) => {
           // 后端未启动时快速失败，避免请求无限挂起
           timeout: 10000,
           proxyTimeout: 10000
+        },
+        // 静态资源代理：本地存储模式下 /upload/** 直接透传到后端静态资源映射
+        '/upload': {
+          target: 'http://127.0.0.1:8080',
+          changeOrigin: true,
+          timeout: 10000,
+          proxyTimeout: 10000
         }
       }
     },

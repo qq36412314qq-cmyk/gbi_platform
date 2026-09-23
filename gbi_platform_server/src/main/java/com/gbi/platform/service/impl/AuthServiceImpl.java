@@ -65,6 +65,49 @@ public class AuthServiceImpl implements AuthService {
 
     private final com.gbi.platform.mapper.hr.HrEmployeeMapper employeeMapper;
 
+    /** 无角色用户默认业务操作员权限（不含系统管理、审计、权限复核等敏感模块） */
+    private static final List<String> DEFAULT_BUSINESS_PERMISSIONS = List.of(
+            // 工作台
+            PermissionConst.DASHBOARD_VIEW,
+            // 租赁铺位
+            PermissionConst.LEASE_STALL_LIST, PermissionConst.LEASE_STALL_ADD, PermissionConst.LEASE_STALL_EDIT,
+            PermissionConst.LEASE_STALL_DELETE,
+            PermissionConst.LEASE_CATEGORY_LIST, PermissionConst.LEASE_CATEGORY_ADD,
+            PermissionConst.LEASE_CONTRACT_LIST, PermissionConst.LEASE_CONTRACT_ADD,
+            PermissionConst.LEASE_CONTRACT_TERMINATE,
+            // 市场管理
+            PermissionConst.MARKET_LIST, PermissionConst.MARKET_ADD, PermissionConst.MARKET_EDIT,
+            // 租户管理
+            PermissionConst.TENANT_LIST, PermissionConst.TENANT_ADD,
+            // 水电设备
+            PermissionConst.WATER_ELEC_LIST, PermissionConst.WATER_ELEC_ADD, PermissionConst.WATER_ELEC_EDIT,
+            PermissionConst.WATER_ELEC_BILL_LIST,
+            PermissionConst.WATER_ELEC_PAY_LIST, PermissionConst.WATER_ELEC_PAY_ADD,
+            // 物业费
+            PermissionConst.PROPERTY_FEE_BILL_LIST, PermissionConst.PROPERTY_FEE_PAY_ADD,
+            PermissionConst.PROPERTY_UNPAID_BILL_LIST,
+            // 财务流水
+            PermissionConst.FINANCE_FLOW_LIST,
+            // 应收应付计划
+            PermissionConst.PLAN_RECVPAY_LIST,
+            // 收费项/规则
+            PermissionConst.FEE_ITEM_LIST, PermissionConst.FEE_ITEM_ADD, PermissionConst.FEE_ITEM_EDIT,
+            PermissionConst.FEE_RULE_LIST, PermissionConst.FEE_RULE_ADD, PermissionConst.FEE_RULE_EDIT,
+            // 工作流
+            PermissionConst.FLOW_TASK_LIST, PermissionConst.FLOW_TASK_HANDLE,
+            PermissionConst.FLOW_APPLY_LIST,
+            // OA
+            PermissionConst.OA_LEAVE_LIST, PermissionConst.OA_LEAVE_ADD,
+            PermissionConst.OA_MEETING_ROOM_LIST, PermissionConst.OA_MEETING_BOOKING_LIST,
+            PermissionConst.OA_ANNOUNCEMENT_LIST,
+            // HR
+            PermissionConst.HR_EMPLOYEE_LIST, PermissionConst.HR_EMPLOYEE_ADD, PermissionConst.HR_EMPLOYEE_EDIT,
+            PermissionConst.HR_ATTENDANCE_LIST,
+            PermissionConst.HR_ENTRY_LIST, PermissionConst.HR_ENTRY_ADD,
+            PermissionConst.HR_SALARY_MONTH_LIST,
+            PermissionConst.HR_SOCIAL_LIST
+    );
+
 
     @Override
     public LoginVO login(LoginDTO dto) {
@@ -149,6 +192,10 @@ public class AuthServiceImpl implements AuthService {
                         .collect(Collectors.toSet());
                 permissions.addAll(perms);
             }
+        } else {
+            // 兜底：无角色用户自动赋予业务操作员默认权限（避免完全无权限导致全页面403）
+            permissions.addAll(DEFAULT_BUSINESS_PERMISSIONS);
+            log.debug("用户[{}]无角色分配，自动赋予业务操作员默认权限", userId);
         }
         // 关联员工档案，注入员工上下文
         LoginUser loginUser = new LoginUser(user.getId(), user.getCompanyId(), user.getUsername(),

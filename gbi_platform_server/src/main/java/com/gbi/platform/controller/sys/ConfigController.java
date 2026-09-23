@@ -44,8 +44,7 @@ public class ConfigController {
         return Result.success(configService.page(pageNum, pageSize, configName, configKey));
     }
 
-    @Operation(summary = "按 key 批量读取集团参数值（子公司只读共享，供页面控制可写性）")
-    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).CONFIG_LIST,'')")
+    @Operation(summary = "按 key 批量读取集团参数值（子公司只读共享，供页面控制可写性；任何登录用户可读，免权限校验）")
     @GetMapping("/values")
     public Result<Map<String, String>> values(@RequestParam List<String> keys) {
         return Result.success(configService.getValuesByKeys(keys));

@@ -47,7 +47,7 @@ public class DiscountController {
     private final DiscountThresholdService discountThresholdService;
     private final DiscountCalcService discountCalcService;
 
-    @Operation(summary = "优惠策略分页")
+    @Operation(summary = "优惠策略分页（只读查询，任何登录用户可读；新增/编辑/删除需要 DISCOUNT_POLICY_* 权限）")
     @GetMapping("/policy/page")
     public Result<PageVO<DiscountPolicyVO>> policyPage(@Valid DiscountPolicyQueryDTO dto) {
         return Result.success(discountPolicyService.page(dto));

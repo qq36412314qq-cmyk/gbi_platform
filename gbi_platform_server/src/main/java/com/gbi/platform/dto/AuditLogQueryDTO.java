@@ -1,41 +1,17 @@
 package com.gbi.platform.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
-import java.io.Serial;
-import java.io.Serializable;
 
 /**
- * 审计日志分页查询入参（对齐前端 AuditLogQueryDTO）
- *
- * @author gbi
+ * 审计日志查询参数
  */
-@Data
-@Schema(description = "审计日志查询入参")
-public class AuditLogQueryDTO implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
-
-    @Schema(description = "页码", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "页码不能为空")
-    @Min(value = 1, message = "页码最小为1")
-    private Integer pageNum;
-
-    @Schema(description = "每页条数", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "每页条数不能为空")
-    @Min(value = 1, message = "每页条数最小为1")
-    @Max(value = 100, message = "每页条数最大为100")
-    private Integer pageSize;
+@Schema(description = "审计日志查询参数")
+public class AuditLogQueryDTO {
 
     @Schema(description = "操作模块")
     private String operModule;
 
-    @Schema(description = "操作类型：新增/编辑/删除/导出/审核")
+    @Schema(description = "操作类型")
     private String operType;
 
     @Schema(description = "操作人姓名（模糊）")
@@ -46,4 +22,25 @@ public class AuditLogQueryDTO implements Serializable {
 
     @Schema(description = "结束时间 yyyy-MM-dd HH:mm:ss")
     private String endTime;
+
+    @Schema(description = "当前页码", example = "1")
+    private Long pageNum = 1L;
+
+    @Schema(description = "每页条数", example = "10")
+    private Long pageSize = 10L;
+
+    public String getOperModule() { return operModule; }
+    public void setOperModule(String operModule) { this.operModule = operModule; }
+    public String getOperType() { return operType; }
+    public void setOperType(String operType) { this.operType = operType; }
+    public String getOperUserName() { return operUserName; }
+    public void setOperUserName(String operUserName) { this.operUserName = operUserName; }
+    public String getStartTime() { return startTime; }
+    public void setStartTime(String startTime) { this.startTime = startTime; }
+    public String getEndTime() { return endTime; }
+    public void setEndTime(String endTime) { this.endTime = endTime; }
+    public Long getPageNum() { return pageNum; }
+    public void setPageNum(Long pageNum) { this.pageNum = pageNum; }
+    public Long getPageSize() { return pageSize; }
+    public void setPageSize(Long pageSize) { this.pageSize = pageSize; }
 }

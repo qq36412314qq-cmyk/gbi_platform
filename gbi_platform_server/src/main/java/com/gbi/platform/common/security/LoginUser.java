@@ -1,9 +1,5 @@
 package com.gbi.platform.common.security;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
@@ -13,9 +9,6 @@ import java.util.List;
  *
  * @author gbi
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class LoginUser implements Serializable {
 
     @Serial
@@ -48,6 +41,42 @@ public class LoginUser implements Serializable {
     /** 岗位ID */
     private Long postId;
 
+    public LoginUser() {
+    }
+
+    public LoginUser(Long userId, Long companyId, String username, String realName,
+                     List<String> permissions, List<String> roleCodes,
+                     Long employeeId, Long orgId, Long postId) {
+        this.userId = userId;
+        this.companyId = companyId;
+        this.username = username;
+        this.realName = realName;
+        this.permissions = permissions;
+        this.roleCodes = roleCodes;
+        this.employeeId = employeeId;
+        this.orgId = orgId;
+        this.postId = postId;
+    }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getRealName() { return realName; }
+    public void setRealName(String realName) { this.realName = realName; }
+    public List<String> getPermissions() { return permissions; }
+    public void setPermissions(List<String> permissions) { this.permissions = permissions; }
+    public List<String> getRoleCodes() { return roleCodes; }
+    public void setRoleCodes(List<String> roleCodes) { this.roleCodes = roleCodes; }
+    public Long getEmployeeId() { return employeeId; }
+    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+    public Long getOrgId() { return orgId; }
+    public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public Long getPostId() { return postId; }
+    public void setPostId(Long postId) { this.postId = postId; }
+
     /**
      * 是否超级管理员（集团全局）
      */
@@ -57,8 +86,6 @@ public class LoginUser implements Serializable {
 
     /**
      * 是否拥有指定权限（支持 *:*:* 通配）
-     *
-     * @param permission 权限标识，如 org:list
      */
     public boolean hasPermission(String permission) {
         if (permission == null || permission.isBlank()) {

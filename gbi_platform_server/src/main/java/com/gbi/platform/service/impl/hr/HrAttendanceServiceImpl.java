@@ -71,8 +71,25 @@ public class HrAttendanceServiceImpl implements HrAttendanceService {
             attendance.setLateMinutes(calcLateMinutes(record));
             attendance.setWorkDays(1);
             attendance.setActualDays(1);
-            attendanceRecordMapper.insert(attendance);
-            count++;
+            attendance.setCreateBy(loginUser.getUserId());
+            try {
+                // 同一员工同一天可能有多个打卡记录（上下班各一条），使用 saveOrUpdate 避免唯一索引冲突
+                attendanceRecordMapper.insert(attendance);
+            } catch (Exception e) {
+                // 唯一索引冲突时执行 UPDATE 更新已存在记录
+                HrAttendanceRecord exist = attendanceRecordMapper.selectOne(
+                        new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<HrAttendanceRecord>()
+                                .eq(HrAttendanceRecord::getEmployeeId, record.getUserId())
+                                .eq(HrAttendanceRecord::getAttendanceDay, record.getClockTime().toLocalDate())
+                                .eq(HrAttendanceRecord::getIsDelete, 0));
+                if (exist != null) {
+                    exist.setClockInTime(record.getClockTime());
+                    exist.setClockType(toClockType(record));
+                    exist.setLateMinutes(calcLateMinutes(record));
+                    attendanceRecordMapper.updateById(exist);
+                }
+                count++;
+            }
         }
         log.info("attendance sync done: month={}, count={}", attendanceMonth, count);
         return count;

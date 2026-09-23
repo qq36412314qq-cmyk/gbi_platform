@@ -181,9 +181,14 @@ export interface MenuVO extends MenuDTO {
   children?: MenuVO[]
 }
 
-/** 菜单树查询 */
+/** 菜单树查询（管理员用，返回全量） */
 export function getMenuTreeApi(): Promise<MenuVO[]> {
   return get<MenuVO[]>('/org/menu/tree')
+}
+
+/** 获取当前用户授权菜单树（动态路由用） */
+export function getAuthorizedMenuTreeApi(): Promise<MenuVO[]> {
+  return get<MenuVO[]>('/org/menu/authorized-tree')
 }
 
 /** 新增菜单 */

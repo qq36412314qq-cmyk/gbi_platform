@@ -36,4 +36,8 @@ public class HrEntryApply extends BaseEntity {
      * 格式：{"workExps":[...],"eduExps":[...]}
      */
     private String experienceData;
+    /** 免冠照片对应的sys_file.id */
+    private Long photoFileId;
+    /** 附件内容（富文本HTML） */
+    private String attachmentContent;
 }

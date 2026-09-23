@@ -56,6 +56,12 @@ public class HrAttendanceVO implements Serializable {
     @Schema(description="请假扣减天数")
     private BigDecimal leaveDays;
 
+    @Schema(description="请假类型 0无薪事假 1有薪年假 2婚假 3产假 4病假 5工伤假 6公差 7调休假")
+    private Integer leaveType;
+
+    @Schema(description="请假明细JSON")
+    private String leaveDaysDetail;
+
     @Schema(description="应出勤天数")
     private Integer workDays;
 

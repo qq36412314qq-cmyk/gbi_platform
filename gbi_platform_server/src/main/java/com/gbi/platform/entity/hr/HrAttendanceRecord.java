@@ -33,12 +33,16 @@ public class HrAttendanceRecord extends BaseEntity {
     private Integer clockType;
     private Integer lateMinutes;
     private Integer earlyMinutes;
+    /** 旷工天数，加反引号避免 JSQLParser 将 absent 识别为 SQL 保留字 */
+    @TableField("`absent`")
     private Integer absent;
     /** 请假天数，数据库 decimal(4,1) */
     private BigDecimal leaveDays;
-    /** 请假类型 0无薪事假 1有薪年假 2婚假 3产假 4病假 5工伤假 6公差 7调休假 */
+    /** 请假类型 0无薪事假 1有薪年假 2婚假 3产假 4病假 5工伤假 6公差 7调休假，加反引号避免 JSQLParser 将 type 识别为关键字 */
+    @TableField("`leave_type`")
     private Integer leaveType;
-    /** 请假明细JSON */
+    /** 请假明细JSON，加反引号避免 JSQLParser 将 detail 识别为关键字 */
+    @TableField("`leave_days_detail`")
     private String leaveDaysDetail;
     /** 应出勤天数，数据库 int(11) */
     private Integer workDays;

@@ -310,4 +310,10 @@ public final class CommonConst {
     public static final String CONFIG_PLAN_OVERDUE_REMIND_DAYS = "plan.overdue_remind_days";
     public static final String CONFIG_REIMBURSE_AMOUNT_LIMIT = "reimburse.amount_limit";
     public static final String CONFIG_PURCHASE_AMOUNT_LIMIT = "purchase.amount_limit";
+
+    /* ------------------------------ 文件服务 ------------------------------ */
+    public static final String MODULE_FILE = "file";
+    public static final String OPER_TYPE_FILE_DELETE = "file_delete";
+    public static final String OPER_TYPE_FILE_PREVIEW = "file_preview";
+    public static final String OPER_TYPE_FILE_UPLOAD = "file_upload";
 }

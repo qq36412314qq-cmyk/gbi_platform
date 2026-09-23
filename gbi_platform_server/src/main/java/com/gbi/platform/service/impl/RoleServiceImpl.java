@@ -142,8 +142,10 @@ public class RoleServiceImpl implements RoleService {
         }
         List<Long> before = getRoleMenus(roleId);
         roleMenuRelMapper.delete(new LambdaQueryWrapper<SysRoleMenuRel>().eq(SysRoleMenuRel::getRoleId, roleId));
-        if (menuIds != null) {
-            for (Long menuId : menuIds) {
+        if (menuIds != null && !menuIds.isEmpty()) {
+            // 用 HashSet 去重，防止前端重复提交导致唯一键冲突
+            List<Long> distinctIds = menuIds.stream().distinct().toList();
+            for (Long menuId : distinctIds) {
                 SysRoleMenuRel rel = new SysRoleMenuRel();
                 rel.setRoleId(roleId);
                 rel.setMenuId(menuId);

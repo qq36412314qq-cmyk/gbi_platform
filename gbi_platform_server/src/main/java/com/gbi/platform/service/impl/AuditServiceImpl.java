@@ -13,8 +13,6 @@ import com.gbi.platform.service.AuditService;
 import com.gbi.platform.util.AuditLogUtil;
 import com.gbi.platform.vo.AuditLogVO;
 import com.gbi.platform.vo.PageVO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -27,30 +25,32 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 审计日志服务实现：只读查询 + CSV 导出（日志永久归档）
- *
- * @author gbi
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuditServiceImpl implements AuditService {
 
+    private static final java.util.logging.Logger log = java.util.logging.Logger.getLogger(AuditServiceImpl.class.getName());
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final SysAuditLogMapper auditLogMapper;
-
     private final AuditLogUtil auditLogUtil;
 
     /** 上传根目录（application.yml gbi.upload-dir） */
     @Value("${gbi.upload-dir:./upload}")
     private String uploadDir;
 
+    public AuditServiceImpl(SysAuditLogMapper auditLogMapper, AuditLogUtil auditLogUtil) {
+        this.auditLogMapper = auditLogMapper;
+        this.auditLogUtil = auditLogUtil;
+    }
+
     @Override
     public PageVO<AuditLogVO> page(AuditLogQueryDTO dto) {
-        Page<SysAuditLog> page = new Page<>(dto.getPageNum(), dto.getPageSize());
+        Page<SysAuditLog> page = new Page<>((long) dto.getPageNum(), (long) dto.getPageSize());
         LambdaQueryWrapper<SysAuditLog> wrapper = buildWrapper(dto, true);
         Page<SysAuditLog> result = auditLogMapper.selectPage(page, wrapper);
         List<AuditLogVO> voList = result.getRecords().stream().map(a -> {
@@ -67,17 +67,15 @@ public class AuditServiceImpl implements AuditService {
             vo.setAfterJson(a.getAfterJson());
             vo.setCreateTime(a.getCreateTime());
             return vo;
-        }).toList();
+        }).collect(Collectors.toList());
         return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
     }
 
     @Override
     public String export(AuditLogQueryDTO dto) {
-        // 最多导出 5 万条，防止大表导出拖垮服务
         LambdaQueryWrapper<SysAuditLog> wrapper = buildWrapper(dto, true);
         wrapper.last("LIMIT 50000");
         List<SysAuditLog> list = auditLogMapper.selectList(wrapper);
-        // 生成 CSV（UTF-8 BOM，Excel 可直接打开）
         StringBuilder sb = new StringBuilder("\uFEFF");
         sb.append("ID,操作人,所属公司ID,操作模块,操作类型,关联单据,操作IP,操作时间,操作前快照,操作后快照\n");
         for (SysAuditLog a : list) {
@@ -98,17 +96,13 @@ public class AuditServiceImpl implements AuditService {
             Files.createDirectories(exportDir);
             Files.writeString(exportDir.resolve(fileName), sb.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            log.error("审计日志导出失败", e);
+            log.severe("审计日志导出失败: " + e.getMessage());
             throw new BizException("导出失败，请稍后重试");
         }
-        // 导出行为本身记审计
         auditLogUtil.record(CommonConst.MODULE_SYS, CommonConst.OPER_TYPE_EXPORT, fileName, null, null);
         return "/upload/export/" + fileName;
     }
 
-    /**
-     * 组装查询条件：模块/类型/操作人模糊/时间范围；非超管强制过滤本公司
-     */
     private LambdaQueryWrapper<SysAuditLog> buildWrapper(AuditLogQueryDTO dto, boolean orderByIdDesc) {
         LambdaQueryWrapper<SysAuditLog> wrapper = new LambdaQueryWrapper<SysAuditLog>()
                 .eq(StringUtils.hasText(dto.getOperModule()), SysAuditLog::getOperModule, dto.getOperModule())
@@ -130,13 +124,8 @@ public class AuditServiceImpl implements AuditService {
         return wrapper;
     }
 
-    /**
-     * CSV 字段转义（含逗号/引号/换行时包裹双引号）
-     */
     private String escapeCsv(String value) {
-        if (value == null) {
-            return "";
-        }
+        if (value == null) return "";
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }

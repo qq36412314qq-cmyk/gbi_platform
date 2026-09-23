@@ -10,15 +10,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 菜单接口（对齐前端 api/org.ts menu 部分）
@@ -40,6 +39,12 @@ public class MenuController {
         return Result.success(menuService.tree());
     }
 
+    @Operation(summary = "获取当前用户授权菜单树（动态路由用）")
+    @GetMapping("/authorized-tree")
+    public Result<List<MenuTreeVO>> authorizedTree() {
+        return Result.success(menuService.getAuthorizedTree());
+    }
+
     @Operation(summary = "新增菜单")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).MENU_ADD,'')")
     @PostMapping("/add")
@@ -58,8 +63,9 @@ public class MenuController {
 
     @Operation(summary = "删除菜单")
     @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).MENU_DELETE,'')")
-    @DeleteMapping("/delete")
-    public Result<Void> delete(@RequestParam Long id) {
+    @PostMapping("/delete")
+    public Result<Void> delete(@RequestBody Map<String, Long> body) {
+        Long id = body.get("id");
         menuService.delete(id);
         return Result.success();
     }

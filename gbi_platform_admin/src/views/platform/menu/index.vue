@@ -162,7 +162,7 @@ async function loadTree(): Promise<void> {
 function openDialog(parentId?: number, row?: MenuVO): void {
   formRef.value?.clearValidate()
   Object.assign(form, {
-    id: undefined,
+    id: row?.id ?? undefined,
     parentId: parentId ?? row?.parentId ?? 0,
     menuName: row?.menuName ?? '',
     permission: row?.permission ?? '',

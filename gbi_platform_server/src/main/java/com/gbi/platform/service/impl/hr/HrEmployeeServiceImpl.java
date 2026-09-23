@@ -22,6 +22,7 @@ import com.gbi.platform.mapper.hr.HrEmployeeWorkExpMapper;
 import com.gbi.platform.mapper.SysUserMapper;
 import com.gbi.platform.entity.SysUser;
 import com.gbi.platform.service.hr.HrEmployeeService;
+import com.gbi.platform.service.FileService;
 import com.gbi.platform.vo.hr.EduExpVO;
 import com.gbi.platform.vo.hr.HrEmployeeVO;
 import com.gbi.platform.vo.hr.WorkExpVO;
@@ -79,6 +80,7 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
     private final AuditLogUtil auditLogUtil;
     private final ObjectMapper objectMapper;
     private final SysUserMapper sysUserMapper;
+    private final FileService fileService;
 
     @Override
     public PageVO<HrEmployeeVO> page(Long pageNum, Long pageSize, String name, String employeeNo, Integer employeeStatus) {
@@ -124,6 +126,8 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
         employee.setSocialSecurityBase(dto.getSocialSecurityBase());
         employee.setBasicSalary(dto.getBasicSalary());
         employee.setRemark(dto.getRemark());
+        employee.setPhotoFileId(dto.getPhotoFileId());
+        employee.setAttachmentContent(dto.getAttachmentContent());
         employee.setCreateBy(loginUser.getUserId());
         employeeMapper.insert(employee);
         auditLogUtil.record(CommonConst.MODULE_HR_EMPLOYEE, CommonConst.OPER_TYPE_ADD,
@@ -153,6 +157,8 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
         employee.setSocialSecurityBase(dto.getSocialSecurityBase());
         employee.setBasicSalary(dto.getBasicSalary());
         employee.setRemark(dto.getRemark());
+        employee.setPhotoFileId(dto.getPhotoFileId());
+        employee.setAttachmentContent(dto.getAttachmentContent());
         employee.setUpdateBy(UserContext.getLoginUser().getUserId());
         employeeMapper.updateById(employee);
         auditLogUtil.record(CommonConst.MODULE_HR_EMPLOYEE, CommonConst.OPER_TYPE_UPDATE,
@@ -220,6 +226,8 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
         employee.setBankAccount(apply.getBankAccount());
         employee.setBasicSalary(apply.getBasicSalary());
         employee.setRemark(apply.getRemark());
+        employee.setPhotoFileId(apply.getPhotoFileId());
+        employee.setAttachmentContent(apply.getAttachmentContent());
         employee.setCreateBy(apply.getCreateBy());
         employeeMapper.insert(employee);
         auditLogUtil.record(CommonConst.MODULE_HR_EMPLOYEE, CommonConst.OPER_TYPE_ADD,
@@ -370,6 +378,15 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
         vo.setBasicSalary(entity.getBasicSalary());
         vo.setRemark(entity.getRemark());
         vo.setCreateTime(entity.getCreateTime());
+        vo.setPhotoFileId(entity.getPhotoFileId());
+        vo.setAttachmentContent(entity.getAttachmentContent());
+        if (entity.getPhotoFileId() != null && entity.getPhotoFileId() > 0) {
+            try {
+                vo.setPhotoPreviewUrl(fileService.getPreviewUrl(entity.getPhotoFileId()));
+            } catch (Exception e) {
+                log.warn("[toVO] 获取照片预览URL失败 - photoFileId={}", entity.getPhotoFileId(), e);
+            }
+        }
         return vo;
     }
 

@@ -7,9 +7,12 @@ import com.gbi.platform.dto.MenuDTO;
 import com.gbi.platform.entity.SysMenu;
 import cn.hutool.core.bean.BeanUtil;
 import com.gbi.platform.entity.SysRoleMenuRel;
-import cn.hutool.core.bean.BeanUtil;
+import com.gbi.platform.entity.SysUserRoleRel;
 import com.gbi.platform.mapper.SysMenuMapper;
 import com.gbi.platform.mapper.SysRoleMenuRelMapper;
+import com.gbi.platform.mapper.SysUserRoleRelMapper;
+import com.gbi.platform.common.security.LoginUser;
+import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.service.MenuService;
 import com.gbi.platform.util.AuditLogUtil;
 import com.gbi.platform.vo.MenuTreeVO;
@@ -38,6 +41,8 @@ public class MenuServiceImpl implements MenuService {
 
     private final SysRoleMenuRelMapper roleMenuRelMapper;
 
+    private final SysUserRoleRelMapper userRoleRelMapper;
+
     private final AuditLogUtil auditLogUtil;
 
     @Override
@@ -48,6 +53,54 @@ public class MenuServiceImpl implements MenuService {
         Map<Long, MenuTreeVO> map = all.stream().collect(Collectors.toMap(SysMenu::getId, this::toVO));
         List<MenuTreeVO> roots = new ArrayList<>();
         for (SysMenu menu : all) {
+            MenuTreeVO vo = map.get(menu.getId());
+            if (menu.getParentId() == null || menu.getParentId() == 0L) {
+                roots.add(vo);
+            } else {
+                MenuTreeVO parent = map.get(menu.getParentId());
+                if (parent != null) {
+                    parent.getChildren().add(vo);
+                } else {
+                    roots.add(vo);
+                }
+            }
+        }
+        return roots;
+    }
+
+    @Override
+    public List<MenuTreeVO> getAuthorizedTree() {
+        LoginUser loginUser = UserContext.getLoginUser();
+        // 超级管理员返回全量菜单树
+        if (loginUser.isSuperAdmin()) {
+            return tree();
+        }
+        // 普通用户：查询其角色有权访问的页面级菜单
+        List<Long> roleIds = userRoleRelMapper.selectList(
+                        new LambdaQueryWrapper<SysUserRoleRel>().eq(SysUserRoleRel::getUserId, loginUser.getUserId()))
+                .stream().map(SysUserRoleRel::getRoleId).toList();
+        if (roleIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // 查询角色关联的菜单ID
+        List<Long> menuIds = roleMenuRelMapper.selectList(
+                        new LambdaQueryWrapper<SysRoleMenuRel>().in(SysRoleMenuRel::getRoleId, roleIds))
+                .stream().map(SysRoleMenuRel::getMenuId).distinct().toList();
+        if (menuIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // 只返回目录和页面级菜单，按排序排列
+        List<SysMenu> menus = menuMapper.selectList(
+                new LambdaQueryWrapper<SysMenu>()
+                        .in(SysMenu::getId, menuIds)
+                        .in(SysMenu::getMenuType, 1, 2)
+                        .eq(SysMenu::getVisible, 1)
+                        .orderByAsc(SysMenu::getSortOrder)
+                        .orderByAsc(SysMenu::getId));
+        // 构建树形结构
+        Map<Long, MenuTreeVO> map = menus.stream().collect(Collectors.toMap(SysMenu::getId, this::toVO));
+        List<MenuTreeVO> roots = new ArrayList<>();
+        for (SysMenu menu : menus) {
             MenuTreeVO vo = map.get(menu.getId());
             if (menu.getParentId() == null || menu.getParentId() == 0L) {
                 roots.add(vo);

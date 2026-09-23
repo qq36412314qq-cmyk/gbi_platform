@@ -1,0 +1,658 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< com.gbi:gbi_platform_server >---------------------
+[INFO] Building gbi_platform_server 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ gbi_platform_server ---
+[INFO] Deleting D:\Office\Project\Java\gbi_platform\gbi_platform_server\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gbi_platform_server ---
+[INFO] Copying 3 resources from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ gbi_platform_server ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 513 source files with javac [debug parameters release 21] to target\classes
+[INFO] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/service/impl/AuthServiceImpl.java: ĳЩ�����ļ�ʹ�û򸲸����ѹ�ʱ�� API��
+[INFO] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/service/impl/AuthServiceImpl.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:deprecation ���±��롣
+[INFO] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrEmployeeServiceImpl.java: D:\Office\Project\Java\gbi_platform\gbi_platform_server\src\main\java\com\gbi\platform\service\impl\hr\HrEmployeeServiceImpl.javaʹ����δ�����򲻰�ȫ�Ĳ�����
+[INFO] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrEmployeeServiceImpl.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:unchecked ���±��롣
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java:[170,32] ������ com.gbi.platform.common.constant.PermissionConst�ж����˱��� LEASE_CONTRACT_LIST
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java:[171,32] ������ com.gbi.platform.common.constant.PermissionConst�ж����˱��� LEASE_CONTRACT_ADD
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java:[172,32] ������ com.gbi.platform.common.constant.PermissionConst�ж����˱��� LEASE_CONTRACT_TERMINATE
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[25,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[26,30] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.exception.BizException�ı��� e
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[34,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[35,51] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[43,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[44,51] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[49,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[50,51] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[55,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[56,51] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[61,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[62,51] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[67,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[73,51] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[78,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[79,45] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[39,47] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[39,77] �Ҳ�������
+  ����:   ���� getMsg()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[43,47] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[43,77] �Ҳ�������
+  ����:   ���� getMsg()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[47,47] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[51,45] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[59,39] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� resultCode
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[59,61] �Ҳ�������
+  ����:   ���� getMsg()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� resultCode
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[17,12] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+  ��Ҫ: û�в���
+  �ҵ�:    int,java.lang.String
+  ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[20,16] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+  ��Ҫ: û�в���
+  �ҵ�:    int,java.lang.String
+  ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[23,17] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+  ��Ҫ: û�в���
+  �ҵ�:    int,java.lang.String
+  ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[26,14] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+  ��Ҫ: û�в���
+  �ҵ�:    int,java.lang.String
+  ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[29,14] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+  ��Ҫ: û�в���
+  �ҵ�:    int,java.lang.String
+  ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[32,10] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+  ��Ҫ: û�в���
+  �ҵ�:    int,java.lang.String
+  ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[35,22] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+  ��Ҫ: û�в���
+  �ҵ�:    int,java.lang.String
+  ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[38,22] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+  ��Ҫ: û�в���
+  �ҵ�:    int,java.lang.String
+  ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/JwtAuthFilter.java:[52,95] �Ҳ�������
+  ����:   ���� getRoleCodes()
+  λ��: ����Ϊcom.gbi.platform.common.security.LoginUser�ı��� loginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/JwtAuthFilter.java:[60,17] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.common.security.JwtAuthFilter
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/UserContext.java:[27,55] �Ҳ�������
+  ����:   ���� getCode()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� UNAUTHORIZED
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/UserContext.java:[27,90] �Ҳ�������
+  ����:   ���� getMsg()
+  λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� UNAUTHORIZED
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/UserContext.java:[46,40] �Ҳ�������
+  ����:   ���� getUserId()
+  λ��: ����Ϊcom.gbi.platform.common.security.LoginUser�ı��� user
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/UserContext.java:[54,40] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: ����Ϊcom.gbi.platform.common.security.LoginUser�ı��� user
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/config/MybatisPlusConfig.java:[57,38] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: ����Ϊcom.gbi.platform.common.security.LoginUser�ı��� user
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/config/SafeTenantLineInnerInterceptor.java:[36,13] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.config.SafeTenantLineInnerInterceptor
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/FileController.java:[41,9] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.controller.base.FileController
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/FileController.java:[47,13] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.controller.base.FileController
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/FileController.java:[47,61] �Ҳ�������
+  ����:   ���� getFileId()
+  λ��: ����Ϊcom.gbi.platform.vo.FileUploadVO�ı��� vo
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/FileController.java:[50,13] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.controller.base.FileController
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/UploadController.java:[53,13] �Ҳ�������
+  ����:   ���� log
+  λ��: �� com.gbi.platform.controller.base.UploadController
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[153,25] �Ҳ�������
+  ����:   ���� getId()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[154,33] �Ҳ�������
+  ����:   ���� getPolicyName()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[155,30] �Ҳ�������
+  ����:   ���� getBizType()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[156,35] �Ҳ�������
+  ����:   ���� getDiscountType()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[157,34] �Ҳ�������
+  ����:   ���� getWaiveMonths()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[158,35] �Ҳ�������
+  ����:   ���� getDiscountRate()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[159,35] �Ҳ�������
+  ����:   ���� getDeductAmount()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[160,34] �Ҳ�������
+  ����:   ���� getFixedAmount()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[161,33] �Ҳ�������
+  ����:   ���� getTierConfig()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[162,32] �Ҳ�������
+  ����:   ���� getScopeType()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[163,31] �Ҳ�������
+  ����:   ���� getScopeIds()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[164,32] �Ҳ�������
+  ����:   ���� getStartTime()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[165,30] �Ҳ�������
+  ����:   ���� getEndTime()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[166,37] �Ҳ�������
+  ����:   ���� getMaxApplyMonths()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[167,34] �Ҳ�������
+  ����:   ���� getAutoApprove()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[168,32] �Ҳ�������
+  ����:   ���� getSortOrder()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[169,29] �Ҳ�������
+  ����:   ���� getRemark()
+  λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/FeeItemController.java:[51,16] �Ҳ�������
+  ����:   ���� getPageNum()
+  λ��: ����Ϊcom.gbi.platform.dto.FeeItemQueryDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/FeeItemController.java:[51,44] �Ҳ�������
+  ����:   ���� getPageSize()
+  λ��: ����Ϊcom.gbi.platform.dto.FeeItemQueryDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/RecvPayPlanController.java:[61,50] �Ҳ�������
+  ����:   ���� getContractId()
+  λ��: ����Ϊ@jakarta.validation.Valid com.gbi.platform.dto.PlanGenerateDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrHousingFundConfigController.java:[33,52] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrHousingFundConfigController.java:[41,52] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrHousingFundConfigController.java:[50,52] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrHousingFundConfigController.java:[59,52] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[31,52] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[33,20] ����������Ч
+  �Ҳ�������
+    ����:   ���� getCompanyId()
+    λ��: �� com.gbi.platform.entity.hr.HrSalaryBatchAdjust
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[34,20] ����������Ч
+  �Ҳ�������
+    ����:   ���� getIsDelete()
+    λ��: �� com.gbi.platform.entity.hr.HrSalaryBatchAdjust
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[35,29] ����������Ч
+  �Ҳ�������
+    ����:   ���� getCreateTime()
+    λ��: �� com.gbi.platform.entity.hr.HrSalaryBatchAdjust
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[42,52] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[43,12] �Ҳ�������
+  ����:   ���� setCompanyId(java.lang.Long)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[44,12] �Ҳ�������
+  ����:   ���� setStatus(int)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[46,42] �Ҳ�������
+  ����:   ���� getId()
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[60,34] �Ҳ�������
+  ����:   ���� getAdjustName()
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� batch
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[62,14] �Ҳ�������
+  ����:   ���� setStatus(int)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� batch
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[63,14] �Ҳ�������
+  ����:   ���� setFlowInstanceId(java.lang.Long)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� batch
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[28,85] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[35,85] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[37,21] ����������Ч
+  �Ҳ�������
+    ����:   ���� getCompanyId()
+    λ��: �� com.gbi.platform.entity.hr.HrSalaryGrade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[38,21] ����������Ч
+  �Ҳ�������
+    ����:   ���� getStatus()
+    λ��: �� com.gbi.platform.entity.hr.HrSalaryGrade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[39,21] ����������Ч
+  �Ҳ�������
+    ����:   ���� getIsDelete()
+    λ��: �� com.gbi.platform.entity.hr.HrSalaryGrade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[40,29] ����������Ч
+  �Ҳ�������
+    ����:   ���� getGradeLevel()
+    λ��: �� com.gbi.platform.entity.hr.HrSalaryGrade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[46,85] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[47,12] �Ҳ�������
+  ����:   ���� setCompanyId(java.lang.Long)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryGrade�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[48,12] �Ҳ�������
+  ����:   ���� setStatus(int)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryGrade�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[50,42] �Ҳ�������
+  ����:   ���� getId()
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryGrade�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[65,14] �Ҳ�������
+  ����:   ���� setStatus(int)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryGrade�ı��� grade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[29,52] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[36,52] �Ҳ�������
+  ����:   ���� getCompanyId()
+  λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[37,12] �Ҳ�������
+  ����:   ���� setCompanyId(java.lang.Long)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryRule�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[38,12] �Ҳ�������
+  ����:   ���� setStatus(int)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryRule�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[39,12] �Ҳ�������
+  ����:   ���� setApplyStatus(int)
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryRule�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[41,42] �Ҳ�������
+  ����:   ���� getId()
+  λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryRule�ı��� dto
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.944 s
+[INFO] Finished at: 2026-09-22T18:30:44+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project gbi_platform_server: Compilation failure: Compilation failure: 
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java:[170,32] ������ com.gbi.platform.common.constant.PermissionConst�ж����˱��� LEASE_CONTRACT_LIST
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java:[171,32] ������ com.gbi.platform.common.constant.PermissionConst�ж����˱��� LEASE_CONTRACT_ADD
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java:[172,32] ������ com.gbi.platform.common.constant.PermissionConst�ж����˱��� LEASE_CONTRACT_TERMINATE
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[25,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[26,30] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.exception.BizException�ı��� e
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[34,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[35,51] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[43,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[44,51] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[49,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[50,51] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[55,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[56,51] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[61,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[62,51] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[67,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[73,51] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� PARAM_ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[78,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.exception.GlobalExceptionHandler
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/exception/GlobalExceptionHandler.java:[79,45] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[39,47] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[39,77] �Ҳ�������
+[ERROR]   ����:   ���� getMsg()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[43,47] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[43,77] �Ҳ�������
+[ERROR]   ����:   ���� getMsg()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[47,47] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� SUCCESS
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[51,45] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� ERROR
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[59,39] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� resultCode
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/Result.java:[59,61] �Ҳ�������
+[ERROR]   ����:   ���� getMsg()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� resultCode
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[17,12] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+[ERROR]   ��Ҫ: û�в���
+[ERROR]   �ҵ�:    int,java.lang.String
+[ERROR]   ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[20,16] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+[ERROR]   ��Ҫ: û�в���
+[ERROR]   �ҵ�:    int,java.lang.String
+[ERROR]   ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[23,17] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+[ERROR]   ��Ҫ: û�в���
+[ERROR]   �ҵ�:    int,java.lang.String
+[ERROR]   ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[26,14] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+[ERROR]   ��Ҫ: û�в���
+[ERROR]   �ҵ�:    int,java.lang.String
+[ERROR]   ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[29,14] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+[ERROR]   ��Ҫ: û�в���
+[ERROR]   �ҵ�:    int,java.lang.String
+[ERROR]   ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[32,10] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+[ERROR]   ��Ҫ: û�в���
+[ERROR]   �ҵ�:    int,java.lang.String
+[ERROR]   ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[35,22] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+[ERROR]   ��Ҫ: û�в���
+[ERROR]   �ҵ�:    int,java.lang.String
+[ERROR]   ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/result/ResultCode.java:[38,22] �޷���ö�� com.gbi.platform.common.result.ResultCode�еĹ����� ResultCodeӦ�õ���������;
+[ERROR]   ��Ҫ: û�в���
+[ERROR]   �ҵ�:    int,java.lang.String
+[ERROR]   ԭ��: ʵ�ʲ����б����ʽ�����б���Ȳ�ͬ
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/JwtAuthFilter.java:[52,95] �Ҳ�������
+[ERROR]   ����:   ���� getRoleCodes()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.security.LoginUser�ı��� loginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/JwtAuthFilter.java:[60,17] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.common.security.JwtAuthFilter
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/UserContext.java:[27,55] �Ҳ�������
+[ERROR]   ����:   ���� getCode()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� UNAUTHORIZED
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/UserContext.java:[27,90] �Ҳ�������
+[ERROR]   ����:   ���� getMsg()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.result.ResultCode�ı��� UNAUTHORIZED
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/UserContext.java:[46,40] �Ҳ�������
+[ERROR]   ����:   ���� getUserId()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.security.LoginUser�ı��� user
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/common/security/UserContext.java:[54,40] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.security.LoginUser�ı��� user
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/config/MybatisPlusConfig.java:[57,38] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.common.security.LoginUser�ı��� user
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/config/SafeTenantLineInnerInterceptor.java:[36,13] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.config.SafeTenantLineInnerInterceptor
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/FileController.java:[41,9] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.controller.base.FileController
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/FileController.java:[47,13] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.controller.base.FileController
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/FileController.java:[47,61] �Ҳ�������
+[ERROR]   ����:   ���� getFileId()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.vo.FileUploadVO�ı��� vo
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/FileController.java:[50,13] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.controller.base.FileController
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/base/UploadController.java:[53,13] �Ҳ�������
+[ERROR]   ����:   ���� log
+[ERROR]   λ��: �� com.gbi.platform.controller.base.UploadController
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[153,25] �Ҳ�������
+[ERROR]   ����:   ���� getId()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[154,33] �Ҳ�������
+[ERROR]   ����:   ���� getPolicyName()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[155,30] �Ҳ�������
+[ERROR]   ����:   ���� getBizType()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[156,35] �Ҳ�������
+[ERROR]   ����:   ���� getDiscountType()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[157,34] �Ҳ�������
+[ERROR]   ����:   ���� getWaiveMonths()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[158,35] �Ҳ�������
+[ERROR]   ����:   ���� getDiscountRate()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[159,35] �Ҳ�������
+[ERROR]   ����:   ���� getDeductAmount()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[160,34] �Ҳ�������
+[ERROR]   ����:   ���� getFixedAmount()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[161,33] �Ҳ�������
+[ERROR]   ����:   ���� getTierConfig()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[162,32] �Ҳ�������
+[ERROR]   ����:   ���� getScopeType()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[163,31] �Ҳ�������
+[ERROR]   ����:   ���� getScopeIds()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[164,32] �Ҳ�������
+[ERROR]   ����:   ���� getStartTime()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[165,30] �Ҳ�������
+[ERROR]   ����:   ���� getEndTime()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[166,37] �Ҳ�������
+[ERROR]   ����:   ���� getMaxApplyMonths()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[167,34] �Ҳ�������
+[ERROR]   ����:   ���� getAutoApprove()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[168,32] �Ҳ�������
+[ERROR]   ����:   ���� getSortOrder()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/DiscountController.java:[169,29] �Ҳ�������
+[ERROR]   ����:   ���� getRemark()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.DiscountPolicyDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/FeeItemController.java:[51,16] �Ҳ�������
+[ERROR]   ����:   ���� getPageNum()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.FeeItemQueryDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/FeeItemController.java:[51,44] �Ҳ�������
+[ERROR]   ����:   ���� getPageSize()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.dto.FeeItemQueryDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/finance/RecvPayPlanController.java:[61,50] �Ҳ�������
+[ERROR]   ����:   ���� getContractId()
+[ERROR]   λ��: ����Ϊ@jakarta.validation.Valid com.gbi.platform.dto.PlanGenerateDTO�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrHousingFundConfigController.java:[33,52] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrHousingFundConfigController.java:[41,52] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrHousingFundConfigController.java:[50,52] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrHousingFundConfigController.java:[59,52] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[31,52] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[33,20] ����������Ч
+[ERROR]   �Ҳ�������
+[ERROR]     ����:   ���� getCompanyId()
+[ERROR]     λ��: �� com.gbi.platform.entity.hr.HrSalaryBatchAdjust
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[34,20] ����������Ч
+[ERROR]   �Ҳ�������
+[ERROR]     ����:   ���� getIsDelete()
+[ERROR]     λ��: �� com.gbi.platform.entity.hr.HrSalaryBatchAdjust
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[35,29] ����������Ч
+[ERROR]   �Ҳ�������
+[ERROR]     ����:   ���� getCreateTime()
+[ERROR]     λ��: �� com.gbi.platform.entity.hr.HrSalaryBatchAdjust
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[42,52] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[43,12] �Ҳ�������
+[ERROR]   ����:   ���� setCompanyId(java.lang.Long)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[44,12] �Ҳ�������
+[ERROR]   ����:   ���� setStatus(int)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[46,42] �Ҳ�������
+[ERROR]   ����:   ���� getId()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[60,34] �Ҳ�������
+[ERROR]   ����:   ���� getAdjustName()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� batch
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[62,14] �Ҳ�������
+[ERROR]   ����:   ���� setStatus(int)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� batch
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryBatchAdjustController.java:[63,14] �Ҳ�������
+[ERROR]   ����:   ���� setFlowInstanceId(java.lang.Long)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryBatchAdjust�ı��� batch
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[28,85] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[35,85] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[37,21] ����������Ч
+[ERROR]   �Ҳ�������
+[ERROR]     ����:   ���� getCompanyId()
+[ERROR]     λ��: �� com.gbi.platform.entity.hr.HrSalaryGrade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[38,21] ����������Ч
+[ERROR]   �Ҳ�������
+[ERROR]     ����:   ���� getStatus()
+[ERROR]     λ��: �� com.gbi.platform.entity.hr.HrSalaryGrade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[39,21] ����������Ч
+[ERROR]   �Ҳ�������
+[ERROR]     ����:   ���� getIsDelete()
+[ERROR]     λ��: �� com.gbi.platform.entity.hr.HrSalaryGrade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[40,29] ����������Ч
+[ERROR]   �Ҳ�������
+[ERROR]     ����:   ���� getGradeLevel()
+[ERROR]     λ��: �� com.gbi.platform.entity.hr.HrSalaryGrade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[46,85] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[47,12] �Ҳ�������
+[ERROR]   ����:   ���� setCompanyId(java.lang.Long)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryGrade�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[48,12] �Ҳ�������
+[ERROR]   ����:   ���� setStatus(int)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryGrade�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[50,42] �Ҳ�������
+[ERROR]   ����:   ���� getId()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryGrade�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryGradeController.java:[65,14] �Ҳ�������
+[ERROR]   ����:   ���� setStatus(int)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryGrade�ı��� grade
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[29,52] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[36,52] �Ҳ�������
+[ERROR]   ����:   ���� getCompanyId()
+[ERROR]   λ��: �� com.gbi.platform.common.security.LoginUser
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[37,12] �Ҳ�������
+[ERROR]   ����:   ���� setCompanyId(java.lang.Long)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryRule�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[38,12] �Ҳ�������
+[ERROR]   ����:   ���� setStatus(int)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryRule�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[39,12] �Ҳ�������
+[ERROR]   ����:   ���� setApplyStatus(int)
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryRule�ı��� dto
+[ERROR] /D:/Office/Project/Java/gbi_platform/gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/HrSalaryRuleController.java:[41,42] �Ҳ�������
+[ERROR]   ����:   ���� getId()
+[ERROR]   λ��: ����Ϊcom.gbi.platform.entity.hr.HrSalaryRule�ı��� dto
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

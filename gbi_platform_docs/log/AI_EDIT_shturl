@@ -1,5 +1,173 @@
 # AI_EDIT_LOG
 
+## 【2026-09-23 12:00:00】第四章优化并移至文档末尾
+
+- 用户原始需求：将第四章"待实现功能优先级排序"移到最后，并根据完整方案和当前进度重新优化
+- 修改涉及文件：
+  - gbi_platform_docs/tmp/HR模块流程分析与实现方案.md
+- 变更摘要：
+  1. 将原第四章（约250行）从文档中部移除
+  2. 新增优化版第四章（约120行）置于文档末尾（第十章之后）
+  3. 优化内容：
+     - 新增P0优先级：入职自动创建薪资档案、审批联动更新、月度薪资空值保护
+     - 新增P1优先级：补调薪功能（含数据库设计）
+     - 精简P2优先级：权限常量补全、数据一致性、审计日志
+     - 新增实施路线图（14天分三阶段）
+     - 新增关键实现要点（事务化、版本化、多租户隔离等）
+  4. 与原第十章（薪资档案专项方案）形成呼应，避免重复
+- 风险与注意事项：无代码修改，仅文档结构调整
+
+---
+
+
+# AI_EDIT_LOG
+
+## 【2026-09-23 11:45:00】HR模块薪资档案自动生成与补调薪方案编写
+
+- 用户原始需求：入职申请审批通过后自动创建薪资档案，支持补调薪功能，实现与员工档案和月度薪资无缝衔接
+- 修改涉及文件：
+  - gbi_platform_docs/tmp/HR模块流程分析与实现方案.md（追加第十章）
+- 变更摘要：
+  1. 新增第十章"薪资档案自动生成与补调薪专项方案"，涵盖10个子节
+  2. 梳理了当前系统缺失点：入职→薪资档案自动创建、转正/调岗薪资联动、员工档案薪资状态展示、补调薪功能
+  3. 设计了入职自动创建薪资档案的完整流程（createFromEntry内部新增逻辑）
+  4. 设计了补调薪数据库表结构（hr_salary_adjust_apply + hr_salary_adjust_detail）
+  5. 提出推荐方案A（追加补差记录，不修改历史数据）替代方案B（修改历史数据）
+  6. 设计了员工档案表新增3个字段（salary_archive_status/current_salary_archive_id/salary_archive_pending）
+  7. 设计了入职申请表单增强（新增薪资规则选择、自动创建开关）
+  8. 绘制了完整业务流程图（入职→转正→调岗→补调薪→月度薪资→财务发放）
+  9. 评估总工作量约11天，分P0/P1/P2三级优先级
+- 风险与注意事项：无代码修改，仅方案编写
+
+---
+
+
+# AI_EDIT_LOG
+
+## 【2026-09-23 11:30:00】HR模块流程分析与实现方案文档编写
+
+- 用户原始需求：分析人力资源模块实现进度，编写流程方案文档
+- 修改涉及文件：无代码修改，仅编写方案文档
+  - gbi_platform_docs/tmp/HR模块流程分析与实现方案.md（新建）
+- 变更摘要：
+  1. 梳理HR模块5大核心领域：人员生命周期、考勤管理、薪酬管理、基础配置
+  2. 绘制员工全生命周期流程、调岗流程、月度薪资核算流程3个场景图
+  3. 评估当前完成度：约75%（已完成38项、部分完成4项、待实现10项）
+  4. 按P0/P1/P2三级排序待实现功能，给出代码级实现方案和工期估算
+  5. 提出性能/体验/安全三类优化建议
+  6. 规划四阶段开发路线图（核心闭环→功能完善→体验优化→高级功能）
+  7. 附数据库表结构速查表和风险评估表
+- 风险与注意事项：无代码修改；文档仅含方案分析，未动业务代码
+
+---
+
+
+# AI_EDIT_LOG
+
+## 【2026-09-23 11:15:00】修复薪资档案页面权限常量缺失导致启动报错
+
+- 用户原始需求：薪资档案页面报错 `Failed to evaluate expression 'hasPermission(T(...PermissionConst).HR_SALARY_ARCHIVE_LIST,'')'`
+- 修改涉及文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/common/constant/PermissionConst.java
+- 变更摘要：
+  1. 新增薪资档案权限常量：`HR_SALARY_ARCHIVE_LIST`、`HR_SALARY_ARCHIVE_ADD`、`HR_SALARY_ARCHIVE_EDIT`、`HR_SALARY_ARCHIVE_DELETE`
+  2. 补充月度薪资缺失常量：`HR_SALARY_MONTH_GENERATE`、`HR_SALARY_MONTH_PAY`、`HR_SALARY_MONTH_EXPORT`（`HR_SALARY_MONTH_LIST` 已存在）
+- 根因：`SalaryController.java` 使用了 `PermissionConst` 中未定义的常量，导致 Spring Security SpEL 表达式求值失败
+- 风险与注意事项：需在数据库 `sys_menu` 表中补充对应权限记录后方可正常使用
+
+---
+
+
+# AI_EDIT_LOG
+
+## 【2026-09-23 11:00:00】修复员工档案编辑弹窗照片和附件内容未显示问题
+
+- 用户原始需求：免冠照片和附件内容输入框中的数据，在编辑弹窗模式下没有写入和预览
+- 修改涉及文件：
+  - gbi_platform_admin/src/views/hr/employee/index.vue
+- 变更摘要：
+  1. `openEditDialog()` 函数添加 `photoFile.value = null` 清空旧文件引用，防止残留影响新预览
+  2. `Object.assign(form, ...)` 补充 `attachmentContent: row.attachmentContent` 确保表单字段同步
+- 根因：编辑弹窗打开时未清空 `photoFile` 旧引用，且表单未同步 `attachmentContent` 字段
+- 风险与注意事项：无特殊风险
+
+---
+
+# AI_EDIT_LOG
+
+## 【2026-09-23 10:45:00】修复员工档案photoFileId和attachmentContent未保存问题
+
+- 用户原始需求：员工档案新增/编辑提交后，hr_employee表没有成功保存photoFileId和attachmentContent字段值
+- 修改涉及文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrEmployeeServiceImpl.java
+- 变更摘要：
+  1. `add()` 方法（第127-128行）补充 `employee.setPhotoFileId(dto.getPhotoFileId())` 和 `employee.setAttachmentContent(dto.getAttachmentContent())`
+  2. `update()` 方法（第158-159行）补充相同两行赋值
+- 根因：DTO中有这两个字段、前端也正确提交，但Service层的add/update方法未将它们set到实体对象，导致MyBatis-Plus生成SQL时不包含这两列
+- 风险与注意事项：无特殊风险
+
+
+## 【2026-09-23 10:40:00】修复入职申请列表免冠照片不显示问题
+
+- 用户原始需求：入职申请列表中id=15有照片数据但显示"—"占位符
+- 修改涉及文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrTransferServiceImpl.java
+- 变更摘要：
+  1. 注入 `FileService`（原有依赖中缺失）
+  2. `toEntryVO()` 方法补充 `photoFileId` 和 `photoPreviewUrl` 赋值（调用 `fileService.getPreviewUrl()` 获取完整预览URL，异常时降级为null不阻断主流程）
+- 根因：`toEntryVO()` 方法未填充照片字段，导致前端 `row.photoPreviewUrl` 始终为 null，触发"—"占位符
+- 风险与注意事项：无特殊风险，与员工档案模块 photoPreviewUrl 填充逻辑一致
+- 备注：edit_file 工具写入时产生多余转义反斜杠（`\"`），需用 Python 字节替换修复为 `"`
+
+
+## 【2026-09-23 10:40:00】修复入职申请列表免冠照片不显示问题
+
+- 用户原始需求：入职申请列表中id=15有照片数据但显示"—"占位符
+- 修改涉及文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/service/impl/hr/HrTransferServiceImpl.java
+- 变更摘要：
+  1. 注入 `FileService`（原有依赖中缺失）
+  2. `toEntryVO()` 方法补充 `photoFileId` 和 `photoPreviewUrl` 赋值（调用 `fileService.getPreviewUrl()` 获取完整预览URL，异常时降级为null不阻断主流程）
+- 根因：`toEntryVO()` 方法未填充照片字段，导致前端 `row.photoPreviewUrl` 始终为 null，触发"—"占位符
+- 风险与注意事项：无特殊风险，与员工档案模块 photoPreviewUrl 填充逻辑一致
+
+
+## 【2026-09-23 10:35:00】入职申请富文本编辑器稳定性修复（transfer/index.vue）
+
+- 用户原始需求：将入职申请富文本编辑器按员工档案已修复方案同步优化
+- 修改涉及文件：
+  - gbi_platform_admin/src/views/hr/transfer/index.vue
+- 变更摘要：
+  1. 主弹窗 `<el-dialog>` 添加 `destroy-on-close`，确保 Editor 组件每次打开全新挂载
+  2. `openAdd()` 中移除 `editorReady.value = false` 和 `editorInstance.value = null` 的手动重置
+  3. 移除 `onBeforeUnmount` 中的 `editorInstance.value.destroy()`，由 destroy-on-close 自动管理
+- 风险与注意事项：无特殊风险，与员工档案修复逻辑一致
+
+
+## 【2026-09-22 13:05:00】修复考勤导出接口HTTP方法不匹配及启动类加载失败
+
+- 用户原始需求：修复考勤管理页面同步打卡报错"请求方法不支持: Request method 'GET' is not supported"
+- 修改涉及文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/AttendanceController.java
+
+- 变更摘要：
+  1. 将 `@PostMapping("/export")` 改为 `@GetMapping("/export")`，与前端 `exportAttendanceApi` 使用 GET 保持一致
+  2. 根因分析：启动时 AttendanceQueryDTO.class 尚未编译完成导致 ClassNotFoundException
+
+- 风险与注意事项：无特殊风险，仅HTTP方法调整，不影响OSS模式
+- 待执行：需重新编译并重启服务后生效
+
+## 【2026-09-22 12:58:00】修复考勤导出接口HTTP方法不匹配问题
+
+- 用户原始需求：修复考勤管理页面同步打卡报错"请求方法不支持: Request method 'GET' is not supported"
+- 修改涉及文件：
+  - gbi_platform_server/src/main/java/com/gbi/platform/controller/hr/AttendanceController.java
+
+- 变更摘要：
+  1. 将 `@PostMapping("/export")` 改为 `@GetMapping("/export")`，与前端 `exportAttendanceApi` 使用 GET 保持一致
+
+- 风险与注意事项：无特殊风险，仅HTTP方法调整，不影响OSS模式
+
 ## 【2026-09-14 09:35:00】修复公积金和社保参数配置激活接口参数不匹配问题
 
 - 用户原始需求：修复日志错误"Required request body is missing"
@@ -151,5 +319,24 @@
   - DROP 字段前需确认无外键引用（本表无外键，安全）
   - deprecated 标记后前端 SocialController 已返回废弃提示，旧数据仍可查询
   - 该脚本需在 v2.10 之前执行
+
+## 【2026-09-22 17:55:00】员工档案模块后端补全 & 编译修复
+
+- 用户原始需求：完善员工档案页面及功能，参考入职申请页面设计，完善免冠照片字段和富文本附件生命周期
+- 修改涉及文件：
+  - gbi_platform_server/.../service/impl/hr/HrEmployeeServiceImpl.java（重写，补全 toVO/update/delete/export/createFromEntry）
+  - gbi_platform_server/.../service/impl/hr/HrTransferServiceImpl.java（补全 onEntryApproved）
+  - gbi_platform_server/.../common/constant/PermissionConst.java（新增 HR_ENTRY/EMPLOYEE/WORK_EXP/EDU_EXP 权限常量）
+  - gbi_platform_server/.../entity/hr/HrSalaryGrade.java（补全缺失的 @Data 注解）
+- 变更摘要：
+  1. HrEmployeeServiceImpl 补全 toVO() 方法，填充 photoPreviewUrl（调用 fileService.getPreviewUrl）
+  2. HrEmployeeServiceImpl 补全 createFromEntry()，审批通过后从入职申请自动创建员工档案并写入工作/学业经历
+  3. HrTransferServiceImpl 补全 onEntryApproved() 回调，调用 hrEmployeeService.createFromEntry()
+  4. PermissionConst 新增 HR_ENTRY_LIST/ADD/REVOKE、HR_EMPLOYEE_*、HR_WORK_EXP_*、HR_EDU_EXP_* 常量
+  5. HrSalaryGrade 补全 @Data 注解，修复 getIsDelete()/getCompanyId() 找不到符号的编译错误
+- 风险与注意事项：
+  - SQL 升级脚本 upgrade_v2.14_employee_photo_attachment.sql 尚未执行，需手动运行
+  - 菜单权限需在 sys_menu 表中插入对应记录后才能生效
+  - 执行 mvn clean compile 清理旧缓存后重新编译
 
 

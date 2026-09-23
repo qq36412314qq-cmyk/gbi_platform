@@ -27,7 +27,8 @@
       </el-header>
 
       <el-main class="g-layout-main">
-        <router-view />
+        <!-- App.vue 通过 slot 传入页面组件（动态路由扁平化后不再用嵌套 router-view） -->
+        <slot />
       </el-main>
     </el-container>
   </el-container>

@@ -1,7 +1,6 @@
 package com.gbi.platform.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -9,10 +8,7 @@ import java.time.LocalDateTime;
 
 /**
  * 审计日志返回（对齐前端 AuditLogVO）
- *
- * @author gbi
  */
-@Data
 @Schema(description = "审计日志")
 public class AuditLogVO implements Serializable {
 
@@ -54,4 +50,29 @@ public class AuditLogVO implements Serializable {
 
     @Schema(description = "操作时间")
     private LocalDateTime createTime;
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public Long getOperUserId() { return operUserId; }
+    public void setOperUserId(Long operUserId) { this.operUserId = operUserId; }
+    public String getOperUserName() { return operUserName; }
+    public void setOperUserName(String operUserName) { this.operUserName = operUserName; }
+    public String getOperIp() { return operIp; }
+    public void setOperIp(String operIp) { this.operIp = operIp; }
+    public String getOperModule() { return operModule; }
+    public void setOperModule(String operModule) { this.operModule = operModule; }
+    public String getOperType() { return operType; }
+    public void setOperType(String operType) { this.operType = operType; }
+    public String getBizId() { return bizId; }
+    public void setBizId(String bizId) { this.bizId = bizId; }
+    public String getBeforeJson() { return beforeJson; }
+    public void setBeforeJson(String beforeJson) { this.beforeJson = beforeJson; }
+    public String getAfterJson() { return afterJson; }
+    public void setAfterJson(String afterJson) { this.afterJson = afterJson; }
+    public Long getAuditOperId() { return auditOperId; }
+    public void setAuditOperId(Long auditOperId) { this.auditOperId = auditOperId; }
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
 }

@@ -33,5 +33,8 @@ import java.math.BigDecimal; import java.time.LocalDate; import java.time.LocalD
     @Schema(description="社保公积金缴纳基数") private BigDecimal socialSecurityBase;
     @Schema(description="基本工资快照") private BigDecimal basicSalary;
     @Schema(description="备注") private String remark;
+    @Schema(description="免冠照片对应的sys_file.id") private Long photoFileId;
+    @Schema(description="免冠照片可直访预览URL") private String photoPreviewUrl;
+    @Schema(description="附件内容（富文本HTML）") private String attachmentContent;
     @Schema(description="创建时间") private LocalDateTime createTime;
 }
