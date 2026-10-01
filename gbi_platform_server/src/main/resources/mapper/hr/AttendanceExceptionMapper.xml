@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gbi.platform.mapper.hr.AttendanceExceptionMapper">
+
+    <!-- 查询连续缺卡超阈值的员工ID列表 -->
+    <select id="selectAbsentEmployees" resultType="java.lang.Long">
+        SELECT employee_id
+        FROM hr_attendance_record
+        WHERE company_id = #{companyId}
+          AND attendance_month = CONCAT(#{monthStart}, '-01')
+          AND clock_type = 4
+          AND is_delete = 0
+        GROUP BY employee_id
+        HAVING COUNT(*) &gt;= #{absentThreshold}
+    </select>
+
+    <!-- 查询月度迟到频繁的员工ID列表 -->
+    <select id="selectLateFrequentEmployees" resultType="java.lang.Long">
+        SELECT employee_id
+        FROM hr_attendance_record
+        WHERE company_id = #{companyId}
+          AND attendance_month = CONCAT(#{monthStart}, '-01')
+          AND clock_type = 2
+          AND is_delete = 0
+        GROUP BY employee_id
+        HAVING COUNT(*) &gt;= #{lateFrequentThreshold}
+    </select>
+
+</mapper>

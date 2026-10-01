@@ -33,6 +33,18 @@ public class HrSalaryRuleServiceImpl extends ServiceImpl<HrSalaryRuleMapper, HrS
     }
 
     @Override
+    public java.util.List<HrSalaryRule> listByCompany(Long companyId, Integer bindType, Long postId, String gradeCode) {
+        LambdaQueryWrapper<HrSalaryRule> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HrSalaryRule::getCompanyId, companyId)
+               .eq(HrSalaryRule::getIsDelete, 0);
+        if (bindType != null) wrapper.eq(HrSalaryRule::getBindType, bindType);
+        if (postId != null) wrapper.eq(HrSalaryRule::getPostId, postId);
+        if (gradeCode != null && !gradeCode.isEmpty()) wrapper.eq(HrSalaryRule::getGradeCode, gradeCode);
+        wrapper.orderByDesc(HrSalaryRule::getStatus).orderByDesc(HrSalaryRule::getCreateTime);
+        return list(wrapper);
+    }
+
+    @Override
     public HrSalaryRule getEffectiveByPostAndGrade(Long postId, String gradeCode, Long companyId) {
         // 优先匹配 岗位+薪酬级别 组合
         HrSalaryRule combo = getOne(new LambdaQueryWrapper<HrSalaryRule>()

@@ -33,7 +33,7 @@ public class OrgTreeVO implements Serializable {
     @Schema(description = "组织名称")
     private String orgName;
 
-    @Schema(description = "组织类型：1集团 2子公司 3部门")
+    @Schema(description = "组织类型：1集团 2子公司 3部门 4班组")
     private Integer orgType;
 
     @Schema(description = "排序")

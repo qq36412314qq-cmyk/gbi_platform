@@ -74,6 +74,17 @@ public class EmployeeController {
         return Result.success(employeeService.export(ids));
     }
 
+    @Operation(summary = "在职员工列表（下拉选择用）")
+    @PreAuthorize("hasPermission(T(com.gbi.platform.common.constant.PermissionConst).HR_EMPLOYEE_LIST,'')")
+    @GetMapping("/list")
+    public Result<List<HrEmployeeVO>> list(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String employeeNo,
+            @RequestParam(required = false) Integer employeeStatus,
+            @RequestParam(required = false) Integer employmentType) {
+        return Result.success(employeeService.listForDropdown(name, employeeNo, employeeStatus, employmentType));
+    }
+
     // ==================== 工作经历 ====================
 
     @Operation(summary = "查询工作经历列表")

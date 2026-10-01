@@ -5,7 +5,6 @@
       <div style="display:flex;gap:8px">
         <span v-if="!hasAddPermission" style="font-size:12px;color:#909399;line-height:32px">审批通过的入职申请将自动创建员工档案，无需手动新增</span>
         <AuthBtn v-if="hasAddPermission" permission="hr:employee:add" type="primary" @click="openAddDialog">新增员工</AuthBtn>
-        <el-button v-if="hasAddPermission" link @click="openHistoryAdd">历史补录</el-button>
       </div>
     </div>
     <SearchBar :model="query" @search="loadData" @reset="handleReset">
@@ -81,9 +80,15 @@
           <template #default="{ row }">{{ row.genderText || '—' }}</template>
         </el-table-column>
         <el-table-column prop="phone" label="手机号" width="120" align="center" />
-        <el-table-column prop="orgName" label="所属组织" width="130" align="center" show-overflow-tooltip />
+        <el-table-column prop="orgName" label="所属部门" width="130" align="center" show-overflow-tooltip />
+        <el-table-column prop="postName" label="岗位名称" width="120" align="center" show-overflow-tooltip />
         <el-table-column prop="employmentTypeText" label="用工类型" width="90" align="center" />
         <el-table-column prop="entryDate" label="入职日期" width="110" align="center" />
+        <el-table-column prop="exemptAttendanceText" label="是否参与考勤" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag size="small" :type="row.exemptAttendance === 1 ? 'info' : 'success'">{{ row.exemptAttendanceText }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="photoFileId" label="免冠照片" width="80" align="center">
           <template #default="{ row }">
             <el-image
@@ -114,7 +119,7 @@
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="20">
           <!-- ========== 左侧表单区域 ========== -->
-          <el-col :span="12">
+          <el-col :span="14">
             <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="员工工号" prop="employeeNo"><el-input v-model="form.employeeNo" placeholder="请输入" /></el-form-item>
@@ -137,6 +142,20 @@
             </el-row>
             <el-row :gutter="16">
               <el-col :span="12">
+                <el-form-item label="免冠照片">
+                  <el-upload ref="photoUploadRef" action="" :auto-upload="false" :on-change="handlePhotoChange" :show-file-list="false" accept="image/jpeg,image/png,image/jpg">
+                    <el-image v-if="photoUrl" :src="photoUrl" fit="cover" style="width:120px;height:160px;border-radius:4px;border:1px solid #dcdfe6" />
+                    <el-button v-else type="primary" size="small"><el-icon><Plus /></el-icon> 上传照片</el-button>
+                  </el-upload>
+                  <div style="color:#909399;font-size:12px;margin-top:4px">支持 JPG/PNG，不超过 5MB</div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="身份证号" prop="idCardNo"><el-input v-model="form.idCardNo" placeholder="请输入" /></el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :span="12">
                 <el-form-item label="用工类型">
                   <el-select v-model="form.employmentType" placeholder="请选择" style="width:100%">
                     <el-option label="正式" :value="1" /><el-option label="试用期" :value="2" /><el-option label="劳务派遣" :value="3" /><el-option label="临时工" :value="4" />
@@ -144,7 +163,11 @@
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="基本工资"><el-input-number v-model="form.basicSalary" :precision="2" :min="0" placeholder="请输入" style="width:100%" /></el-form-item>
+                <el-form-item label="就职城市" prop="cityId">
+                  <el-select v-model="form.cityId" placeholder="请选择就职城市" clearable filterable style="width:100%" :loading="cityLoading">
+                    <el-option v-for="city in cityList" :key="city.id" :label="city.cityCode + '、' + city.cityName" :value="city.id" />
+                  </el-select>
+                </el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="16">
@@ -155,28 +178,137 @@
                 <el-form-item label="邮箱"><el-input v-model="form.email" placeholder="请输入" /></el-form-item>
               </el-col>
             </el-row>
-            <!-- 免冠照片上传 -->
             <el-row :gutter="16">
               <el-col :span="12">
-                <el-form-item label="免冠照片">
-                  <el-upload ref="photoUploadRef" action="" :auto-upload="false" :on-change="handlePhotoChange" :show-file-list="false" accept="image/jpeg,image/png,image/jpg">
-                    <el-image v-if="photoUrl" :src="photoUrl" fit="cover" style="width:120px;height:160px;border-radius:4px;border:1px solid #dcdfe6" />
-                    <el-button v-else type="primary" size="small"><el-icon><Plus /></el-icon> 上传照片</el-button>
-                  </el-upload>
-                  <div style="color:#909399;font-size:12px;margin-top:4px">支持 JPG/PNG，不超过 5MB</div>
+                <el-form-item label="所属组织" prop="orgId">
+                  <el-tree-select
+                    v-model="form.orgId"
+                    :data="orgTreeData"
+                    :props="{ label: 'orgName', value: 'id', children: 'children' }"
+                    check-strictly
+                    node-key="id"
+                    placeholder="请选择部门"
+                    clearable
+                    filterable
+                    style="width:100%"
+                    :render-after-expand="false"
+                  />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="所属组织">
-                  <el-tree-select v-model="form.orgId" :data="orgTreeData" :props="{ label: 'orgName', value: 'id', children: 'children' }" check-strictly node-key="id" placeholder="请选择" clearable filterable style="width:100%" :render-after-expand="false" />
+                <el-form-item label="目标岗位" prop="postId">
+                  <el-select v-model="form.postId" placeholder="请选择目标岗位" clearable filterable style="width:100%" :loading="postLoading">
+                    <el-option v-for="post in filteredPostList" :key="post.id" :label="post.postName" :value="post.id" />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
+            <el-form-item label="薪资模板">
+              <el-select v-model="form.salaryRuleId" placeholder="请选择薪资模板" clearable filterable style="width:100%" :loading="salaryRuleLoading" @change="handleSalaryRuleChange">
+                <el-option v-for="rule in salaryRuleList" :key="rule.id" :label="rule.ruleName" :value="rule.id" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="休息日配置">
+              <el-select v-model="form.workweekConfigId" placeholder="请选择休息日配置" clearable filterable style="width:100%">
+                <el-option v-for="cfg in workweekConfigList" :key="cfg.id" :label="cfg.configName" :value="cfg.id" />
+              </el-select>
+              <div style="color:#909399;font-size:12px;margin-top:4px">
+                说明：配置员工出勤的休息日规则（单休/双休/做五休二等）。
+                优先级：员工个人配置 &gt; 岗位默认配置 &gt; 组织默认配置 &gt; 集团全局默认。
+                子公司可在「组织岗位」页面为岗位单独指定休息日配置；也可在「员工档案」中为单个员工单独设置，覆盖岗位默认值。
+              </div>
+            </el-form-item>
+            <el-form-item label="是否参与考勤">
+              <el-radio-group v-model="form.exemptAttendance">
+                <el-radio :value="0">参与</el-radio>
+                <el-radio :value="1">不参与</el-radio>
+              </el-radio-group>
+              <div style="color:#909399;font-size:12px;margin-top:4px">不参与考勤的员工，同步打卡时默认为满勤</div>
+            </el-form-item>
+            <el-form-item label="基本工资"><el-input-number v-model="form.basicSalary" :precision="2" :min="0" placeholder="请输入" style="width:100%" /></el-form-item>
             <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
+
+            <!-- 工作经历 -->
+            <el-form-item label="工作经历">
+              <div style="width:100%">
+                <el-table :data="workExps" border size="small" style="width:100%">
+                  <el-table-column prop="companyName" label="公司名称" min-width="120">
+                    <template #default="{ row, $index }">
+                      <el-input v-model="row.companyName" placeholder="公司名称" size="small" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="position" label="职位" width="100">
+                    <template #default="{ row }">
+                      <el-input v-model="row.position" placeholder="职位" size="small" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="department" label="部门" width="100">
+                    <template #default="{ row }">
+                      <el-input v-model="row.department" placeholder="部门" size="small" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="startDate" label="开始时间" width="100">
+                    <template #default="{ row }">
+                      <el-date-picker v-model="row.startDate" type="date" placeholder="开始时间" value-format="YYYY-MM" size="small" style="width:100%" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="endDate" label="结束时间" width="100">
+                    <template #default="{ row }">
+                      <el-date-picker v-model="row.endDate" type="date" placeholder="结束时间" value-format="YYYY-MM" size="small" style="width:100%" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="60" align="center">
+                    <template #default="{ $index }">
+                      <el-button type="danger" link size="small" @click="removeWorkExpRow($index)">删除</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-button type="primary" link size="small" @click="addWorkExpRow" style="margin-top:8px">+ 添加工作经历</el-button>
+              </div>
+            </el-form-item>
+
+            <!-- 学业经历 -->
+            <el-form-item label="学业经历">
+              <div style="width:100%">
+                <el-table :data="eduExps" border size="small" style="width:100%">
+                  <el-table-column prop="schoolName" label="学校名称" min-width="120">
+                    <template #default="{ row, $index }">
+                      <el-input v-model="row.schoolName" placeholder="学校名称" size="small" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="degree" label="学位" width="80">
+                    <template #default="{ row }">
+                      <el-input v-model="row.degree" placeholder="学位" size="small" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="major" label="专业" width="100">
+                    <template #default="{ row }">
+                      <el-input v-model="row.major" placeholder="专业" size="small" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="startDate" label="入学时间" width="100">
+                    <template #default="{ row }">
+                      <el-date-picker v-model="row.startDate" type="date" placeholder="入学时间" value-format="YYYY-MM" size="small" style="width:100%" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="graduationDate" label="毕业时间" width="100">
+                    <template #default="{ row }">
+                      <el-date-picker v-model="row.graduationDate" type="date" placeholder="毕业时间" value-format="YYYY-MM" size="small" style="width:100%" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="60" align="center">
+                    <template #default="{ $index }">
+                      <el-button type="danger" link size="small" @click="removeEduExpRow($index)">删除</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-button type="primary" link size="small" @click="addEduExpRow" style="margin-top:8px">+ 添加学业经历</el-button>
+              </div>
+            </el-form-item>
           </el-col>
 
           <!-- ========== 右侧：富文本附件内容 ========== -->
-          <el-col :span="12">
+          <el-col :span="10">
             <el-form-item label="附件内容" label-position="top" style="height:100%;margin-bottom:0;">
               <div class="wang-editor-wrapper">
                 <div class="wang-editor-toolbar-row">
@@ -270,6 +402,9 @@ import { useTable } from '@/hooks/useTable'
 import * as api from '@/api/hr'
 import * as fileApi from '@/api/file'
 import { getOrgTreeApi } from '@/api/org'
+import { getCityListApi } from '@/api/hrSocialParam'
+import { getSalaryRuleListApi, type HrSalaryRuleVO } from '@/api/hrSalary'
+import { getWorkweekConfigListApi } from '@/api/hr'
 import { getStorage } from '@/utils/storage'
 
 const hasAddPermission = computed(() => true)
@@ -283,6 +418,72 @@ const orgTreeData = ref<any[]>([])
 onMounted(async () => {
   try { orgTreeData.value = await getOrgTreeApi() } catch { /* ignore */ }
   loadData()
+  await loadAllPosts()
+  await loadCityList()
+  await loadSalaryRuleList()
+  await loadWorkweekConfigList()
+})
+
+// ---- 就职城市 ----
+const cityList = ref<any[]>([])
+const cityLoading = ref(false)
+const loadCityList = async () => {
+  cityLoading.value = true
+  try {
+    const res = await getCityListApi()
+    cityList.value = res || []
+  } catch (e) { console.error('[employee] 加载城市列表失败', e) }
+  finally { cityLoading.value = false }
+}
+
+// ---- 薪资模板下拉 ----
+const salaryRuleList = ref<HrSalaryRuleVO[]>([])
+const salaryRuleLoading = ref(false)
+const loadSalaryRuleList = async () => {
+  salaryRuleLoading.value = true
+  try {
+    const res = await getSalaryRuleListApi()
+    salaryRuleList.value = res || []
+  } catch (e) { console.error('[employee] 加载薪资模板列表失败', e) }
+  finally { salaryRuleLoading.value = false }
+}
+
+// ---- 岗位列表（按所属组织联动过滤）----
+const allPostList = ref<api.HrPostVO[]>([])
+const postLoading = ref(false)
+const filteredPostList = computed(() => {
+  if (!form.orgId) return []
+  return allPostList.value.filter(p => p.deptId === form.orgId)
+})
+const loadAllPosts = async () => {
+  postLoading.value = true
+  try {
+    const result = await api.getPostFlatListApi()
+    allPostList.value = result as unknown as api.HrPostVO[]
+  } finally {
+    postLoading.value = false
+  }
+}
+
+// 选择薪资模板时自动填充基本工资
+function handleSalaryRuleChange(ruleId: number | undefined) {
+  if (!ruleId) { form.basicSalary = undefined; return }
+  const rule = salaryRuleList.value.find(r => r.id === ruleId)
+  if (rule) form.basicSalary = rule.basicSalary
+}
+
+// ---- 休息日配置下拉 ----
+const workweekConfigList = ref<api.WorkweekConfigVO[]>([])
+const loadWorkweekConfigList = async () => {
+  try {
+    const res = await getWorkweekConfigListApi()
+    workweekConfigList.value = res || []
+  } catch (e) { console.error('[employee] 加载休息日配置列表失败', e) }
+}
+// 筛选当前公司可用的休息日配置：全局( companyId=0) + 本公司配置
+const visibleWorkweekConfigs = computed(() => {
+  // 先从岗位获取默认配置，显示时带名称
+  return workweekConfigList.value
 })
 
 /* ---- 照片上传 ---- */
@@ -341,6 +542,18 @@ const applyHtmlEdit = () => {
   ElMessage.success('HTML 源码已应用')
 }
 
+// 工作经历/学业经历数据（临时存储，提交时序列化为experienceData）
+const workExps = ref<Array<{ companyName: string; position?: string; department?: string; startDate: string; endDate?: string; isCurrent?: number; reasonForLeaving?: string; remark?: string }>>([])
+const eduExps = ref<Array<{ schoolName: string; degree?: string; major?: string; educationLevel?: string; startDate: string; graduationDate?: string; isGraduated?: number; certificateNo?: string; remark?: string }>>([])
+
+// 工作经历行操作
+const addWorkExpRow = () => { workExps.value.push({ companyName: '', startDate: '' }) }
+const removeWorkExpRow = (index: number) => { workExps.value.splice(index, 1) }
+
+// 学业经历行操作
+const addEduExpRow = () => { eduExps.value.push({ schoolName: '', startDate: '' }) }
+const removeEduExpRow = (index: number) => { eduExps.value.splice(index, 1) }
+
 /* ---- 新增/编辑 ---- */
 const dialogVisible = ref(false)
 const submitLoading = ref(false)
@@ -349,21 +562,27 @@ const form = reactive<api.EmployeeDTO>({ employeeNo: '', name: '', employmentTyp
 const rules = { employeeNo: [{ required: true, message: '工号不能为空' }], name: [{ required: true, message: '姓名不能为空' }] }
 
 const openAddDialog = () => {
-  Object.assign(form, { id: undefined, employeeNo: '', name: '', employmentType: 1, remark: '' })
+  Object.assign(form, { id: undefined, employeeNo: '', name: '', employmentType: 1, cityId: 1, salaryRuleId: undefined, workweekConfigId: undefined, exemptAttendance: 0, orgId: undefined, postId: undefined, remark: '' })
   resetEditor()
+  workExps.value = []
+  eduExps.value = []
   dialogVisible.value = true
 }
 const openHistoryAdd = () => {
-  Object.assign(form, { id: undefined, employeeNo: '', name: '', employmentType: 1, remark: '历史补录' })
+  Object.assign(form, { id: undefined, employeeNo: '', name: '', employmentType: 1, orgId: undefined, postId: undefined, remark: '历史补录' })
   resetEditor()
+  workExps.value = []
+  eduExps.value = []
   dialogVisible.value = true
 }
 const openEditDialog = (row: api.EmployeeVO) => {
-  Object.assign(form, { id: row.id, employeeNo: row.employeeNo, name: row.name, gender: row.gender, birthdate: row.birthdate, entryDate: row.entryDate, employmentType: row.employmentType, phone: row.phone, email: row.email, basicSalary: row.basicSalary, remark: row.remark, photoFileId: row.photoFileId, attachmentContent: row.attachmentContent })
+  Object.assign(form, { id: row.id, employeeNo: row.employeeNo, name: row.name, gender: row.gender, birthdate: row.birthdate, entryDate: row.entryDate, employmentType: row.employmentType, phone: row.phone, email: row.email, basicSalary: row.basicSalary, cityId: row.cityId, salaryRuleId: row.salaryRuleId, workweekConfigId: row.workweekConfigId, exemptAttendance: row.exemptAttendance, orgId: row.orgId, postId: row.postId, remark: row.remark, photoFileId: row.photoFileId, attachmentContent: row.attachmentContent })
   photoFile.value = null
   photoFileId.value = row.photoFileId
   photoUrl.value = row.photoPreviewUrl || ''
   attachmentHtml.value = row.attachmentContent || ''
+  workExps.value = []
+  eduExps.value = []
   dialogVisible.value = true
 }
 const resetEditor = () => {
@@ -373,6 +592,12 @@ const resetEditor = () => {
   attachmentHtml.value = ''
   htmlContent.value = ''
   htmlDialogVisible.value = false
+  workExps.value = []
+  eduExps.value = []
+  form.cityId = 1
+  form.salaryRuleId = undefined
+  form.workweekConfigId = undefined
+  form.exemptAttendance = 0
 }
 const handleDelete = (row: api.EmployeeVO) => {
   ElMessageBox.confirm('确认删除该员工?', '提示').then(async () => { await api.deleteEmployeeApi(row.id!); ElMessage.success('删除成功'); loadData() })
@@ -388,7 +613,9 @@ const handleSubmit = async () => {
   }
   submitLoading.value = true
   try {
-    const submitData = { ...form, photoFileId: uploadedPhotoFileId, attachmentContent: attachmentHtml.value } as any
+    const workExpsData = workExps.value.filter(r => r.companyName)
+    const eduExpsData = eduExps.value.filter(r => r.schoolName)
+    const submitData = { ...form, photoFileId: uploadedPhotoFileId, attachmentContent: attachmentHtml.value, experienceData: JSON.stringify({ workExps: workExpsData, eduExps: eduExpsData }) } as any
     if (form.id) { await api.updateEmployeeApi(submitData); ElMessage.success('编辑成功') }
     else { await api.addEmployeeApi(submitData); ElMessage.success('新增成功') }
     dialogVisible.value = false

@@ -65,10 +65,11 @@ const PATH_COMPONENT_OVERRIDE: Record<string, string> = {
   '/property/market': '../views/business/property/marketList.vue',
   '/property/bill': '../views/business/waterElec/waterElecBill.vue',
   '/property/meter/pay': '../views/business/waterElec/waterElecPay.vue',
-  '/property/feeBill': '../views/business/property/feeBill.vue',
   '/property/feeBill/list': '../views/business/property/feeBill.vue',
   '/property/unpaidBill': '../views/business/property/unpaidBill.vue',
   '/property/feePay': '../views/business/property/propertyFeePay.vue',
+
+  '/property/meter': '../views/business/waterElec/waterElecMeter.vue',
 
   // 租赁子模块
   '/property/lease/stall': '../views/business/property/leaseStall.vue',
@@ -97,6 +98,8 @@ const PATH_COMPONENT_OVERRIDE: Record<string, string> = {
   '/hr/employee': '../views/hr/employee/index.vue',
   '/hr/transfer': '../views/hr/transfer/index.vue',
   '/hr/attendance': '../views/hr/attendance/index.vue',
+  '/hr/config': '../views/hr/config/index.vue',
+  '/hr/config/attendance': '../views/hr/config/index.vue',
   '/hr/salary': '../views/hr/salary/index.vue',
   '/hr/salary/grade': '../views/hr/salary/grade.vue',
   '/hr/salary/rule': '../views/hr/salary/rule.vue',

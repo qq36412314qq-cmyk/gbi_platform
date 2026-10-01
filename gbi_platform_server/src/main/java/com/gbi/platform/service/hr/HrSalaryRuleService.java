@@ -10,4 +10,6 @@ public interface HrSalaryRuleService extends IService<HrSalaryRule> {
     HrSalaryRule getEffectiveByPostAndGrade(Long postId, String gradeCode, Long companyId);
     /** 提交模板变更去审批（调用FlowEngineService.submit） */
     void submitAudit(Long ruleId);
+    /** 查询公司下薪资模板列表（下拉框用） */
+    java.util.List<HrSalaryRule> listByCompany(Long companyId, Integer bindType, Long postId, String gradeCode);
 }

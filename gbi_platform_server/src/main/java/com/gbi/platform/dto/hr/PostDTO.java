@@ -14,6 +14,8 @@ import java.io.Serial; import java.io.Serializable;
     @NotBlank(message="岗位编码不能为空") @Size(max=32) private String postCode;
     @Schema(description="岗位职级") @Size(max=32) private String postLevel;
     @Schema(description="所属部门ID") private Long deptId;
+    @Schema(description="岗位默认休息日配置ID（关联sys_workweek_config.id）") private Long workweekConfigId;
+    @Schema(description="班次类型 1标准工时 2早班 3晚班 4夜班 5综合工时") private Integer shiftType;
     @Schema(description="状态 0禁用 1启用") private Integer status;
     @Schema(description="备注") @Size(max=500) private String remark;
 }

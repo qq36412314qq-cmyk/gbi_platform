@@ -76,6 +76,10 @@ export function getSalaryRulePageApi(params: {
   return get<PageResult<HrSalaryRuleVO>>('/hr/salary/rule/page', params)
 }
 
+export function getSalaryRuleListApi(params?: { bindType?: number; postId?: number; gradeCode?: string }) {
+  return get<HrSalaryRuleVO[]>('/hr/salary/rule/list', params)
+}
+
 export function addSalaryRuleApi(data: Partial<HrSalaryRuleVO>) {
   return post<number>('/hr/salary/rule/add', data)
 }

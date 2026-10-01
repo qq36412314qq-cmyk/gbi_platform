@@ -27,6 +27,7 @@ import java.math.BigDecimal; import java.time.LocalDate; import java.time.LocalD
     @Schema(description="所属组织ID") private Long orgId;
     @Schema(description="岗位ID") private Long postId;
     @Schema(description="岗位职级快照") private String postLevel;
+    @Schema(description="岗位名称（关联查询）") private String postName;
     @Schema(description="组织名称快照") private String orgName;
     @Schema(description="直属上级用户ID") private Long supervisorId;
     @Schema(description="工资卡号（脱敏）") private String bankAccount;
@@ -37,4 +38,12 @@ import java.math.BigDecimal; import java.time.LocalDate; import java.time.LocalD
     @Schema(description="免冠照片可直访预览URL") private String photoPreviewUrl;
     @Schema(description="附件内容（富文本HTML）") private String attachmentContent;
     @Schema(description="创建时间") private LocalDateTime createTime;
+    @Schema(description="就职城市ID") private Long cityId;
+    @Schema(description="就职城市名称（关联查询）") private String cityName;
+    @Schema(description="薪资模板ID") private Long salaryRuleId;
+    @Schema(description="薪资模板名称（关联查询）") private String salaryRuleName;
+    @Schema(description="休息日配置ID（关联sys_workweek_config.id）") private Long workweekConfigId;
+    @Schema(description="休息日配置名称（关联查询）") private String workweekConfigName;
+    @Schema(description="是否免考勤 0参与 1不参与") private Integer exemptAttendance;
+    @Schema(description="是否免考勤文本") private String exemptAttendanceText;
 }

@@ -53,4 +53,15 @@ public class HrEmployee extends BaseEntity {
     private Long photoFileId;
     /** 附件内容（富文本HTML） */
     private String attachmentContent;
+    /** 就职城市ID（关联sys_city.id） */
+    private Long cityId;
+    /** 薪资模板ID（关联hr_salary_rule.id） */
+    private Long salaryRuleId;
+    /** 休息日配置ID（关联sys_workweek_config.id） */
+    private Long workweekConfigId;
+    /** 特殊排班JSON（格式：{"2026-10-01":"休息","2026-10-02":"上班"}） */
+    private String specialSchedule;
+    /** 是否免考勤 0参与 1不参与（不参与考勤的员工同步时默认为满勤） */
+    private Integer exemptAttendance;
 }
+

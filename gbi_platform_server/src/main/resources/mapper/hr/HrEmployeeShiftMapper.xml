@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gbi.platform.mapper.hr.HrEmployeeShiftMapper">
+
+    <!-- 查询指定日期范围内生效的班次配置 -->
+    <select id="selectActiveShifts" resultType="com.gbi.platform.entity.hr.HrEmployeeShift">
+        SELECT id, company_id, employee_id, shift_type, shift_start_time, shift_end_time,
+               start_date, end_date, status, remark, create_by, create_time, update_by, update_time, is_delete
+        FROM hr_employee_shift
+        WHERE employee_id = #{employeeId}
+          AND status = 1
+          AND is_delete = 0
+          AND start_date &lt;= #{date}
+          AND (end_date IS NULL OR end_date &gt;= #{date})
+        ORDER BY start_date DESC
+        LIMIT 1
+    </select>
+
+</mapper>

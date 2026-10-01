@@ -51,6 +51,26 @@
           <AuthBtn permission="hr:salary:month:generate" type="primary" @click="openGenerate">生成薪资</AuthBtn>
           <AuthBtn permission="hr:salary:month:export" @click="handleExportMonth">导出</AuthBtn>
         </div>
+        <el-collapse v-model="salaryHelpActive" accordion style="margin-bottom:12px">
+          <el-collapse-item title="📖 薪资计算说明" name="help">
+            <template #title>
+              <span style="font-size:13px;color:#606266">薪资计算说明</span>
+              <el-tag size="small" type="info" style="margin-left:8px">点击展开</el-tag>
+            </template>
+            <div style="font-size:13px;line-height:1.8;padding:8px">
+              <ul style="margin:0;padding-left:20px">
+                <li><b>数据来源</b>：从「薪资档案」读取员工基本工资、绩效工资、岗位津贴、其他津贴</li>
+                <li><b>社保计算</b>：根据员工城市代码，从「社保参数配置」读取个人/公司缴纳比例，基数按工资总额上下限 Clamp</li>
+                <li><b>公积金计算</b>：从「公积金配置」读取缴存比例，基数同样受上下限约束</li>
+                <li><b>个税计算</b>：采用累计预扣法，扣除社保个人部分+公积金个人部分+5000元起征点</li>
+                <li><b>考勤扣款</b>：勾选「同步考勤扣款」后，根据「考勤记录」计算迟到/早退/缺卡扣款（关联薪资模板的skipAttendance、latePenaltyRate等参数）</li>
+                <li><b>加班补偿</b>：勾选「同步加班费」后，汇总当月已核算的加班补偿台账（hr_overtime_compensate），将加班费金额加入实发合计</li>
+                <li><b>最低保护</b>：实发金额不得低于当地最低工资标准，超出部分自动调整扣款</li>
+                <li><b>前置条件</b>：生成前请确保「薪资档案」已维护，「社保参数」和「公积金配置」已初始化</li>
+              </ul>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
         <SearchBar :model="monthQuery" @search="loadMonthData" @reset="() => { monthQuery.pageNum = 1; loadMonthData() }">
           <el-form-item label="薪资月份">
             <el-date-picker v-model="monthQuery.salaryMonth" type="month" value-format="YYYY-MM" placeholder="选择月份" style="width:140px" />
@@ -58,21 +78,57 @@
         </SearchBar>
         <TablePage v-model:page-num="monthQuery.pageNum" v-model:page-size="monthQuery.pageSize" :total="monthTotal" @refresh="loadMonthData">
           <el-table v-loading="monthLoading" :data="monthRecords" border stripe>
-            <el-table-column prop="employeeName" label="姓名" width="100" align="center" />
-            <el-table-column prop="salaryMonth" label="薪资月份" width="110" align="center" />
-            <el-table-column prop="grossAmount" label="应发金额" width="110" align="right" />
-            <el-table-column prop="taxAmount" label="个税" width="90" align="right">
-              <template #default="{ row }">{{ Number(row.taxAmount ?? 0).toFixed(2) }}</template>
+            <el-table-column prop="employeeName" label="姓名" width="100" align="center" fixed="left" />
+            <el-table-column prop="salaryMonth" label="薪资月份" width="110" align="center" fixed="left" />
+            <el-table-column label="基本工资" width="100" align="right">
+              <template #default="{ row }">{{ Number(row.basicSalary ?? 0).toFixed(2) }}</template>
             </el-table-column>
-            <el-table-column prop="attendanceDeduction" label="考勤扣款" width="100" align="right">
-              <template #default="{ row }">{{ Number(row.attendanceDeduction ?? 0).toFixed(2) }}</template>
+            <el-table-column label="绩效工资" width="100" align="right">
+              <template #default="{ row }">{{ Number(row.performanceSalary ?? 0).toFixed(2) }}</template>
             </el-table-column>
-            <el-table-column prop="netAmount" label="实发金额" width="110" align="right">
-              <template #default="{ row }"><span style="color:#e6a23c;font-weight:600">{{ Number(row.netAmount).toFixed(2) }}</span></template>
+            <el-table-column label="补贴合计" width="100" align="right">
+              <template #default="{ row }">{{ Number(row.allowanceAmount ?? 0).toFixed(2) }}</template>
+            </el-table-column>
+            <el-table-column label="应发金额" width="110" align="right">
+              <template #default="{ row }"><b>{{ Number(row.grossAmount ?? 0).toFixed(2) }}</b></template>
+            </el-table-column>
+            <el-table-column label="社保扣款" width="100" align="right">
+              <template #default="{ row }"><span style="color:#f56c6c">{{ Number(row.socialSecurity ?? 0).toFixed(2) }}</span></template>
+            </el-table-column>
+            <el-table-column label="公积金扣款" width="110" align="right">
+              <template #default="{ row }"><span style="color:#f56c6c">{{ Number(row.housingFund ?? 0).toFixed(2) }}</span></template>
+            </el-table-column>
+            <el-table-column label="个税" width="90" align="right">
+              <template #default="{ row }"><span style="color:#f56c6c">{{ Number(row.taxAmount ?? 0).toFixed(2) }}</span></template>
+            </el-table-column>
+            <el-table-column label="考勤扣款" width="110" align="right" show-overflow-tooltip>
+              <template #default="{ row }">
+                <div style="line-height:1.3">
+                  <div><span style="color:#f56c6c;font-weight:600">{{ Number(row.attendanceDeduction ?? 0).toFixed(2) }}</span></div>
+                  <div style="color:#909399;font-size:11px;line-height:1.4">
+                    旷工{{ Number(row.absentDeduction ?? 0).toFixed(2) }} / 迟到{{ Number(row.lateDeduction ?? 0).toFixed(2) }}
+                  </div>
+                  <div style="color:#909399;font-size:11px;line-height:1.4">
+                    早退{{ Number(row.earlyDeduction ?? 0).toFixed(2) }} / 事假{{ Number(row.unpaidLeaveDeduction ?? 0).toFixed(2) }}
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="最低工资保护" width="110" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.minWageProtected === 1" size="small" type="warning">已触发</el-tag>
+                <span v-else style="color:#c0c4cc">-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="实发金额" width="120" align="right">
+              <template #default="{ row }"><span style="color:#e6a23c;font-weight:700;font-size:14px">{{ Number(row.netAmount ?? 0).toFixed(2) }}</span></template>
             </el-table-column>
             <el-table-column prop="payStatusText" label="发放状态" width="100" align="center">
-              <template #default="{ row }"><el-tag size="small" :type="row.payStatus === 1 ? 'success' : 'info'">{{ row.payStatusText || '-' }}</el-tag></template>
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.payStatus === 1 ? 'success' : row.payStatus === 2 ? 'danger' : 'info'">{{ row.payStatusText || '-' }}</el-tag>
+              </template>
             </el-table-column>
+            <el-table-column prop="createTime" label="生成时间" width="155" align="center" />
             <el-table-column label="操作" width="180" align="center" fixed="right">
               <template #default="{ row }">
                 <AuthBtn permission="hr:salary:month:view" link type="primary" size="small" @click="openDetail(row)">明细</AuthBtn>
@@ -112,8 +168,57 @@
       <el-form label-width="120px">
         <el-form-item label="核算月份"><el-date-picker v-model="generateMonth" type="month" value-format="YYYY-MM" style="width:100%" /></el-form-item>
         <el-form-item label="同步考勤扣款"><el-switch v-model="syncAttendance" /></el-form-item>
+        <el-form-item label="同步加班费"><el-switch v-model="syncOvertime" /></el-form-item>
       </el-form>
       <template #footer><el-button @click="generateDialogVisible=false">取消</el-button><el-button type="primary" :loading="generateLoading" @click="handleGenerate">确定</el-button></template>
+    </el-dialog>
+
+    <!-- 月度薪资明细弹窗 -->
+    <el-dialog v-model="detailDialogVisible" title="薪资明细" width="720px">
+      <template v-if="detailRow">
+        <el-descriptions :column="3" border size="small" style="margin-bottom:16px">
+          <el-descriptions-item label="员工">{{ detailRow.employeeName }}</el-descriptions-item>
+          <el-descriptions-item label="薪资月份">{{ detailRow.salaryMonth }}</el-descriptions-item>
+          <el-descriptions-item label="发放状态">
+            <el-tag size="small" :type="detailRow.payStatus === 1 ? 'success' : detailRow.payStatus === 2 ? 'danger' : 'info'">{{ detailRow.payStatusText || '-' }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="基本工资">¥{{ Number(detailRow.basicSalary ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="绩效工资">¥{{ Number(detailRow.performanceSalary ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="补贴合计">¥{{ Number(detailRow.allowanceAmount ?? 0).toFixed(2) }}</el-descriptions-item>
+        </el-descriptions>
+
+        <el-divider content-position="left">应发合计</el-divider>
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="应发金额">
+            <span style="color:#e6a23c;font-weight:700;font-size:16px">¥{{ Number(detailRow.grossAmount ?? 0).toFixed(2) }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="实发金额" :span="2">
+            <span style="color:#67c23a;font-weight:700;font-size:16px">¥{{ Number(detailRow.netAmount ?? 0).toFixed(2) }}</span>
+            <span v-if="detailRow.minWageProtected === 1" style="margin-left:8px"><el-tag size="small" type="warning">触发最低工资保护</el-tag></span>
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <el-divider content-position="left">扣款明细</el-divider>
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="社保扣款">¥{{ Number(detailRow.socialSecurity ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="公积金扣款">¥{{ Number(detailRow.housingFund ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="个税">¥{{ Number(detailRow.taxAmount ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="考勤扣款">¥{{ Number(detailRow.attendanceDeduction ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="旷工扣款">¥{{ Number(detailRow.absentDeduction ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="迟到扣款">¥{{ Number(detailRow.lateDeduction ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="早退扣款">¥{{ Number(detailRow.earlyDeduction ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="无薪事假扣款">¥{{ Number(detailRow.unpaidLeaveDeduction ?? 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="其他扣款">¥{{ Number(detailRow.deductionAmount ?? 0).toFixed(2) }}</el-descriptions-item>
+        </el-descriptions>
+
+        <el-divider content-position="left">发放信息</el-divider>
+        <el-descriptions :column="2" border size="small">
+          <el-descriptions-item label="生成时间">{{ detailRow.createTime || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="实际发放时间">{{ detailRow.payTime || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="备注" :span="2">{{ detailRow.remark || '-' }}</el-descriptions-item>
+        </el-descriptions>
+      </template>
+      <template #footer><el-button @click="detailDialogVisible=false">关闭</el-button></template>
     </el-dialog>
   </div>
 </template>
@@ -126,10 +231,14 @@ import * as api from '@/api/hr'
 import * as salaryApi from '@/api/hrSalary'
 
 const activeTab = ref<'archive' | 'month'>('archive')
+const salaryHelpActive = ref<string[]>([]) // 默认收起
 
 /* ---- 薪资档案 ---- */
-const archiveQuery = reactive({ pageNum: 1, pageSize: 20, keyword: '', gradeCode: undefined as string | undefined })
-const { records: archiveRecords, total: archiveTotal, loading: archiveLoading, loadData: loadArchiveData } = useTable(api.getSalaryArchivePageApi, archiveQuery)
+const { query: archiveQuery, records: archiveRecords, total: archiveTotal, loading: archiveLoading, loadData: loadArchiveData } = useTable(api.getSalaryArchivePageApi, {
+  pageSize: 20,
+  keyword: '',
+  gradeCode: undefined as string | undefined,
+})
 const archiveDialogVisible = ref(false)
 const archiveSubmitLoading = ref(false)
 const archiveFormRef = ref()
@@ -162,15 +271,38 @@ const handleSubmitArchiveAudit = (row: api.SalaryArchiveVO) => { ElMessageBox.co
 const handleArchiveSubmit = async () => { await archiveFormRef.value.validate(); archiveSubmitLoading.value = true; try { if (archiveForm.id) { await api.updateSalaryArchiveApi(archiveForm); ElMessage.success('编辑成功') } else { await api.addSalaryArchiveApi(archiveForm); ElMessage.success('新增成功') } archiveDialogVisible.value = false; loadArchiveData() } finally { archiveSubmitLoading.value = false } }
 
 /* ---- 月度薪资 ---- */
-const monthQuery = reactive({ pageNum: 1, pageSize: 20, employeeId: undefined as number | undefined, salaryMonth: undefined as string | undefined })
-const { records: monthRecords, total: monthTotal, loading: monthLoading, loadData: loadMonthData } = useTable(api.getSalaryMonthPageApi, monthQuery)
+const { query: monthQuery, records: monthRecords, total: monthTotal, loading: monthLoading, loadData: loadMonthData } = useTable(api.getSalaryMonthPageApi, {
+  pageSize: 20,
+  employeeId: undefined as number | undefined,
+  salaryMonth: undefined as string | undefined,
+})
 const generateDialogVisible = ref(false)
 const generateMonth = ref('')
 const syncAttendance = ref(true)
+const syncOvertime = ref(false)
 const generateLoading = ref(false)
+const detailDialogVisible = ref(false)
+const detailRow = ref<api.SalaryMonthVO | null>(null)
 const openGenerate = () => { generateMonth.value = new Date().toISOString().slice(0, 7); generateDialogVisible.value = true }
-const handleGenerate = async () => { generateLoading.value = true; try { await api.generateSalaryMonthApi({ employeeIds: [], salaryMonth: generateMonth.value, syncAttendance: syncAttendance.value ? 1 : 0 }); ElMessage.success('生成成功'); generateDialogVisible.value = false; loadMonthData() } finally { generateLoading.value = false } }
+const handleGenerate = async () => {
+  const payload = {
+    employeeIds: [] as number[],
+    salaryMonth: generateMonth.value,
+    syncAttendance: (syncAttendance.value ? 1 : 0) as number,
+    syncOvertime: (syncOvertime.value ? 1 : 0) as number,
+  }
+  generateLoading.value = true
+  try {
+    await api.generateSalaryMonthApi(payload)
+    ElMessage.success('生成成功')
+    generateDialogVisible.value = false
+    loadMonthData()
+  } finally { generateLoading.value = false }
+}
 const handlePay = (row: api.SalaryMonthVO) => { ElMessageBox.confirm(`确认发放 ${row.employeeName} ${row.salaryMonth} 薪资?`, '提示').then(async () => { await api.paySalaryMonthApi(row.id!); ElMessage.success('发放成功'); loadMonthData() }) }
-const handleExportMonth = async () => { try { await api.exportSalaryMonthApi({ employeeId: monthQuery.employeeId, salaryMonth: monthQuery.salaryMonth }) } catch {} }
-const openDetail = (row: api.SalaryMonthVO) => { ElMessage.info(`员工: ${row.employeeName} | 月份: ${row.salaryMonth} | 应发: ${row.grossAmount} | 社保: ${row.socialSecurity} | 公积金: ${row.housingFund} | 个税: ${row.taxAmount} | 考勤扣款: ${row.attendanceDeduction ?? 0} | 实发: ${row.netAmount}`) }
+const handleExportMonth = async () => {
+  const params = { employeeId: monthQuery.employeeId as number | undefined, salaryMonth: monthQuery.salaryMonth as string | undefined }
+  try { await api.exportSalaryMonthApi(params) } catch {}
+}
+const openDetail = (row: api.SalaryMonthVO) => { detailRow.value = row; detailDialogVisible.value = true }
 </script>

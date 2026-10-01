@@ -11,7 +11,7 @@
  Target Server Version : 80012 (8.0.12)
  File Encoding         : 65001
 
- Date: 15/09/2026 11:06:51
+ Date: 01/10/2026 11:59:25
 */
 
 SET NAMES utf8mb4;
@@ -38,7 +38,7 @@ CREATE TABLE `biz_fee_bill_detail`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_bill_id`(`bill_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '收费账单明细快照表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '收费账单明细快照表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of biz_fee_bill_detail
@@ -82,7 +82,7 @@ CREATE TABLE `biz_kingdee_push`  (
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '金蝶凭证推送记录表【预留，一期不执行业务写入】' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '金蝶凭证推送记录表【预留，一期不执行业务写入】' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of biz_kingdee_push
@@ -168,7 +168,7 @@ CREATE TABLE `finance_discount_log`  (
   INDEX `idx_log_bill`(`bill_id` ASC) USING BTREE,
   INDEX `idx_log_source`(`source_bill_id` ASC) USING BTREE,
   INDEX `idx_log_stall_month`(`stall_id` ASC, `bill_month` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '优惠执行日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '优惠执行日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of finance_discount_log
@@ -792,7 +792,7 @@ CREATE TABLE `flow_definition`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_def_code`(`def_code` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程定义表（集团全局模板）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程定义表（集团全局模板）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flow_definition
@@ -812,6 +812,7 @@ INSERT INTO `flow_definition` VALUES (12, 0, '调岗申请审批', 'hr_transfer'
 INSERT INTO `flow_definition` VALUES (13, 0, '离职申请审批', 'hr_resign', 'hr_resign', '[{\"nodeName\":\"子公司经理审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"sub_manager\"}]', 1, NULL, 1, '2026-09-10 23:25:03', NULL, NULL, 0);
 INSERT INTO `flow_definition` VALUES (14, 0, '调薪审批', 'salary_archive_adjust', 'hr_salary_archive', '[{\"nodeName\":\"部门负责人审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"dept_manager\"},{\"nodeName\":\"HR审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"hr_manager\"}]', 1, '单人调薪/晋升调级审批', 1, '2026-09-11 14:49:13', NULL, NULL, 0);
 INSERT INTO `flow_definition` VALUES (15, 0, '年终奖审批', 'salary_year_bonus', 'hr_year_bonus', '[{\"nodeName\":\"部门负责人审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"dept_manager\"},{\"nodeName\":\"财务复核\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"finance_manager\"}]', 1, '年终奖审批', 1, '2026-09-11 14:49:13', NULL, NULL, 0);
+INSERT INTO `flow_definition` VALUES (16, 0, '加班申请', 'hr_overtime_apply', 'hr_overtime_apply', '{\"nodes\":[{\"nodeName\":\"主管审批\",\"nodeMode\":\"single\",\"handlerType\":\"role\",\"handlerValue\":\"sub_manager\",\"copyTo\":[]}]}', 1, '员工加班申请审批，由子公司经理审批', 0, '2026-09-29 13:32:42', NULL, '2026-09-29 16:29:49', 0);
 
 -- ----------------------------
 -- Table structure for flow_instance
@@ -845,7 +846,7 @@ CREATE TABLE `flow_instance`  (
   INDEX `idx_def_id`(`def_id` ASC) USING BTREE,
   INDEX `idx_source`(`source_type` ASC, `source_id` ASC) USING BTREE,
   INDEX `idx_apply_user_id`(`apply_user_id` ASC, `instance_status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程实例表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程实例表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flow_instance
@@ -854,6 +855,15 @@ INSERT INTO `flow_instance` VALUES (15, 0, 'FL202609101954424146', 1, '租赁合
 INSERT INTO `flow_instance` VALUES (16, 0, 'FL202609102202216818', 1, '租赁合同审批', 'contract', 'work_report', '1', 'admin 提交日报：2026-09-10', 1, '集团超级管理员', 0, '子公司经理审批', '[1]', '2026-09-10 22:02:22', NULL, 1, '2026-09-10 22:02:22', 1, '2026-09-10 22:02:22', 0);
 INSERT INTO `flow_instance` VALUES (17, 0, 'FL202609102334357648', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '10', '2号员工 入职申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-10 23:34:35', '2026-09-10 23:34:54', 1, '2026-09-10 23:34:35', 1, '2026-09-10 23:34:35', 0);
 INSERT INTO `flow_instance` VALUES (18, 0, 'FL202609102336341046', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '11', '3号员工 入职申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-10 23:36:34', '2026-09-10 23:36:41', 1, '2026-09-10 23:36:34', 1, '2026-09-10 23:36:34', 0);
+INSERT INTO `flow_instance` VALUES (19, 0, 'FL202609151521537222', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '12', '测试四号 入职申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-15 15:21:54', '2026-09-15 15:22:19', 1, '2026-09-15 15:21:54', 1, '2026-09-15 15:21:54', 0);
+INSERT INTO `flow_instance` VALUES (20, 0, 'FL202609151555429938', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '13', '5号员工 入职申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-15 15:55:43', '2026-09-15 15:55:51', 1, '2026-09-15 15:55:43', 1, '2026-09-15 15:55:43', 0);
+INSERT INTO `flow_instance` VALUES (21, 0, 'FL202609151612280838', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '14', '6号员工 入职申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-15 16:12:28', '2026-09-15 16:12:38', 1, '2026-09-15 16:12:28', 1, '2026-09-15 16:12:28', 0);
+INSERT INTO `flow_instance` VALUES (22, 0, 'FL202609211749459741', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '15', '照片7 入职申请', 1, '集团超级管理员', 0, '子公司经理审批', '[1]', '2026-09-21 17:49:45', NULL, 1, '2026-09-21 17:49:45', 1, '2026-09-21 17:49:45', 0);
+INSERT INTO `flow_instance` VALUES (23, 0, 'FL202609221715484465', 10, '入职申请审批', 'hr_entry', 'hr_entry_apply', '16', '8号员工 入职申请', 1, '集团超级管理员', 0, '子公司经理审批', '[1]', '2026-09-22 17:15:48', NULL, 1, '2026-09-22 17:15:48', 1, '2026-09-22 17:15:48', 0);
+INSERT INTO `flow_instance` VALUES (24, 0, 'FL202609271058163004', 11, '转正申请审批', 'hr_regular', 'hr_regular_apply', '1', '转正申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-27 10:58:17', '2026-09-27 12:28:35', 1, '2026-09-27 10:58:17', 1, '2026-09-27 10:58:17', 0);
+INSERT INTO `flow_instance` VALUES (25, 0, 'FL202609271230368818', 12, '调岗申请审批', 'hr_transfer', 'hr_transfer_apply', '1', '调岗申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-27 12:30:36', '2026-09-27 12:53:57', 1, '2026-09-27 12:30:36', 1, '2026-09-27 12:30:36', 0);
+INSERT INTO `flow_instance` VALUES (26, 0, 'FL202609271451027650', 13, '离职申请审批', 'hr_resign', 'hr_resign_apply', '1', '离职申请', 1, '集团超级管理员', 1, '子公司经理审批', '[1]', '2026-09-27 14:51:03', '2026-09-27 14:51:13', 1, '2026-09-27 14:51:03', 1, '2026-09-27 14:51:03', 0);
+INSERT INTO `flow_instance` VALUES (27, 0, 'FL202609291545484845', 16, '加班申请', 'hr_overtime_apply', 'hr_overtime_apply', '1', '6号员工 申请2026-09-21 加班 4小时', 1, '集团超级管理员', 1, '主管审批', '[1]', '2026-09-29 15:45:49', '2026-09-29 16:30:37', 1, '2026-09-29 15:45:49', 1, '2026-09-29 15:45:49', 0);
 
 -- ----------------------------
 -- Table structure for flow_record
@@ -875,7 +885,7 @@ CREATE TABLE `flow_record`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_instance_id`(`instance_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程流转记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 53 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批流程流转记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flow_record
@@ -893,6 +903,37 @@ INSERT INTO `flow_record` VALUES (18, 0, 17, '子公司经理审批', 'submit', 
 INSERT INTO `flow_record` VALUES (19, 0, 17, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-10 23:34:54', 1, '2026-09-10 23:34:54', 0);
 INSERT INTO `flow_record` VALUES (20, 0, 18, '子公司经理审批', 'submit', 1, '集团超级管理员', '3号员工 入职申请', 1, '2026-09-10 23:36:34', 1, '2026-09-10 23:36:34', 0);
 INSERT INTO `flow_record` VALUES (21, 0, 18, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-10 23:36:41', 1, '2026-09-10 23:36:41', 0);
+INSERT INTO `flow_record` VALUES (22, 0, 19, '子公司经理审批', 'submit', 1, '集团超级管理员', '测试四号 入职申请', 1, '2026-09-15 15:21:54', 1, '2026-09-15 15:21:54', 0);
+INSERT INTO `flow_record` VALUES (23, 0, 19, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-15 15:22:19', 1, '2026-09-15 15:22:19', 0);
+INSERT INTO `flow_record` VALUES (24, 0, 20, '子公司经理审批', 'submit', 1, '集团超级管理员', '5号员工 入职申请', 1, '2026-09-15 15:55:43', 1, '2026-09-15 15:55:43', 0);
+INSERT INTO `flow_record` VALUES (25, 0, 20, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-15 15:55:51', 1, '2026-09-15 15:55:51', 0);
+INSERT INTO `flow_record` VALUES (26, 0, 21, '子公司经理审批', 'submit', 1, '集团超级管理员', '6号员工 入职申请', 1, '2026-09-15 16:12:28', 1, '2026-09-15 16:12:28', 0);
+INSERT INTO `flow_record` VALUES (27, 0, 21, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-15 16:12:38', 1, '2026-09-15 16:12:38', 0);
+INSERT INTO `flow_record` VALUES (28, 0, 22, '子公司经理审批', 'submit', 1, '集团超级管理员', '照片7 入职申请', 1, '2026-09-21 17:49:45', 1, '2026-09-21 17:49:45', 0);
+INSERT INTO `flow_record` VALUES (29, 0, 23, '子公司经理审批', 'submit', 1, '集团超级管理员', '8号员工 入职申请', 1, '2026-09-22 17:15:48', 1, '2026-09-22 17:15:48', 0);
+INSERT INTO `flow_record` VALUES (30, 0, 24, '子公司经理审批', 'submit', 1, '集团超级管理员', '转正申请', 1, '2026-09-27 10:58:17', 1, '2026-09-27 10:58:17', 0);
+INSERT INTO `flow_record` VALUES (31, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 10:58:30', 1, '2026-09-27 10:58:30', 0);
+INSERT INTO `flow_record` VALUES (32, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 11:16:39', 1, '2026-09-27 11:16:39', 0);
+INSERT INTO `flow_record` VALUES (33, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 11:28:02', 1, '2026-09-27 11:28:02', 0);
+INSERT INTO `flow_record` VALUES (34, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 11:39:44', 1, '2026-09-27 11:39:44', 0);
+INSERT INTO `flow_record` VALUES (35, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '审批通过', 1, '2026-09-27 11:39:44', 1, '2026-09-27 11:39:44', 0);
+INSERT INTO `flow_record` VALUES (36, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 12:05:43', 1, '2026-09-27 12:05:43', 0);
+INSERT INTO `flow_record` VALUES (37, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '审批通过', 1, '2026-09-27 12:05:43', 1, '2026-09-27 12:05:43', 0);
+INSERT INTO `flow_record` VALUES (38, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 12:17:51', 1, '2026-09-27 12:17:51', 0);
+INSERT INTO `flow_record` VALUES (39, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '审批通过', 1, '2026-09-27 12:17:51', 1, '2026-09-27 12:17:51', 0);
+INSERT INTO `flow_record` VALUES (40, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 12:28:35', 1, '2026-09-27 12:28:35', 0);
+INSERT INTO `flow_record` VALUES (41, 0, 24, '子公司经理审批', 'pass', 1, '集团超级管理员', '审批通过', 1, '2026-09-27 12:28:35', 1, '2026-09-27 12:28:35', 0);
+INSERT INTO `flow_record` VALUES (42, 0, 25, '子公司经理审批', 'submit', 1, '集团超级管理员', '调岗申请', 1, '2026-09-27 12:30:36', 1, '2026-09-27 12:30:36', 0);
+INSERT INTO `flow_record` VALUES (43, 0, 25, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 12:53:57', 1, '2026-09-27 12:53:57', 0);
+INSERT INTO `flow_record` VALUES (44, 0, 25, '子公司经理审批', 'pass', 1, '集团超级管理员', '审批通过', 1, '2026-09-27 12:53:57', 1, '2026-09-27 12:53:57', 0);
+INSERT INTO `flow_record` VALUES (45, 0, 26, '子公司经理审批', 'submit', 1, '集团超级管理员', '离职申请', 1, '2026-09-27 14:51:03', 1, '2026-09-27 14:51:03', 0);
+INSERT INTO `flow_record` VALUES (46, 0, 26, '子公司经理审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-27 14:51:13', 1, '2026-09-27 14:51:13', 0);
+INSERT INTO `flow_record` VALUES (47, 0, 26, '子公司经理审批', 'pass', 1, '集团超级管理员', '审批通过', 1, '2026-09-27 14:51:13', 1, '2026-09-27 14:51:13', 0);
+INSERT INTO `flow_record` VALUES (48, 0, 27, '主管审批', 'submit', 1, '集团超级管理员', '6号员工 申请2026-09-21 加班 4小时', 1, '2026-09-29 15:45:49', 1, '2026-09-29 15:45:49', 0);
+INSERT INTO `flow_record` VALUES (49, 0, 27, '主管审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-29 15:45:56', 1, '2026-09-29 15:45:56', 0);
+INSERT INTO `flow_record` VALUES (50, 0, 27, '主管审批', 'pass', 1, '集团超级管理员', '审批通过', 1, '2026-09-29 15:45:56', 1, '2026-09-29 15:45:56', 0);
+INSERT INTO `flow_record` VALUES (51, 0, 27, '主管审批', 'pass', 1, '集团超级管理员', '', 1, '2026-09-29 16:30:37', 1, '2026-09-29 16:30:37', 0);
+INSERT INTO `flow_record` VALUES (52, 0, 27, '主管审批', 'pass', 1, '集团超级管理员', '审批通过', 1, '2026-09-29 16:30:37', 1, '2026-09-29 16:30:37', 0);
 
 -- ----------------------------
 -- Table structure for flow_task
@@ -920,7 +961,7 @@ CREATE TABLE `flow_task`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_handler_status`(`handler_id` ASC, `task_status` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_instance_id`(`instance_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批任务表（待办/已办）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 26 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统一审批任务表（待办/已办）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flow_task
@@ -932,6 +973,51 @@ INSERT INTO `flow_task` VALUES (13, 0, 15, '子公司经理审批', 1, 1, '集�
 INSERT INTO `flow_task` VALUES (14, 0, 16, '子公司经理审批', 1, 1, '集团超级管理员', 0, NULL, NULL, NULL, NULL, 1, '2026-09-10 22:02:22', 1, '2026-09-10 22:02:22', 0);
 INSERT INTO `flow_task` VALUES (15, 0, 17, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-10 23:34:54', NULL, 1, '2026-09-10 23:34:35', 1, '2026-09-10 23:34:35', 0);
 INSERT INTO `flow_task` VALUES (16, 0, 18, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-10 23:36:41', NULL, 1, '2026-09-10 23:36:34', 1, '2026-09-10 23:36:34', 0);
+INSERT INTO `flow_task` VALUES (17, 0, 19, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-15 15:22:19', NULL, 1, '2026-09-15 15:21:54', 1, '2026-09-15 15:21:54', 0);
+INSERT INTO `flow_task` VALUES (18, 0, 20, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-15 15:55:51', NULL, 1, '2026-09-15 15:55:43', 1, '2026-09-15 15:55:43', 0);
+INSERT INTO `flow_task` VALUES (19, 0, 21, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-15 16:12:38', NULL, 1, '2026-09-15 16:12:28', 1, '2026-09-15 16:12:28', 0);
+INSERT INTO `flow_task` VALUES (20, 0, 22, '子公司经理审批', 1, 1, '集团超级管理员', 0, NULL, NULL, NULL, NULL, 1, '2026-09-21 17:49:45', 1, '2026-09-21 17:49:45', 0);
+INSERT INTO `flow_task` VALUES (21, 0, 23, '子公司经理审批', 1, 1, '集团超级管理员', 0, NULL, NULL, NULL, NULL, 1, '2026-09-22 17:15:48', 1, '2026-09-22 17:15:48', 0);
+INSERT INTO `flow_task` VALUES (22, 0, 24, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-27 12:28:35', NULL, 1, '2026-09-27 10:58:17', 1, '2026-09-27 12:28:28', 0);
+INSERT INTO `flow_task` VALUES (23, 0, 25, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-27 12:53:57', NULL, 1, '2026-09-27 12:30:36', 1, '2026-09-27 12:30:36', 0);
+INSERT INTO `flow_task` VALUES (24, 0, 26, '子公司经理审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-27 14:51:13', NULL, 1, '2026-09-27 14:51:03', 1, '2026-09-27 14:51:03', 0);
+INSERT INTO `flow_task` VALUES (25, 0, 27, '主管审批', 1, 1, '集团超级管理员', 1, 1, '', '2026-09-29 16:30:37', NULL, 1, '2026-09-29 15:45:49', 1, '2026-09-29 16:30:31', 0);
+
+-- ----------------------------
+-- Table structure for hr_attendance_exception
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_attendance_exception`;
+CREATE TABLE `hr_attendance_exception`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '员工姓名快照',
+  `exception_type` tinyint(4) NOT NULL COMMENT '异常类型：1连续缺卡 2月度迟到频繁 3旷工 4早退频繁',
+  `exception_date` date NOT NULL COMMENT '异常发生日期',
+  `detail_count` int(11) NULL DEFAULT NULL COMMENT '详情数量，如连续缺卡天数、迟到次数等',
+  `detail_json` json NULL COMMENT '详情JSON，记录具体的异常日期列表',
+  `status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '处理状态 0待处理 1已确认 2已豁免 3已忽略',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人ID',
+  `handle_by` bigint(20) NULL DEFAULT NULL COMMENT '处理人ID',
+  `handle_time` datetime NULL DEFAULT NULL COMMENT '处理时间',
+  `handle_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '处理备注',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人ID',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
+  INDEX `idx_exception_type`(`exception_type` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '考勤异常记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_attendance_exception
+-- ----------------------------
+INSERT INTO `hr_attendance_exception` VALUES (1, 0, 3, '2号员工', 1, '2026-09-01', 22, '[\"2026-09-01\", \"2026-09-02\", \"2026-09-03\", \"2026-09-04\", \"2026-09-07\", \"2026-09-08\", \"2026-09-09\", \"2026-09-10\", \"2026-09-11\", \"2026-09-14\", \"2026-09-15\", \"2026-09-16\", \"2026-09-17\", \"2026-09-18\", \"2026-09-21\", \"2026-09-22\", \"2026-09-23\", \"2026-09-24\", \"2026-09-25\", \"2026-09-28\", \"2026-09-29\", \"2026-09-30\"]', 0, 1, NULL, NULL, NULL, '2026-09-28 13:59:18', 0, 1, '2026-09-28 13:59:18');
+INSERT INTO `hr_attendance_exception` VALUES (2, 0, 4, '3号员工', 1, '2026-09-01', 22, '[\"2026-09-01\", \"2026-09-02\", \"2026-09-03\", \"2026-09-04\", \"2026-09-07\", \"2026-09-08\", \"2026-09-09\", \"2026-09-10\", \"2026-09-11\", \"2026-09-14\", \"2026-09-15\", \"2026-09-16\", \"2026-09-17\", \"2026-09-18\", \"2026-09-21\", \"2026-09-22\", \"2026-09-23\", \"2026-09-24\", \"2026-09-25\", \"2026-09-28\", \"2026-09-29\", \"2026-09-30\"]', 0, 1, NULL, NULL, NULL, '2026-09-28 13:59:18', 0, 1, '2026-09-28 13:59:18');
+INSERT INTO `hr_attendance_exception` VALUES (3, 0, 5, '测试四号', 1, '2026-09-01', 22, '[\"2026-09-01\", \"2026-09-02\", \"2026-09-03\", \"2026-09-04\", \"2026-09-07\", \"2026-09-08\", \"2026-09-09\", \"2026-09-10\", \"2026-09-11\", \"2026-09-14\", \"2026-09-15\", \"2026-09-16\", \"2026-09-17\", \"2026-09-18\", \"2026-09-21\", \"2026-09-22\", \"2026-09-23\", \"2026-09-24\", \"2026-09-25\", \"2026-09-28\", \"2026-09-29\", \"2026-09-30\"]', 0, 1, NULL, NULL, NULL, '2026-09-28 13:59:18', 0, 1, '2026-09-28 13:59:18');
+INSERT INTO `hr_attendance_exception` VALUES (4, 0, 6, '5号员工', 1, '2026-09-01', 22, '[\"2026-09-01\", \"2026-09-02\", \"2026-09-03\", \"2026-09-04\", \"2026-09-07\", \"2026-09-08\", \"2026-09-09\", \"2026-09-10\", \"2026-09-11\", \"2026-09-14\", \"2026-09-15\", \"2026-09-16\", \"2026-09-17\", \"2026-09-18\", \"2026-09-21\", \"2026-09-22\", \"2026-09-23\", \"2026-09-24\", \"2026-09-25\", \"2026-09-28\", \"2026-09-29\", \"2026-09-30\"]', 0, 1, NULL, NULL, NULL, '2026-09-28 13:59:18', 0, 1, '2026-09-28 13:59:18');
 
 -- ----------------------------
 -- Table structure for hr_attendance_record
@@ -951,6 +1037,8 @@ CREATE TABLE `hr_attendance_record`  (
   `early_minutes` int(11) NULL DEFAULT 0 COMMENT '早退分钟数',
   `absent` int(11) NULL DEFAULT 0 COMMENT '旷工天数',
   `leave_days` decimal(4, 1) NULL DEFAULT 0.0 COMMENT '请假天数',
+  `leave_type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '请假类型 0无薪事假 1有薪年假 2婚假 3产假 4病假 5工伤假 6公差 7调休假',
+  `leave_days_detail` json NULL COMMENT '请假明细JSON（格式：{\"totalLeaveDays\":N,\"items\":[{type,typeName,days,startDate,endDate,remark}]}）',
   `work_days` int(11) NULL DEFAULT 0 COMMENT '应出勤天数',
   `actual_days` int(11) NULL DEFAULT 0 COMMENT '实际出勤天数',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
@@ -964,12 +1052,124 @@ CREATE TABLE `hr_attendance_record`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_attendance_month`(`attendance_month` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'HR考勤记录（按月聚合快照）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 823 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'HR考勤记录（按月聚合快照）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_attendance_record
 -- ----------------------------
-INSERT INTO `hr_attendance_record` VALUES (1, 0, 1, 'admin', '2026-08', '2026-08-25', '2026-08-25 09:25:46', NULL, 2, 25, 0, 0, 0.0, 1, 1, NULL, 1, 1, '2026-08-26 07:30:27', '2026-08-26 07:30:27', 0);
+INSERT INTO `hr_attendance_record` VALUES (1, 0, 1, 'admin', '2026-08', '2026-08-25', '2026-08-25 09:25:46', NULL, 2, 25, 0, 0, 0.0, 0, NULL, 1, 1, NULL, 1, 1, '2026-08-26 07:30:27', '2026-08-26 07:30:27', 0);
+INSERT INTO `hr_attendance_record` VALUES (3, 0, 1, 'admin', '2026-09', '2026-09-10', '2026-09-10 21:09:59', NULL, 2, 729, 0, 0, 0.0, 0, NULL, 1, 1, NULL, 1, 1, '2026-09-15 20:01:24', '2026-09-15 20:01:24', 0);
+INSERT INTO `hr_attendance_record` VALUES (31, 0, 1, 'admin', '2026-09', '2026-09-22', '2026-09-22 13:10:56', NULL, 2, 250, 0, 0, 0.0, 0, NULL, 1, 1, NULL, 1, 1, '2026-09-27 14:52:42', '2026-09-27 14:52:42', 0);
+INSERT INTO `hr_attendance_record` VALUES (713, 0, 3, '2号员工', '2026-09', '2026-09-01', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (714, 0, 3, '2号员工', '2026-09', '2026-09-02', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (715, 0, 3, '2号员工', '2026-09', '2026-09-03', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (716, 0, 3, '2号员工', '2026-09', '2026-09-04', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (717, 0, 3, '2号员工', '2026-09', '2026-09-07', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (718, 0, 3, '2号员工', '2026-09', '2026-09-08', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (719, 0, 3, '2号员工', '2026-09', '2026-09-09', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (720, 0, 3, '2号员工', '2026-09', '2026-09-10', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (721, 0, 3, '2号员工', '2026-09', '2026-09-11', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (722, 0, 3, '2号员工', '2026-09', '2026-09-14', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (723, 0, 3, '2号员工', '2026-09', '2026-09-15', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (724, 0, 3, '2号员工', '2026-09', '2026-09-16', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (725, 0, 3, '2号员工', '2026-09', '2026-09-17', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (726, 0, 3, '2号员工', '2026-09', '2026-09-18', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (727, 0, 3, '2号员工', '2026-09', '2026-09-21', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (728, 0, 3, '2号员工', '2026-09', '2026-09-22', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (729, 0, 3, '2号员工', '2026-09', '2026-09-23', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (730, 0, 3, '2号员工', '2026-09', '2026-09-24', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (731, 0, 3, '2号员工', '2026-09', '2026-09-25', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (732, 0, 3, '2号员工', '2026-09', '2026-09-28', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (733, 0, 3, '2号员工', '2026-09', '2026-09-29', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (734, 0, 3, '2号员工', '2026-09', '2026-09-30', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (735, 0, 4, '3号员工', '2026-09', '2026-09-01', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (736, 0, 4, '3号员工', '2026-09', '2026-09-02', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (737, 0, 4, '3号员工', '2026-09', '2026-09-03', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (738, 0, 4, '3号员工', '2026-09', '2026-09-04', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (739, 0, 4, '3号员工', '2026-09', '2026-09-07', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (740, 0, 4, '3号员工', '2026-09', '2026-09-08', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (741, 0, 4, '3号员工', '2026-09', '2026-09-09', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (742, 0, 4, '3号员工', '2026-09', '2026-09-10', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (743, 0, 4, '3号员工', '2026-09', '2026-09-11', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (744, 0, 4, '3号员工', '2026-09', '2026-09-14', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (745, 0, 4, '3号员工', '2026-09', '2026-09-15', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (746, 0, 4, '3号员工', '2026-09', '2026-09-16', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (747, 0, 4, '3号员工', '2026-09', '2026-09-17', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (748, 0, 4, '3号员工', '2026-09', '2026-09-18', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (749, 0, 4, '3号员工', '2026-09', '2026-09-21', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (750, 0, 4, '3号员工', '2026-09', '2026-09-22', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (751, 0, 4, '3号员工', '2026-09', '2026-09-23', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (752, 0, 4, '3号员工', '2026-09', '2026-09-24', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (753, 0, 4, '3号员工', '2026-09', '2026-09-25', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (754, 0, 4, '3号员工', '2026-09', '2026-09-28', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (755, 0, 4, '3号员工', '2026-09', '2026-09-29', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (756, 0, 4, '3号员工', '2026-09', '2026-09-30', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (757, 0, 5, '测试四号', '2026-09', '2026-09-01', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (758, 0, 5, '测试四号', '2026-09', '2026-09-02', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (759, 0, 5, '测试四号', '2026-09', '2026-09-03', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (760, 0, 5, '测试四号', '2026-09', '2026-09-04', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (761, 0, 5, '测试四号', '2026-09', '2026-09-07', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (762, 0, 5, '测试四号', '2026-09', '2026-09-08', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:05', 0);
+INSERT INTO `hr_attendance_record` VALUES (763, 0, 5, '测试四号', '2026-09', '2026-09-09', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (764, 0, 5, '测试四号', '2026-09', '2026-09-10', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (765, 0, 5, '测试四号', '2026-09', '2026-09-11', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (766, 0, 5, '测试四号', '2026-09', '2026-09-14', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (767, 0, 5, '测试四号', '2026-09', '2026-09-15', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (768, 0, 5, '测试四号', '2026-09', '2026-09-16', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (769, 0, 5, '测试四号', '2026-09', '2026-09-17', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (770, 0, 5, '测试四号', '2026-09', '2026-09-18', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (771, 0, 5, '测试四号', '2026-09', '2026-09-21', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (772, 0, 5, '测试四号', '2026-09', '2026-09-22', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (773, 0, 5, '测试四号', '2026-09', '2026-09-23', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (774, 0, 5, '测试四号', '2026-09', '2026-09-24', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (775, 0, 5, '测试四号', '2026-09', '2026-09-25', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (776, 0, 5, '测试四号', '2026-09', '2026-09-28', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (777, 0, 5, '测试四号', '2026-09', '2026-09-29', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (778, 0, 5, '测试四号', '2026-09', '2026-09-30', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (779, 0, 6, '5号员工', '2026-09', '2026-09-01', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (780, 0, 6, '5号员工', '2026-09', '2026-09-02', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (781, 0, 6, '5号员工', '2026-09', '2026-09-03', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (782, 0, 6, '5号员工', '2026-09', '2026-09-04', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (783, 0, 6, '5号员工', '2026-09', '2026-09-07', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (784, 0, 6, '5号员工', '2026-09', '2026-09-08', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (785, 0, 6, '5号员工', '2026-09', '2026-09-09', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (786, 0, 6, '5号员工', '2026-09', '2026-09-10', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (787, 0, 6, '5号员工', '2026-09', '2026-09-11', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (788, 0, 6, '5号员工', '2026-09', '2026-09-14', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (789, 0, 6, '5号员工', '2026-09', '2026-09-15', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (790, 0, 6, '5号员工', '2026-09', '2026-09-16', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (791, 0, 6, '5号员工', '2026-09', '2026-09-17', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (792, 0, 6, '5号员工', '2026-09', '2026-09-18', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (793, 0, 6, '5号员工', '2026-09', '2026-09-21', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (794, 0, 6, '5号员工', '2026-09', '2026-09-22', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (795, 0, 6, '5号员工', '2026-09', '2026-09-23', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (796, 0, 6, '5号员工', '2026-09', '2026-09-24', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (797, 0, 6, '5号员工', '2026-09', '2026-09-25', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (798, 0, 6, '5号员工', '2026-09', '2026-09-28', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (799, 0, 6, '5号员工', '2026-09', '2026-09-29', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (800, 0, 6, '5号员工', '2026-09', '2026-09-30', NULL, NULL, 4, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (801, 0, 7, '6号员工', '2026-09', '2026-09-01', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (802, 0, 7, '6号员工', '2026-09', '2026-09-02', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (803, 0, 7, '6号员工', '2026-09', '2026-09-03', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (804, 0, 7, '6号员工', '2026-09', '2026-09-04', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (805, 0, 7, '6号员工', '2026-09', '2026-09-07', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (806, 0, 7, '6号员工', '2026-09', '2026-09-08', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (807, 0, 7, '6号员工', '2026-09', '2026-09-09', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (808, 0, 7, '6号员工', '2026-09', '2026-09-10', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (809, 0, 7, '6号员工', '2026-09', '2026-09-11', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (810, 0, 7, '6号员工', '2026-09', '2026-09-14', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (811, 0, 7, '6号员工', '2026-09', '2026-09-15', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (812, 0, 7, '6号员工', '2026-09', '2026-09-16', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (813, 0, 7, '6号员工', '2026-09', '2026-09-17', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (814, 0, 7, '6号员工', '2026-09', '2026-09-18', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (815, 0, 7, '6号员工', '2026-09', '2026-09-21', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (816, 0, 7, '6号员工', '2026-09', '2026-09-22', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (817, 0, 7, '6号员工', '2026-09', '2026-09-23', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (818, 0, 7, '6号员工', '2026-09', '2026-09-24', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (819, 0, 7, '6号员工', '2026-09', '2026-09-25', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (820, 0, 7, '6号员工', '2026-09', '2026-09-28', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (821, 0, 7, '6号员工', '2026-09', '2026-09-29', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
+INSERT INTO `hr_attendance_record` VALUES (822, 0, 7, '6号员工', '2026-09', '2026-09-30', NULL, NULL, 1, 0, 0, 0, 0.0, 0, NULL, 1, 0, NULL, 1, 1, '2026-09-28 13:23:12', '2026-09-28 12:16:06', 0);
 
 -- ----------------------------
 -- Table structure for hr_employee
@@ -994,6 +1194,9 @@ CREATE TABLE `hr_employee`  (
   `employment_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '用工类型 1正式 2试用期 3劳务派遣 4临时工',
   `employee_status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0待入职 1在职 2试用期 3离职 4终止合同',
   `org_id` bigint(20) NULL DEFAULT NULL COMMENT '所属组织ID（sys_org）',
+  `workweek_config_id` bigint(20) NULL DEFAULT NULL COMMENT '休息日配置ID（关联sys_workweek_config.id）',
+  `special_schedule` json NULL COMMENT '特殊排班JSON（格式：{\"2026-10-01\":\"休息\",\"2026-10-02\":\"上班\"}）',
+  `exempt_attendance` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否免考勤 0参与 1不参与（不参与考勤的员工同步时默认为满勤）',
   `post_id` bigint(20) NULL DEFAULT NULL COMMENT '岗位ID（hr_post）',
   `post_level` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '岗位职级快照（冗余避免关联查询）',
   `social_declare_base` decimal(12, 2) NULL DEFAULT NULL COMMENT '社保申报基数（年度锁定）',
@@ -1011,21 +1214,60 @@ CREATE TABLE `hr_employee`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人用户ID',
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  `photo_file_id` bigint(20) UNSIGNED NOT NULL DEFAULT 0 COMMENT '免冠照片对应的sys_file.id',
+  `attachment_content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '附件内容（富文本HTML）',
+  `city_id` bigint(20) NULL DEFAULT NULL COMMENT '就职城市ID（关联sys_city.id）',
+  `salary_rule_id` bigint(20) NULL DEFAULT NULL COMMENT '薪资模板ID（关联hr_salary_rule.id）',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_employee_no_company`(`employee_no` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
   INDEX `idx_employee_status`(`employee_status` ASC, `company_id` ASC) USING BTREE,
   INDEX `idx_grade_code`(`salary_grade_code` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工主档案表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工主档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_employee
 -- ----------------------------
-INSERT INTO `hr_employee` VALUES (1, 0, NULL, NULL, NULL, '00001', '员工名', NULL, '13112312312', '123@qqw.com', 1, NULL, '2026-08-26', NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 5000.00, '备注', 1, '2026-08-26 07:29:54', 1, '2026-08-26 07:29:54', 0);
-INSERT INTO `hr_employee` VALUES (2, 0, NULL, NULL, NULL, '123', '123123', NULL, '12312312312', NULL, 1, NULL, '2026-09-10', NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-09-10 22:03:04', 1, '2026-09-10 22:03:17', 1);
-INSERT INTO `hr_employee` VALUES (3, 0, NULL, NULL, NULL, '0002', '2号员工', '370284199001011116', '13112312312', NULL, 1, '2026-09-10', '2026-09-10', NULL, NULL, 1, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '123456133', NULL, 4000.00, '备注', 1, '2026-09-10 23:34:54', 1, '2026-09-10 23:34:54', 0);
-INSERT INTO `hr_employee` VALUES (4, 0, NULL, NULL, NULL, '0003', '3号员工', '370282199001011115', '1312311231', NULL, 1, '2026-09-10', '2026-09-10', NULL, NULL, 2, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '33231213', NULL, 5000.00, '备注', 1, '2026-09-10 23:36:41', 1, '2026-09-10 23:36:41', 0);
+INSERT INTO `hr_employee` VALUES (1, 0, NULL, NULL, NULL, '00001', '员工名', NULL, '13112312312', '123@qqw.com', 1, NULL, '2026-08-26', NULL, '2026-09-27', 1, 3, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 5000.00, '备注', 1, '2026-08-26 07:29:54', 1, '2026-09-24 15:36:05', 0, 0, NULL, 1, NULL);
+INSERT INTO `hr_employee` VALUES (2, 0, NULL, NULL, NULL, '123', '123123', NULL, '12312312312', NULL, 1, NULL, '2026-09-10', NULL, NULL, 1, 1, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-09-10 22:03:04', 1, '2026-09-24 15:36:05', 1, 0, NULL, 1, NULL);
+INSERT INTO `hr_employee` VALUES (3, 0, NULL, NULL, NULL, '0002', '2号员工', '370284199001011116', '13112312312', NULL, 1, '2026-09-10', '2026-09-10', NULL, NULL, 1, 1, 1, NULL, NULL, 0, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '123456133', NULL, 4000.00, '备注', 1, '2026-09-10 23:34:54', 1, '2026-09-24 15:36:05', 0, 0, NULL, 1, NULL);
+INSERT INTO `hr_employee` VALUES (4, 0, NULL, NULL, NULL, '0003', '3号员工', '370282199001011115', '1312311231', NULL, 1, '2026-09-10', '2026-09-10', '2026-09-27', NULL, 1, 1, 8, NULL, NULL, 0, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '33231213', NULL, 5000.00, '备注', 1, '2026-09-10 23:36:41', 1, '2026-09-27 12:28:09', 0, 0, NULL, 1, NULL);
+INSERT INTO `hr_employee` VALUES (5, 0, NULL, NULL, NULL, '4号员工', '测试四号', NULL, NULL, NULL, 1, '2026-09-15', '2026-09-15', NULL, NULL, 2, 1, 1, NULL, NULL, 0, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '223', NULL, 6000.00, NULL, 1, '2026-09-15 15:22:19', 1, '2026-09-24 15:36:05', 0, 0, NULL, 1, NULL);
+INSERT INTO `hr_employee` VALUES (6, 0, NULL, NULL, NULL, '0005', '5号员工', NULL, NULL, NULL, 1, '2026-09-15', '2026-09-15', NULL, NULL, 1, 1, 1, NULL, NULL, 0, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '123', NULL, 7000.00, NULL, 1, '2026-09-15 15:55:51', 1, '2026-09-24 15:36:05', 0, 0, NULL, 1, NULL);
+INSERT INTO `hr_employee` VALUES (7, 0, NULL, NULL, NULL, '0006', '6号员工', NULL, NULL, NULL, 1, '2026-09-01', '2026-09-15', NULL, NULL, 2, 1, 1, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '231', NULL, 8000.00, '备注', 1, '2026-09-15 16:12:38', 1, '2026-09-28 13:07:24', 0, 13, '<p><img src=\"/upload/0/hr_employee/20260923/3883163157da4714a36e324e8a471828.png\" alt=\"\" data-href=\"\" style=\"\"/>123132</p>', 1, NULL);
+
+-- ----------------------------
+-- Table structure for hr_employee_edu_exp
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_employee_edu_exp`;
+CREATE TABLE `hr_employee_edu_exp`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '关联hr_employee.id',
+  `school_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '学校名称',
+  `degree` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '学历：本科/硕士/博士/大专/其他',
+  `major` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '专业',
+  `education_level` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '教育形式：全日制/在职/自考等',
+  `start_date` date NOT NULL COMMENT '入学时间',
+  `graduation_date` date NULL DEFAULT NULL COMMENT '毕业时间',
+  `is_graduated` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否已毕业 1是 0否',
+  `certificate_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '学位证书号',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_emp`(`company_id` ASC, `employee_id` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工学业经历表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_employee_edu_exp
+-- ----------------------------
+INSERT INTO `hr_employee_edu_exp` VALUES (1, 0, 7, '学校1', '学历', '专业1', '教育', '2026-09-01', '2026-09-14', 1, '', '', 1, '2026-09-15 16:12:38', 1, '2026-09-15 16:12:38', 0);
+INSERT INTO `hr_employee_edu_exp` VALUES (2, 0, 7, '学校2', '学历', '专业', '教育', '2026-09-01', '2026-09-09', 1, '', '', 1, '2026-09-15 16:12:38', 1, '2026-09-15 16:12:38', 0);
 
 -- ----------------------------
 -- Table structure for hr_employee_file
@@ -1044,7 +1286,7 @@ CREATE TABLE `hr_employee_file`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工附件表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工附件表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_employee_file
@@ -1073,11 +1315,72 @@ CREATE TABLE `hr_employee_grade_log`  (
   INDEX `idx_employee`(`employee_id` ASC, `create_time` ASC) USING BTREE,
   INDEX `idx_company`(`company_id` ASC) USING BTREE,
   INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '薪酬级别变更流水表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '薪酬级别变更流水表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_employee_grade_log
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_employee_shift
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_employee_shift`;
+CREATE TABLE `hr_employee_shift`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID（关联hr_employee.id）',
+  `shift_type` tinyint(4) NOT NULL COMMENT '班次类型 1标准工时 2早班 3晚班 4夜班 5综合工时',
+  `shift_start_time` time NULL DEFAULT NULL COMMENT '班次上班时间',
+  `shift_end_time` time NULL DEFAULT NULL COMMENT '班次下班时间',
+  `start_date` date NOT NULL COMMENT '班次生效开始日期',
+  `end_date` date NULL DEFAULT NULL COMMENT '班次生效结束日期，NULL表示长期有效',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0禁用 1启用',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
+  INDEX `idx_date_range`(`start_date` ASC, `end_date` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工班次配置表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_employee_shift
+-- ----------------------------
+INSERT INTO `hr_employee_shift` VALUES (1, 0, 3, 1, '08:00:00', '16:09:00', '2026-09-27', '2027-09-28', 1, NULL, 1, '2026-09-28 11:10:00', 1, '2026-09-28 11:10:00', 0);
+
+-- ----------------------------
+-- Table structure for hr_employee_work_exp
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_employee_work_exp`;
+CREATE TABLE `hr_employee_work_exp`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '关联hr_employee.id',
+  `company_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '公司名称',
+  `position` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '职位',
+  `department` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '部门',
+  `start_date` date NOT NULL COMMENT '入职时间',
+  `end_date` date NULL DEFAULT NULL COMMENT '离职时间（当前在职可为空）',
+  `is_current` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否仍在职 1是 0否',
+  `reason_for_leaving` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '离职原因',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_emp`(`company_id` ASC, `employee_id` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工工作经历表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_employee_work_exp
+-- ----------------------------
+INSERT INTO `hr_employee_work_exp` VALUES (1, 0, 7, '公司2', '职位', '部门', '2026-09-08', NULL, 1, '', '', 1, '2026-09-15 16:12:38', 1, '2026-09-15 16:12:38', 0);
+INSERT INTO `hr_employee_work_exp` VALUES (2, 0, 7, '公司3', '职位', '部门', '2026-09-14', '2026-09-15', 0, '', '', 1, '2026-09-15 16:12:38', 1, '2026-09-15 16:12:38', 0);
 
 -- ----------------------------
 -- Table structure for hr_entry_apply
@@ -1094,6 +1397,17 @@ CREATE TABLE `hr_entry_apply`  (
   `birthdate` date NULL DEFAULT NULL COMMENT '出生日期',
   `entry_date` date NOT NULL COMMENT '入职日期',
   `employment_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '用工类型',
+  `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '就职城市编码，关联sys_city',
+  `industry_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '所属行业编码，关联sys_industry',
+  `social_declare_base` decimal(12, 2) NULL DEFAULT NULL COMMENT '社保申报基数',
+  `housing_fund_declare_base` decimal(12, 2) NULL DEFAULT NULL COMMENT '公积金申报基数',
+  `base_effective_year` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '基数生效年度',
+  `salary_rule_id` bigint(20) NULL DEFAULT NULL COMMENT '薪资规则ID',
+  `workweek_config_id` bigint(20) NULL DEFAULT NULL COMMENT '休息日配置ID（关联sys_workweek_config.id）',
+  `exempt_attendance` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否免考勤 0参与 1不参与',
+  `salary_grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '薪酬级别编码',
+  `auto_create_salary_archive` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否自动创建薪资档案 0否 1是',
+  `auto_submit_salary_audit` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否自动提交薪资审核 0否 1是',
   `org_id` bigint(20) NULL DEFAULT NULL COMMENT '所属组织ID',
   `post_id` bigint(20) NULL DEFAULT NULL COMMENT '岗位ID',
   `basic_salary` decimal(12, 2) NULL DEFAULT NULL COMMENT '基本工资',
@@ -1107,18 +1421,27 @@ CREATE TABLE `hr_entry_apply`  (
   `update_by` bigint(20) NULL DEFAULT NULL,
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  `experience_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '工作经历和学业经历JSON数据，格式：{\"workExps\":[{...}], \"eduExps\":[{...}]}',
+  `photo_file_id` bigint(20) UNSIGNED NOT NULL DEFAULT 0 COMMENT '免冠照片对应的sys_file.id，0表示未上传',
+  `attachment_content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '附件内容（富文本HTML）',
+  `city_id` bigint(20) NULL DEFAULT NULL COMMENT '就职城市ID（关联sys_city.id）',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_company_employee_no`(`company_id` ASC, `employee_no` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_no`(`employee_no` ASC) USING BTREE,
   INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '入职申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '入职申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_entry_apply
 -- ----------------------------
-INSERT INTO `hr_entry_apply` VALUES (10, 0, '0002', '2号员工', '370284199001011116', '13112312312', 1, '2026-09-10', '2026-09-10', 1, 1, 1, 4000.00, '123456133', 0, 17, 2, '备注', 1, '2026-09-10 23:34:35', 1, '2026-09-10 23:34:35', 0);
-INSERT INTO `hr_entry_apply` VALUES (11, 0, '0003', '3号员工', '370282199001011115', '1312311231', 1, '2026-09-10', '2026-09-10', 2, 1, 1, 5000.00, '33231213', 0, 18, 2, '备注', 1, '2026-09-10 23:36:34', 1, '2026-09-10 23:36:34', 0);
+INSERT INTO `hr_entry_apply` VALUES (10, 0, '0002', '2号员工', '370284199001011116', '13112312312', 1, '2026-09-10', '2026-09-10', 1, '', NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 1, 4000.00, '123456133', 0, 17, 2, '备注', 1, '2026-09-10 23:34:35', 1, '2026-09-24 13:02:20', 0, NULL, 0, NULL, 1);
+INSERT INTO `hr_entry_apply` VALUES (11, 0, '0003', '3号员工', '370282199001011115', '1312311231', 1, '2026-09-10', '2026-09-10', 2, '', NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 1, 5000.00, '33231213', 0, 18, 2, '备注', 1, '2026-09-10 23:36:34', 1, '2026-09-24 13:02:20', 0, NULL, 0, NULL, 1);
+INSERT INTO `hr_entry_apply` VALUES (12, 0, '4号员工', '测试四号', NULL, NULL, 1, '2026-09-15', '2026-09-15', 2, '', NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 1, 6000.00, '223', 0, 19, 2, NULL, 1, '2026-09-15 15:21:54', 1, '2026-09-24 13:02:20', 0, NULL, 0, NULL, 1);
+INSERT INTO `hr_entry_apply` VALUES (13, 0, '0005', '5号员工', NULL, NULL, 1, '2026-09-15', '2026-09-15', 1, '', NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 1, 7000.00, '123', 0, 20, 2, NULL, 1, '2026-09-15 15:55:43', 1, '2026-09-24 13:02:20', 0, NULL, 0, NULL, 1);
+INSERT INTO `hr_entry_apply` VALUES (14, 0, '0006', '6号员工', NULL, NULL, 1, '2026-09-01', '2026-09-15', 2, '', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0, 0, 1, 1, 8000.00, '231', 0, 21, 2, '备注', 1, '2026-09-15 16:12:28', 1, '2026-09-28 13:17:30', 0, '{\"workExps\":[{\"companyName\":\"公司2\",\"position\":\"职位\",\"department\":\"部门\",\"startDate\":\"2026-09-08\",\"endDate\":null,\"isCurrent\":1,\"reasonForLeaving\":\"\",\"remark\":\"\"},{\"companyName\":\"公司3\",\"position\":\"职位\",\"department\":\"部门\",\"startDate\":\"2026-09-14\",\"endDate\":\"2026-09-15\",\"isCurrent\":0,\"reasonForLeaving\":\"\",\"remark\":\"\"}],\"eduExps\":[{\"schoolName\":\"学校1\",\"degree\":\"学历\",\"major\":\"专业1\",\"educationLevel\":\"教育\",\"startDate\":\"2026-09-01\",\"graduationDate\":\"2026-09-14\",\"isGraduated\":1,\"certificateNo\":\"\",\"remark\":\"\"},{\"schoolName\":\"学校2\",\"degree\":\"学历\",\"major\":\"专业\",\"educationLevel\":\"教育\",\"startDate\":\"2026-09-01\",\"graduationDate\":\"2026-09-09\",\"isGraduated\":1,\"certificateNo\":\"\",\"remark\":\"\"}]}', 0, NULL, 1);
+INSERT INTO `hr_entry_apply` VALUES (15, 0, '00007', '照片7', NULL, NULL, NULL, NULL, '2026-09-21', 1, '', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0, 0, NULL, NULL, NULL, NULL, 0, 22, 1, '', 1, '2026-09-21 17:49:45', 1, '2026-09-28 13:17:31', 0, '{\"workExps\":[],\"eduExps\":[]}', 1, NULL, 1);
+INSERT INTO `hr_entry_apply` VALUES (16, 0, '0008', '8号员工', NULL, NULL, NULL, NULL, '2026-09-22', 1, '', NULL, NULL, NULL, NULL, NULL, 1, 0, NULL, 0, 0, NULL, NULL, NULL, NULL, 0, 23, 1, '', 1, '2026-09-22 17:15:48', 1, '2026-09-28 13:17:02', 0, '{\"workExps\":[],\"eduExps\":[]}', 0, '<p><img src=\"/upload/0/hr_entry/20260922/5e30be41091b4771af4b5bc963b18322.png\" alt=\"\" data-href=\"\" style=\"\"/>测试测试</p>', 1);
 
 -- ----------------------------
 -- Table structure for hr_housing_fund_config
@@ -1172,10 +1495,117 @@ CREATE TABLE `hr_leave_record`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_leave_apply_id`(`leave_apply_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'HR请假记录（同步自OA请假申请）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'HR请假记录（同步自OA请假申请）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_leave_record
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_overtime_apply
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_overtime_apply`;
+CREATE TABLE `hr_overtime_apply`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团全局',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '员工姓名快照',
+  `overtime_date` date NOT NULL COMMENT '加班日期',
+  `start_time` time NOT NULL COMMENT '加班开始时间',
+  `end_time` time NOT NULL COMMENT '加班结束时间',
+  `expected_hours` decimal(5, 2) NOT NULL DEFAULT 0.00 COMMENT '预计加班时长（小时）',
+  `overtime_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '加班类型 1工作日 2休息日 3法定节假日',
+  `reason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '加班事由',
+  `status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '状态 0待审批 1已通过 2已驳回 3已撤回 4已取消',
+  `flow_instance_id` bigint(20) NULL DEFAULT NULL COMMENT '关联流程实例ID',
+  `flow_task_id` bigint(20) NULL DEFAULT NULL COMMENT '当前流程任务ID',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人ID',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
+  INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
+  INDEX `idx_overtime_date`(`overtime_date` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '加班申请表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_overtime_apply
+-- ----------------------------
+INSERT INTO `hr_overtime_apply` VALUES (1, 0, 7, '6号员工', '2026-09-21', '13:45:17', '17:45:17', 4.00, 1, '加班', 1, 27, NULL, 1, '2026-09-29 15:45:49', 1, '2026-09-29 16:30:37', 0);
+
+-- ----------------------------
+-- Table structure for hr_overtime_compensate
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_overtime_compensate`;
+CREATE TABLE `hr_overtime_compensate`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '员工姓名快照',
+  `basic_salary` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '基准月薪（用于计算时薪）',
+  `compensate_month` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '补偿月份 yyyy-MM',
+  `total_hours` decimal(6, 2) NOT NULL DEFAULT 0.00 COMMENT '累计加班时长（小时）',
+  `workday_hours` decimal(6, 2) NOT NULL DEFAULT 0.00 COMMENT '工作日加班时长',
+  `restday_hours` decimal(6, 2) NOT NULL DEFAULT 0.00 COMMENT '休息日加班时长',
+  `holiday_hours` decimal(6, 2) NOT NULL DEFAULT 0.00 COMMENT '法定节假日加班时长',
+  `used_hours` decimal(6, 2) NOT NULL DEFAULT 0.00 COMMENT '已使用时长（调休+加班费）',
+  `remain_hours` decimal(6, 2) NOT NULL DEFAULT 0.00 COMMENT '剩余可使用时长',
+  `compensate_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '补偿方式 1调休 2加班费 3混合',
+  `overtime_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '加班费金额（元）',
+  `pay_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '发放状态 0待发放 1已发放 2已取消',
+  `pay_time` datetime NULL DEFAULT NULL COMMENT '发放时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_employee_month`(`employee_id` ASC, `compensate_month` ASC) USING BTREE,
+  INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
+  INDEX `idx_compensate_month`(`compensate_month` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '加班补偿台账表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_overtime_compensate
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for hr_overtime_record
+-- ----------------------------
+DROP TABLE IF EXISTS `hr_overtime_record`;
+CREATE TABLE `hr_overtime_record`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '员工姓名快照',
+  `overtime_date` date NOT NULL COMMENT '加班日期',
+  `start_time` time NOT NULL COMMENT '加班开始时间',
+  `end_time` time NOT NULL COMMENT '加班结束时间',
+  `overtime_hours` decimal(5, 2) NOT NULL DEFAULT 0.00 COMMENT '加班时长（小时）',
+  `overtime_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '加班类型 1工作日 2休息日 3法定节假日',
+  `source_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '来源类型 1手动申请 2自动识别',
+  `apply_id` bigint(20) NULL DEFAULT NULL COMMENT '关联申请ID',
+  `attend_record_id` bigint(20) NULL DEFAULT NULL COMMENT '关联考勤记录ID',
+  `confirm_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '确认状态 0待确认 1已确认 2已驳回',
+  `confirm_time` datetime NULL DEFAULT NULL COMMENT '确认时间',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1有效 2已抵扣 3已作废',
+  `compensate_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '补偿状态 0未补偿 1已调休 2已发放加班费',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
+  INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
+  INDEX `idx_overtime_date`(`overtime_date` ASC) USING BTREE,
+  INDEX `idx_apply_id`(`apply_id` ASC) USING BTREE,
+  INDEX `idx_confirm_status`(`confirm_status` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '加班记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of hr_overtime_record
 -- ----------------------------
 
 -- ----------------------------
@@ -1188,7 +1618,9 @@ CREATE TABLE `hr_post`  (
   `post_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '岗位名称',
   `post_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '岗位编码',
   `post_level` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '岗位职级',
-  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '所属部门ID（sys_org）',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '所属组织节点ID（关联sys_org.id，建议org_type=4）',
+  `workweek_config_id` bigint(20) NULL DEFAULT NULL COMMENT '岗位默认休息日配置ID',
+  `shift_type` tinyint(4) NULL DEFAULT NULL COMMENT '班次类型 1标准工时 2早班 3晚班 4夜班 5综合工时',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0禁用 1启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `create_by` bigint(20) NOT NULL DEFAULT 0,
@@ -1199,13 +1631,14 @@ CREATE TABLE `hr_post`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_post_code_company`(`post_code` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_post
 -- ----------------------------
-INSERT INTO `hr_post` VALUES (1, 0, '测试岗位', '0001', 'P0', NULL, 1, '', 1, '2026-08-26 07:29:04', 1, '2026-08-26 07:29:04', 0);
-INSERT INTO `hr_post` VALUES (2, 0, '31232', '123123', '23', NULL, 1, '', 1, '2026-09-10 22:02:43', 1, '2026-09-10 22:02:52', 1);
+INSERT INTO `hr_post` VALUES (1, 0, '测试岗位', '0001', 'P0', 9, 1, NULL, 1, '', 1, '2026-08-26 07:29:04', 1, '2026-09-28 11:08:32', 0);
+INSERT INTO `hr_post` VALUES (2, 0, '31232', '123123', '23', NULL, NULL, NULL, 1, '', 1, '2026-09-10 22:02:43', 1, '2026-09-10 22:02:52', 1);
+INSERT INTO `hr_post` VALUES (3, 0, '调整岗位', '0002', 'P1', 8, NULL, NULL, 1, '', 1, '2026-09-27 11:14:53', 1, '2026-09-27 11:14:53', 0);
 
 -- ----------------------------
 -- Table structure for hr_regular_apply
@@ -1228,11 +1661,12 @@ CREATE TABLE `hr_regular_apply`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '转正申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '转正申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_regular_apply
 -- ----------------------------
+INSERT INTO `hr_regular_apply` VALUES (1, 0, 4, '3号员工', '2026-09-27', '', 24, 2, 1, '2026-09-27 10:58:17', 1, '2026-09-27 12:28:17', 0);
 
 -- ----------------------------
 -- Table structure for hr_resign_apply
@@ -1258,11 +1692,12 @@ CREATE TABLE `hr_resign_apply`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '离职申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '离职申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_resign_apply
 -- ----------------------------
+INSERT INTO `hr_resign_apply` VALUES (1, 0, 1, '员工名', '2026-09-27', 1, '离职原因', '交接备注', 26, 2, 1, '2026-09-27 14:51:03', 1, '2026-09-27 14:51:03', 0);
 
 -- ----------------------------
 -- Table structure for hr_salary_archive
@@ -1270,30 +1705,28 @@ CREATE TABLE `hr_resign_apply`  (
 DROP TABLE IF EXISTS `hr_salary_archive`;
 CREATE TABLE `hr_salary_archive`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID',
-  `version_no` int(11) NOT NULL DEFAULT 1 COMMENT '版本号，每次变更递增',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团总部',
+  `version_no` int(11) NOT NULL DEFAULT 1 COMMENT '版本号，同一员工可有多条历史版本',
   `source_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '来源类型 1模板生成 2人工录入 3批量调薪 4晋升调级',
-  `source_id` bigint(20) NULL DEFAULT NULL COMMENT '来源记录ID（关联批量调薪/晋升等场景）',
-  `grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '薪酬级别编码快照',
+  `source_id` bigint(20) NULL DEFAULT NULL COMMENT '来源记录ID（关联批量调薪/晋升等主表ID）',
+  `grade_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '薪酬级别编码（快照）',
   `grade_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '薪酬级别名称快照',
-  `rule_id` bigint(20) NULL DEFAULT NULL COMMENT '薪资模板ID',
-  `rule_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '薪资模板名称快照',
+  `rule_id` bigint(20) NULL DEFAULT NULL COMMENT '薪资规则ID',
+  `rule_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '薪资规则名称快照',
   `effective_date` date NOT NULL COMMENT '生效日期',
   `is_current` tinyint(4) NOT NULL DEFAULT 1 COMMENT '是否当前生效版本 1是 0否',
   `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
-  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '姓名快照',
+  `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '员工姓名快照',
   `basic_salary` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '基本工资',
   `performance_salary` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '绩效工资',
   `position_allowance` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '岗位津贴',
   `other_allowance` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '其他补贴',
-  `social_security_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '社保个人扣款（已废弃，改为运行时动态计算）',
-  `housing_fund_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金个人扣款（已废弃，改为运行时动态计算）',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
-  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人用户ID',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0未删除 1已删除',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_employee`(`employee_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
@@ -1301,11 +1734,13 @@ CREATE TABLE `hr_salary_archive`  (
   INDEX `idx_employee_current`(`employee_id` ASC, `is_current` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_version`(`employee_id` ASC, `version_no` ASC) USING BTREE,
   INDEX `idx_company_grade`(`company_id` ASC, `grade_code` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工薪资档案表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工薪资档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_salary_archive
 -- ----------------------------
+INSERT INTO `hr_salary_archive` VALUES (1, 0, 1, 2, NULL, NULL, NULL, 1, NULL, '2026-09-15', 1, 1, '员工名', 5000.00, 100.00, 500.00, 5.00, NULL, 1, '2026-09-15 17:04:14', 1, '2026-09-15 17:04:14', 0);
+INSERT INTO `hr_salary_archive` VALUES (2, 0, 1, 2, NULL, NULL, NULL, 1, NULL, '2026-08-01', 1, 7, '6号员工', 5000.00, 100.00, 500.00, 5.00, NULL, 1, '2026-09-28 14:02:04', 1, '2026-09-28 14:02:04', 0);
 
 -- ----------------------------
 -- Table structure for hr_salary_batch_adjust
@@ -1333,7 +1768,7 @@ CREATE TABLE `hr_salary_batch_adjust`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_status`(`company_id` ASC, `status` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '批量调薪任务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '批量调薪任务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_salary_batch_adjust
@@ -1361,7 +1796,7 @@ CREATE TABLE `hr_salary_batch_adjust_item`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_batch`(`batch_id` ASC) USING BTREE,
   INDEX `idx_employee`(`employee_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '批量调薪明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '批量调薪明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_salary_batch_adjust_item
@@ -1425,6 +1860,14 @@ CREATE TABLE `hr_salary_month`  (
   `housing_fund` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金扣款快照',
   `tax_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '个税快照',
   `deduction_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '其他扣款快照',
+  `attendance_deduction` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '考勤扣款合计（旷工+迟到+早退+事假）',
+  `absent_deduction` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '旷工扣款',
+  `late_deduction` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '迟到扣款',
+  `early_deduction` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '早退扣款',
+  `unpaid_leave_deduction` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '无薪事假扣款',
+  `min_wage_protected` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否触发最低工资保护 0否 1是',
+  `skip_attendance` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否跳过考勤（快照） 0否 1是',
+  `overtime_amount` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '加班补偿金额（元），由 generateMonth 同步',
   `gross_amount` decimal(12, 2) NOT NULL COMMENT '应发合计',
   `net_amount` decimal(12, 2) NOT NULL COMMENT '实发合计',
   `pay_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '发放状态 0未发放 1已发放 2发放失败',
@@ -1457,11 +1900,13 @@ CREATE TABLE `hr_salary_month`  (
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE,
   INDEX `idx_salary_month`(`salary_month` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '月度薪资核算单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '月度薪资核算单' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_salary_month
 -- ----------------------------
+INSERT INTO `hr_salary_month` VALUES (1, 0, 1, '员工名', '2026-09', 5000.00, 100.00, 0.00, 0.00, 0.00, 0.00, NULL, 505.00, 0.00, 0.00, 18.15, 0.00, 468.87, 0.00, 468.87, 0.00, 0.00, 0, 0, 0.00, 5605.00, 5117.98, 0, NULL, NULL, NULL, NULL, 1, '2026-09-28 15:42:14', 1, '2026-09-28 15:42:14', 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 5000.00, 0.00, '2026');
+INSERT INTO `hr_salary_month` VALUES (2, 0, 7, '6号员工', '2026-09', 5000.00, 100.00, 0.00, 0.00, 0.00, 0.00, NULL, 505.00, 0.00, 0.00, 18.15, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0, 0, 0.00, 5605.00, 5586.85, 1, '2026-09-28 15:52:20', NULL, NULL, NULL, 1, '2026-09-28 15:42:14', 1, '2026-09-28 15:42:14', 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 8000.00, 0.00, '2026');
 
 -- ----------------------------
 -- Table structure for hr_salary_rule
@@ -1481,6 +1926,9 @@ CREATE TABLE `hr_salary_rule`  (
   `fixed_month_bonus` decimal(12, 2) NOT NULL DEFAULT 0.00,
   `social_security_rate` decimal(5, 2) NULL DEFAULT NULL COMMENT '社保个人比例(%),NULL表示继承全局参数',
   `housing_fund_rate` decimal(5, 2) NULL DEFAULT NULL COMMENT '公积金个人比例(%),NULL表示继承全局参数',
+  `skip_attendance` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否跳过考勤核算 0参与 1跳过',
+  `late_penalty_rate` decimal(5, 2) NOT NULL DEFAULT 1.00 COMMENT '迟到扣款费率倍数（默认1.0=全额扣）',
+  `early_penalty_rate` decimal(5, 2) NOT NULL DEFAULT 1.00 COMMENT '早退扣款费率倍数（默认1.0=全额扣）',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `flow_instance_id` bigint(20) NULL DEFAULT NULL,
   `apply_status` tinyint(4) NOT NULL DEFAULT 1,
@@ -1501,56 +1949,69 @@ CREATE TABLE `hr_salary_rule`  (
 -- ----------------------------
 -- Records of hr_salary_rule
 -- ----------------------------
-INSERT INTO `hr_salary_rule` VALUES (1, 0, 'P1岗位薪资模板', 3, NULL, 'P1', 5000.00, 100.00, 500.00, 5.00, 0.00, 50.00, 50.00, '测试', NULL, 1, 1, 1, '2026-09-12 09:30:31', 1, '2026-09-12 09:30:31', 0);
+INSERT INTO `hr_salary_rule` VALUES (1, 0, 'P1岗位薪资模板', 3, NULL, 'P1', 5000.00, 100.00, 500.00, 5.00, 0.00, 50.00, 50.00, 0, 1.00, 1.00, '测试', NULL, 1, 1, 1, '2026-09-12 09:30:31', 1, '2026-09-12 09:30:31', 0);
 
 -- ----------------------------
 -- Table structure for hr_social_calc_detail
 -- ----------------------------
 DROP TABLE IF EXISTS `hr_social_calc_detail`;
 CREATE TABLE `hr_social_calc_detail`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `company_id` bigint(20) NOT NULL,
-  `employee_id` bigint(20) NOT NULL,
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL COMMENT '所属公司ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
   `employee_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '员工姓名快照',
-  `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '城市快照',
+  `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '城市快照',
   `salary_month` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '薪资月份，如2026-09',
   `base_effective_year` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '基数生效年度快照',
   `social_base` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '社保实际缴费基数',
   `housing_fund_base` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金实际缴费基数',
-  `pension_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `pension_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `pension_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '养老个人扣除',
+  `pension_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '养老单位缴纳',
   `pension_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '养老个人比例快照',
   `pension_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '养老单位比例快照',
-  `medical_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `medical_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `medical_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000,
-  `medical_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000,
-  `unemployment_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `unemployment_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `unemployment_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000,
-  `unemployment_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000,
-  `work_injury_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `medical_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '医疗个人扣除',
+  `medical_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '医疗单位缴纳',
+  `medical_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '医疗个人比例快照',
+  `medical_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '医疗单位比例快照',
+  `unemployment_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '失业个人扣除',
+  `unemployment_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '失业单位缴纳',
+  `unemployment_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '失业个人比例快照',
+  `unemployment_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '失业单位比例快照',
+  `work_injury_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '工伤单位缴纳',
   `work_injury_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '工伤费率快照',
-  `maternity_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `maternity_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000,
-  `long_care_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `long_care_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `long_care_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000,
-  `long_care_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000,
-  `housing_fund_personal` decimal(12, 2) NOT NULL DEFAULT 0.00,
-  `housing_fund_company` decimal(12, 2) NOT NULL DEFAULT 0.00,
+  `maternity_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '生育单位缴纳',
+  `maternity_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '生育费率快照',
+  `long_care_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '长护险个人扣除',
+  `long_care_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '长护险单位缴纳',
+  `long_care_rate_personal` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '长护险个人比例快照',
+  `long_care_rate_company` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '长护险单位比例快照',
+  `housing_fund_personal` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金个人扣除',
+  `housing_fund_company` decimal(12, 2) NOT NULL DEFAULT 0.00 COMMENT '公积金单位缴纳',
   `housing_fund_rate` decimal(6, 4) NOT NULL DEFAULT 0.0000 COMMENT '公积金比例快照',
   `rounding_diff` decimal(12, 4) NOT NULL DEFAULT 0.0000 COMMENT '计算尾差',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1已删除',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_month`(`company_id` ASC, `salary_month` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_month`(`employee_id` ASC, `salary_month` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社保公积金核算明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社保公积金核算明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_social_calc_detail
 -- ----------------------------
+INSERT INTO `hr_social_calc_detail` VALUES (1, 0, 1, '员工名', '', '2026-09', '2026', 5000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:42:14', 1, 1, '2026-09-28 15:42:14', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (2, 0, 7, '6号员工', '', '2026-09', '2026', 8000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:42:14', 1, 1, '2026-09-28 15:42:14', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (3, 0, 1, '员工名', '', '2026-09', '2026', 5000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:48:38', 1, 1, '2026-09-28 15:48:38', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (4, 0, 7, '6号员工', '', '2026-09', '2026', 8000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:48:38', 1, 1, '2026-09-28 15:48:38', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (5, 0, 1, '员工名', '', '2026-09', '2026', 5000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:51:48', 1, 1, '2026-09-28 15:51:48', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (6, 0, 7, '6号员工', '', '2026-09', '2026', 8000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:51:48', 1, 1, '2026-09-28 15:51:48', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (7, 0, 1, '员工名', '', '2026-10', '2026', 5000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:52:47', 1, 1, '2026-09-28 15:52:47', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (8, 0, 7, '6号员工', '', '2026-10', '2026', 8000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:52:47', 1, 1, '2026-09-28 15:52:47', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (9, 0, 1, '员工名', '', '2026-10', '2026', 5000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:53:04', 1, 1, '2026-09-28 15:53:04', 0);
+INSERT INTO `hr_social_calc_detail` VALUES (10, 0, 7, '6号员工', '', '2026-10', '2026', 8000.00, 0.00, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.0000, 0.00, 0.0000, 0.00, 0.00, 0.0000, 0.0000, 0.00, 0.00, 0.0000, 0.0000, '2026-09-28 15:53:04', 1, 1, '2026-09-28 15:53:04', 0);
 
 -- ----------------------------
 -- Table structure for hr_social_param_config
@@ -1608,6 +2069,7 @@ CREATE TABLE `hr_social_security`  (
   `end_month` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '参保截止月份（NULL=未停保）',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0停保 1参保',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `deprecated` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否已废弃 0否 1是',
   `create_by` bigint(20) NOT NULL DEFAULT 0,
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
@@ -1617,7 +2079,7 @@ CREATE TABLE `hr_social_security`  (
   UNIQUE INDEX `uk_employee`(`employee_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社保公积金台账' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社保公积金台账' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_social_security
@@ -1649,11 +2111,12 @@ CREATE TABLE `hr_transfer_apply`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调岗申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调岗申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_transfer_apply
 -- ----------------------------
+INSERT INTO `hr_transfer_apply` VALUES (1, 0, 4, '3号员工', NULL, NULL, 8, 3, NULL, '2026-09-27', '', 25, 2, 1, '2026-09-27 12:30:36', 1, '2026-09-27 12:30:36', 0);
 
 -- ----------------------------
 -- Table structure for hr_year_bonus
@@ -1683,7 +2146,7 @@ CREATE TABLE `hr_year_bonus`  (
   INDEX `idx_employee`(`employee_id` ASC, `bonus_year` ASC) USING BTREE,
   INDEX `idx_flow_instance`(`flow_instance_id` ASC) USING BTREE,
   INDEX `idx_apply_status`(`company_id` ASC, `apply_status` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '年终奖/一次性奖金表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '年终奖/一次性奖金表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of hr_year_bonus
@@ -1709,7 +2172,7 @@ CREATE TABLE `map_stall_point`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_map_stall`(`map_id` ASC, `stall_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '摊位点位明细表（点位超过500条启用）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '摊位点位明细表（点位超过500条启用）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of map_stall_point
@@ -1735,7 +2198,7 @@ CREATE TABLE `market_map`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_market_name_company`(`company_id` ASC, `map_name` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_mark`(`company_id` ASC, `market_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '市场平面图主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '市场平面图主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of market_map
@@ -1759,7 +2222,7 @@ CREATE TABLE `material_category`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of material_category
@@ -1786,7 +2249,7 @@ CREATE TABLE `material_goods`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_category_id`(`category_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资物料档案表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资物料档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of material_goods
@@ -1810,7 +2273,7 @@ CREATE TABLE `material_warehouse`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资仓库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物资仓库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of material_warehouse
@@ -1881,7 +2344,7 @@ CREATE TABLE `oa_announcement_read`  (
   `read_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '阅读时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_au_user`(`announcement_id` ASC, `user_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '公告已读记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '公告已读记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_announcement_read
@@ -1915,7 +2378,7 @@ CREATE TABLE `oa_clock_record`  (
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
   INDEX `idx_clock_time`(`clock_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '打卡记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '打卡记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_clock_record
@@ -1925,6 +2388,7 @@ INSERT INTO `oa_clock_record` VALUES (2, 0, 1, 'admin', 1, '2026-08-27 16:27:17'
 INSERT INTO `oa_clock_record` VALUES (3, 0, 1, 'admin', 2, '2026-08-27 16:27:20', NULL, NULL, '', 0, 0, 0, NULL, 1, '2026-08-27 16:27:20', 0, 1, '2026-08-27 16:27:20', NULL);
 INSERT INTO `oa_clock_record` VALUES (4, 0, 1, 'admin', 1, '2026-09-10 21:09:56', NULL, NULL, '', 0, 0, 0, NULL, 1, '2026-09-10 21:09:56', 0, 1, '2026-09-10 21:09:56', NULL);
 INSERT INTO `oa_clock_record` VALUES (5, 0, 1, 'admin', 2, '2026-09-10 21:09:59', NULL, NULL, '', 0, 0, 0, NULL, 1, '2026-09-10 21:09:59', 0, 1, '2026-09-10 21:09:59', NULL);
+INSERT INTO `oa_clock_record` VALUES (6, 0, 1, 'admin', 1, '2026-09-22 13:10:56', NULL, NULL, '', 0, 0, 0, NULL, 1, '2026-09-22 13:10:56', 0, 1, '2026-09-22 13:10:56', NULL);
 
 -- ----------------------------
 -- Table structure for oa_leave_apply
@@ -1983,7 +2447,7 @@ CREATE TABLE `oa_meeting_booking`  (
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE,
   INDEX `idx_room_id`(`room_id` ASC) USING BTREE,
   INDEX `idx_start_time`(`start_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会议室预约表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '会议室预约表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of oa_meeting_booking
@@ -2423,7 +2887,7 @@ CREATE TABLE `stall_merchant`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '商户档案表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '商户档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of stall_merchant
@@ -2436,11 +2900,11 @@ DROP TABLE IF EXISTS `sys_audit_log`;
 CREATE TABLE `sys_audit_log`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作人所属子公司ID',
-  `oper_user_id` bigint(20) NOT NULL COMMENT '操作人用户ID',
-  `oper_user_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作人姓名',
-  `oper_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '操作客户端IP地址',
-  `oper_module` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作模块 market_map/finance/org等',
-  `oper_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作类型：新增/编辑/删除/导出/审核',
+  `oper_user_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作人ID',
+  `oper_user_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '操作人姓名',
+  `oper_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '操作IP',
+  `oper_module` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '操作模块',
+  `oper_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '操作类型',
   `biz_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '关联业务单据ID',
   `before_json` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '操作前数据快照JSON',
   `after_json` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '操作后数据快照JSON',
@@ -2449,7 +2913,7 @@ CREATE TABLE `sys_audit_log`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_create_time`(`company_id` ASC, `create_time` ASC) USING BTREE,
   INDEX `idx_oper_module`(`oper_module` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1172 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '业务审计日志表【永久不可删除】' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1591 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '业务审计日志表【永久不可删除】' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_audit_log
@@ -3610,6 +4074,425 @@ INSERT INTO `sys_audit_log` VALUES (1168, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'ba
 INSERT INTO `sys_audit_log` VALUES (1169, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '499', NULL, '\"核销金额=60.00，账单=water_elec/61\"', NULL, '2026-09-15 10:44:18');
 INSERT INTO `sys_audit_log` VALUES (1170, 0, 1, '集团超级管理员', '127.0.0.1', 'writeoff', '缴费核销', '503', NULL, '\"核销金额=25.00，账单=property/57\"', NULL, '2026-09-15 10:44:18');
 INSERT INTO `sys_audit_log` VALUES (1171, 0, 1, '集团超级管理员', '127.0.0.1', 'propertyFee', '缴费', '36', NULL, '\"合并缴费，金额=85.00\"', NULL, '2026-09-15 10:44:18');
+INSERT INTO `sys_audit_log` VALUES (1172, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 15:02:45');
+INSERT INTO `sys_audit_log` VALUES (1173, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '19', NULL, '{\"id\":19,\"createBy\":1,\"createTime\":\"2026-09-15T15:21:53.6196114\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:21:53.6196114\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609151521537222\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"12\",\"title\":\"测试四号 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-15T15:21:53.6196114\",\"finishTime\":null}', NULL, '2026-09-15 15:21:54');
+INSERT INTO `sys_audit_log` VALUES (1174, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '12', NULL, '{\"id\":12,\"createBy\":1,\"createTime\":\"2026-09-15T15:21:53.5979396\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:21:53.5979396\",\"isDelete\":null,\"companyId\":0,\"employeeNo\":\"4号员工\",\"name\":\"测试四号\",\"idCardNo\":null,\"phone\":null,\"gender\":1,\"birthdate\":\"2026-09-15\",\"entryDate\":\"2026-09-15\",\"employmentType\":2,\"orgId\":1,\"postId\":1,\"basicSalary\":6000,\"bankAccount\":\"223\",\"autoCreateUser\":0,\"flowInstanceId\":19,\"status\":1,\"remark\":null}', NULL, '2026-09-15 15:21:54');
+INSERT INTO `sys_audit_log` VALUES (1175, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '完成', '19', NULL, '{\"id\":19,\"createBy\":1,\"createTime\":\"2026-09-15T15:21:54\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:21:54\",\"isDelete\":0,\"companyId\":0,\"instanceNo\":\"FL202609151521537222\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"12\",\"title\":\"测试四号 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":1,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-15T15:21:54\",\"finishTime\":\"2026-09-15T15:22:19.2882995\"}', NULL, '2026-09-15 15:22:19');
+INSERT INTO `sys_audit_log` VALUES (1176, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_employee', '新增', '5', NULL, '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-09-15T15:22:19.3129418\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:22:19.3129418\",\"isDelete\":null,\"companyId\":0,\"cityCode\":null,\"industryCode\":null,\"userId\":null,\"employeeNo\":\"4号员工\",\"name\":\"测试四号\",\"idCardNo\":null,\"phone\":null,\"email\":null,\"gender\":1,\"birthdate\":\"2026-09-15\",\"entryDate\":\"2026-09-15\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":2,\"employeeStatus\":1,\"orgId\":1,\"postId\":1,\"postLevel\":null,\"socialDeclareBase\":null,\"housingFundDeclareBase\":null,\"baseEffectiveYear\":null,\"salaryGradeCode\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":\"223\",\"socialSecurityBase\":null,\"basicSalary\":6000.00,\"remark\":null}', NULL, '2026-09-15 15:22:19');
+INSERT INTO `sys_audit_log` VALUES (1177, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '12', NULL, '{\"id\":12,\"createBy\":1,\"createTime\":\"2026-09-15T15:21:54\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:21:54\",\"isDelete\":0,\"companyId\":0,\"employeeNo\":\"4号员工\",\"name\":\"测试四号\",\"idCardNo\":null,\"phone\":null,\"gender\":1,\"birthdate\":\"2026-09-15\",\"entryDate\":\"2026-09-15\",\"employmentType\":2,\"orgId\":1,\"postId\":1,\"basicSalary\":6000.00,\"bankAccount\":\"223\",\"autoCreateUser\":0,\"flowInstanceId\":19,\"status\":2,\"remark\":null}', NULL, '2026-09-15 15:22:19');
+INSERT INTO `sys_audit_log` VALUES (1178, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '20', NULL, '{\"id\":20,\"createBy\":1,\"createTime\":\"2026-09-15T15:55:42.9462152\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:55:42.9462152\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609151555429938\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"13\",\"title\":\"5号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-15T15:55:42.9456923\",\"finishTime\":null}', NULL, '2026-09-15 15:55:43');
+INSERT INTO `sys_audit_log` VALUES (1179, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '13', NULL, '{\"id\":13,\"createBy\":1,\"createTime\":\"2026-09-15T15:55:42.9218832\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:55:42.9218832\",\"isDelete\":null,\"companyId\":0,\"employeeNo\":\"0005\",\"name\":\"5号员工\",\"idCardNo\":null,\"phone\":null,\"gender\":1,\"birthdate\":\"2026-09-15\",\"entryDate\":\"2026-09-15\",\"employmentType\":1,\"orgId\":1,\"postId\":1,\"basicSalary\":7000,\"bankAccount\":\"123\",\"autoCreateUser\":0,\"flowInstanceId\":20,\"status\":1,\"remark\":null,\"experienceData\":null}', NULL, '2026-09-15 15:55:43');
+INSERT INTO `sys_audit_log` VALUES (1180, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '完成', '20', NULL, '{\"id\":20,\"createBy\":1,\"createTime\":\"2026-09-15T15:55:43\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:55:43\",\"isDelete\":0,\"companyId\":0,\"instanceNo\":\"FL202609151555429938\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"13\",\"title\":\"5号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":1,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-15T15:55:43\",\"finishTime\":\"2026-09-15T15:55:51.002092\"}', NULL, '2026-09-15 15:55:51');
+INSERT INTO `sys_audit_log` VALUES (1181, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_employee', '新增', '6', NULL, '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-09-15T15:55:51.0263905\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:55:51.0263905\",\"isDelete\":null,\"companyId\":0,\"cityCode\":null,\"industryCode\":null,\"userId\":null,\"employeeNo\":\"0005\",\"name\":\"5号员工\",\"idCardNo\":null,\"phone\":null,\"email\":null,\"gender\":1,\"birthdate\":\"2026-09-15\",\"entryDate\":\"2026-09-15\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":1,\"employeeStatus\":1,\"orgId\":1,\"postId\":1,\"postLevel\":null,\"socialDeclareBase\":null,\"housingFundDeclareBase\":null,\"baseEffectiveYear\":null,\"salaryGradeCode\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":\"123\",\"socialSecurityBase\":null,\"basicSalary\":7000.00,\"remark\":null}', NULL, '2026-09-15 15:55:51');
+INSERT INTO `sys_audit_log` VALUES (1182, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '13', NULL, '{\"id\":13,\"createBy\":1,\"createTime\":\"2026-09-15T15:55:43\",\"updateBy\":1,\"updateTime\":\"2026-09-15T15:55:43\",\"isDelete\":0,\"companyId\":0,\"employeeNo\":\"0005\",\"name\":\"5号员工\",\"idCardNo\":null,\"phone\":null,\"gender\":1,\"birthdate\":\"2026-09-15\",\"entryDate\":\"2026-09-15\",\"employmentType\":1,\"orgId\":1,\"postId\":1,\"basicSalary\":7000.00,\"bankAccount\":\"123\",\"autoCreateUser\":0,\"flowInstanceId\":20,\"status\":2,\"remark\":null,\"experienceData\":null}', NULL, '2026-09-15 15:55:51');
+INSERT INTO `sys_audit_log` VALUES (1183, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '21', NULL, '{\"id\":21,\"createBy\":1,\"createTime\":\"2026-09-15T16:12:28.0848885\",\"updateBy\":1,\"updateTime\":\"2026-09-15T16:12:28.0848885\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609151612280838\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"14\",\"title\":\"6号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-15T16:12:28.0833827\",\"finishTime\":null}', NULL, '2026-09-15 16:12:28');
+INSERT INTO `sys_audit_log` VALUES (1184, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '14', NULL, '{\"id\":14,\"createBy\":1,\"createTime\":\"2026-09-15T16:12:28.0462704\",\"updateBy\":1,\"updateTime\":\"2026-09-15T16:12:28.0462704\",\"isDelete\":null,\"companyId\":0,\"employeeNo\":\"0006\",\"name\":\"6号员工\",\"idCardNo\":null,\"phone\":null,\"gender\":1,\"birthdate\":\"2026-09-01\",\"entryDate\":\"2026-09-15\",\"employmentType\":2,\"orgId\":1,\"postId\":1,\"basicSalary\":8000,\"bankAccount\":\"231\",\"autoCreateUser\":0,\"flowInstanceId\":21,\"status\":1,\"remark\":\"备注\",\"experienceData\":\"{\\\"workExps\\\":[{\\\"companyName\\\":\\\"公司2\\\",\\\"position\\\":\\\"职位\\\",\\\"department\\\":\\\"部门\\\",\\\"startDate\\\":\\\"2026-09-08\\\",\\\"endDate\\\":null,\\\"isCurrent\\\":1,\\\"reasonForLeaving\\\":\\\"\\\",\\\"remark\\\":\\\"\\\"},{\\\"companyName\\\":\\\"公司3\\\",\\\"position\\\":\\\"职位\\\",\\\"department\\\":\\\"部门\\\",\\\"startDate\\\":\\\"2026-09-14\\\",\\\"endDate\\\":\\\"2026-09-15\\\",\\\"isCurrent\\\":0,\\\"reasonForLeaving\\\":\\\"\\\",\\\"remark\\\":\\\"\\\"}],\\\"eduExps\\\":[{\\\"schoolName\\\":\\\"学校1\\\",\\\"degree\\\":\\\"学历\\\",\\\"major\\\":\\\"专业1\\\",\\\"educationLevel\\\":\\\"教育\\\",\\\"startDate\\\":\\\"2026-09-01\\\",\\\"graduationDate\\\":\\\"2026-09-14\\\",\\\"isGraduated\\\":1,\\\"certificateNo\\\":\\\"\\\",\\\"remark\\\":\\\"\\\"},{\\\"schoolName\\\":\\\"学校2\\\",\\\"degree\\\":\\\"学历\\\",\\\"major\\\":\\\"专业\\\",\\\"educationLevel\\\":\\\"教育\\\",\\\"startDate\\\":\\\"2026-09-01\\\",\\\"graduationDate\\\":\\\"2026-09-09\\\",\\\"isGraduated\\\":1,\\\"certificateNo\\\":\\\"\\\",\\\"remark\\\":\\\"\\\"}]}\"}', NULL, '2026-09-15 16:12:28');
+INSERT INTO `sys_audit_log` VALUES (1185, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '完成', '21', NULL, '{\"id\":21,\"createBy\":1,\"createTime\":\"2026-09-15T16:12:28\",\"updateBy\":1,\"updateTime\":\"2026-09-15T16:12:28\",\"isDelete\":0,\"companyId\":0,\"instanceNo\":\"FL202609151612280838\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"14\",\"title\":\"6号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":1,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-15T16:12:28\",\"finishTime\":\"2026-09-15T16:12:37.8256559\"}', NULL, '2026-09-15 16:12:38');
+INSERT INTO `sys_audit_log` VALUES (1186, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_employee', '新增', '7', NULL, '{\"id\":7,\"createBy\":1,\"createTime\":\"2026-09-15T16:12:37.868869\",\"updateBy\":1,\"updateTime\":\"2026-09-15T16:12:37.868869\",\"isDelete\":null,\"companyId\":0,\"cityCode\":null,\"industryCode\":null,\"userId\":null,\"employeeNo\":\"0006\",\"name\":\"6号员工\",\"idCardNo\":null,\"phone\":null,\"email\":null,\"gender\":1,\"birthdate\":\"2026-09-01\",\"entryDate\":\"2026-09-15\",\"regularDate\":null,\"resignDate\":null,\"employmentType\":2,\"employeeStatus\":1,\"orgId\":1,\"postId\":1,\"postLevel\":null,\"socialDeclareBase\":null,\"housingFundDeclareBase\":null,\"baseEffectiveYear\":null,\"salaryGradeCode\":null,\"orgName\":null,\"supervisorId\":null,\"bankAccount\":\"231\",\"socialSecurityBase\":null,\"basicSalary\":8000.00,\"remark\":\"备注\"}', NULL, '2026-09-15 16:12:38');
+INSERT INTO `sys_audit_log` VALUES (1187, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '14', NULL, '{\"id\":14,\"createBy\":1,\"createTime\":\"2026-09-15T16:12:28\",\"updateBy\":1,\"updateTime\":\"2026-09-15T16:12:28\",\"isDelete\":0,\"companyId\":0,\"employeeNo\":\"0006\",\"name\":\"6号员工\",\"idCardNo\":null,\"phone\":null,\"gender\":1,\"birthdate\":\"2026-09-01\",\"entryDate\":\"2026-09-15\",\"employmentType\":2,\"orgId\":1,\"postId\":1,\"basicSalary\":8000.00,\"bankAccount\":\"231\",\"autoCreateUser\":0,\"flowInstanceId\":21,\"status\":2,\"remark\":\"备注\",\"experienceData\":\"{\\\"workExps\\\":[{\\\"companyName\\\":\\\"公司2\\\",\\\"position\\\":\\\"职位\\\",\\\"department\\\":\\\"部门\\\",\\\"startDate\\\":\\\"2026-09-08\\\",\\\"endDate\\\":null,\\\"isCurrent\\\":1,\\\"reasonForLeaving\\\":\\\"\\\",\\\"remark\\\":\\\"\\\"},{\\\"companyName\\\":\\\"公司3\\\",\\\"position\\\":\\\"职位\\\",\\\"department\\\":\\\"部门\\\",\\\"startDate\\\":\\\"2026-09-14\\\",\\\"endDate\\\":\\\"2026-09-15\\\",\\\"isCurrent\\\":0,\\\"reasonForLeaving\\\":\\\"\\\",\\\"remark\\\":\\\"\\\"}],\\\"eduExps\\\":[{\\\"schoolName\\\":\\\"学校1\\\",\\\"degree\\\":\\\"学历\\\",\\\"major\\\":\\\"专业1\\\",\\\"educationLevel\\\":\\\"教育\\\",\\\"startDate\\\":\\\"2026-09-01\\\",\\\"graduationDate\\\":\\\"2026-09-14\\\",\\\"isGraduated\\\":1,\\\"certificateNo\\\":\\\"\\\",\\\"remark\\\":\\\"\\\"},{\\\"schoolName\\\":\\\"学校2\\\",\\\"degree\\\":\\\"学历\\\",\\\"major\\\":\\\"专业\\\",\\\"educationLevel\\\":\\\"教育\\\",\\\"startDate\\\":\\\"2026-09-01\\\",\\\"graduationDate\\\":\\\"2026-09-09\\\",\\\"isGraduated\\\":1,\\\"certificateNo\\\":\\\"\\\",\\\"remark\\\":\\\"\\\"}]}\"}', NULL, '2026-09-15 16:12:38');
+INSERT INTO `sys_audit_log` VALUES (1188, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 16:51:53');
+INSERT INTO `sys_audit_log` VALUES (1189, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_salary', '新增', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-09-15T17:04:13.8384676\",\"updateBy\":1,\"updateTime\":\"2026-09-15T17:04:13.8384676\",\"isDelete\":null,\"companyId\":0,\"versionNo\":1,\"sourceType\":2,\"sourceId\":null,\"employeeId\":1,\"employeeName\":\"员工名\",\"gradeCode\":null,\"gradeName\":null,\"ruleId\":1,\"ruleName\":null,\"effectiveDate\":\"2026-09-15\",\"isCurrent\":1,\"basicSalary\":5000,\"performanceSalary\":100,\"positionAllowance\":500,\"otherAllowance\":5,\"socialSecurityPersonal\":2802.5,\"housingFundPersonal\":2500,\"remark\":null}', NULL, '2026-09-15 17:04:14');
+INSERT INTO `sys_audit_log` VALUES (1190, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:12:11');
+INSERT INTO `sys_audit_log` VALUES (1191, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:13:41');
+INSERT INTO `sys_audit_log` VALUES (1192, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:13:58');
+INSERT INTO `sys_audit_log` VALUES (1193, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:26:03');
+INSERT INTO `sys_audit_log` VALUES (1194, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:26:17');
+INSERT INTO `sys_audit_log` VALUES (1195, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:26:36');
+INSERT INTO `sys_audit_log` VALUES (1196, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:26:46');
+INSERT INTO `sys_audit_log` VALUES (1197, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:27:01');
+INSERT INTO `sys_audit_log` VALUES (1198, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:28:29');
+INSERT INTO `sys_audit_log` VALUES (1199, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:28:59');
+INSERT INTO `sys_audit_log` VALUES (1200, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:41:15');
+INSERT INTO `sys_audit_log` VALUES (1201, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:42:18');
+INSERT INTO `sys_audit_log` VALUES (1202, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-15 20:46:59');
+INSERT INTO `sys_audit_log` VALUES (1203, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 15:59:56');
+INSERT INTO `sys_audit_log` VALUES (1204, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 16:00:29');
+INSERT INTO `sys_audit_log` VALUES (1205, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 16:01:31');
+INSERT INTO `sys_audit_log` VALUES (1206, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '重置密码', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:44\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$dC8NacyhYNPxnyUGHb066.0J/DQ89YSZpwxUqhtZKyDi5pStYwpc2\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', '{\"id\":2,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:58.8029606\",\"isDelete\":null,\"companyId\":null,\"username\":null,\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":null,\"phone\":null,\"email\":null,\"avatar\":null,\"status\":null}', NULL, '2026-09-16 16:01:59');
+INSERT INTO `sys_audit_log` VALUES (1207, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', NULL, '2026-09-16 16:02:09');
+INSERT INTO `sys_audit_log` VALUES (1208, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '删除', '3', '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-07T12:39:05\",\"updateBy\":1,\"updateTime\":\"2026-09-07T12:39:05\",\"isDelete\":0,\"companyId\":1,\"roleName\":\"test\",\"roleCode\":\"test1\",\"remark\":\"\"}', NULL, NULL, '2026-09-16 16:02:26');
+INSERT INTO `sys_audit_log` VALUES (1209, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '5', '[]', '[41,42,72,76,80,86,90,131]', NULL, '2026-09-16 16:02:55');
+INSERT INTO `sys_audit_log` VALUES (1210, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-16 16:03:01');
+INSERT INTO `sys_audit_log` VALUES (1211, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-16 16:03:06');
+INSERT INTO `sys_audit_log` VALUES (1212, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-16 16:06:18');
+INSERT INTO `sys_audit_log` VALUES (1213, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 16:06:22');
+INSERT INTO `sys_audit_log` VALUES (1214, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', NULL, '2026-09-16 16:06:38');
+INSERT INTO `sys_audit_log` VALUES (1215, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-16 16:06:43');
+INSERT INTO `sys_audit_log` VALUES (1216, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-16 16:06:47');
+INSERT INTO `sys_audit_log` VALUES (1217, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-16 16:06:57');
+INSERT INTO `sys_audit_log` VALUES (1218, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 16:07:01');
+INSERT INTO `sys_audit_log` VALUES (1219, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1}', NULL, '2026-09-16 16:07:14');
+INSERT INTO `sys_audit_log` VALUES (1220, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-16 16:07:17');
+INSERT INTO `sys_audit_log` VALUES (1221, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-16 16:07:22');
+INSERT INTO `sys_audit_log` VALUES (1222, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-16 16:16:45');
+INSERT INTO `sys_audit_log` VALUES (1223, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 16:16:48');
+INSERT INTO `sys_audit_log` VALUES (1224, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 16:40:35');
+INSERT INTO `sys_audit_log` VALUES (1225, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-16 16:41:41');
+INSERT INTO `sys_audit_log` VALUES (1226, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 16:41:41');
+INSERT INTO `sys_audit_log` VALUES (1227, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-16 16:44:48');
+INSERT INTO `sys_audit_log` VALUES (1228, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 16:44:49');
+INSERT INTO `sys_audit_log` VALUES (1229, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 17:04:57');
+INSERT INTO `sys_audit_log` VALUES (1230, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 17:05:28');
+INSERT INTO `sys_audit_log` VALUES (1231, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 17:05:57');
+INSERT INTO `sys_audit_log` VALUES (1232, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-16 17:07:10');
+INSERT INTO `sys_audit_log` VALUES (1233, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 17:07:18');
+INSERT INTO `sys_audit_log` VALUES (1234, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '6', '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-08-21T09:20:52\",\"updateBy\":null,\"updateTime\":\"2026-09-07T10:04:07\",\"isDelete\":0,\"companyId\":1,\"parentId\":1,\"orgName\":\"飞宇汽车城\",\"orgType\":2,\"sortOrder\":5,\"status\":1}', '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-08-21T09:20:52\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:04:07\",\"isDelete\":0,\"companyId\":1,\"parentId\":1,\"orgName\":\"飞宇汽车城\",\"orgType\":1,\"sortOrder\":5,\"status\":1}', NULL, '2026-09-16 17:09:10');
+INSERT INTO `sys_audit_log` VALUES (1235, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-16 17:24:46');
+INSERT INTO `sys_audit_log` VALUES (1236, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '6', '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-08-21T09:20:52\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:04:07\",\"isDelete\":0,\"companyId\":1,\"parentId\":1,\"orgName\":\"飞宇汽车城\",\"orgType\":1,\"sortOrder\":5,\"status\":1}', '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-08-21T09:20:52\",\"updateBy\":1,\"updateTime\":\"2026-09-07T10:04:07\",\"isDelete\":0,\"companyId\":1,\"parentId\":1,\"orgName\":\"飞宇汽车城\",\"orgType\":2,\"sortOrder\":5,\"status\":1}', NULL, '2026-09-16 17:27:23');
+INSERT INTO `sys_audit_log` VALUES (1237, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-17 10:46:53');
+INSERT INTO `sys_audit_log` VALUES (1238, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_org', '编辑', '1', '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-08-26T07:29:04\",\"updateBy\":1,\"updateTime\":\"2026-08-26T07:29:04\",\"isDelete\":0,\"companyId\":0,\"postName\":\"测试岗位\",\"postCode\":\"0001\",\"postLevel\":\"P0\",\"deptId\":null,\"status\":1,\"remark\":\"\"}', '{\"id\":1,\"createBy\":null,\"createTime\":null,\"updateBy\":1,\"updateTime\":\"2026-09-17T11:56:08.2294502\",\"isDelete\":null,\"companyId\":null,\"postName\":\"测试岗位\",\"postCode\":\"0001\",\"postLevel\":\"P0\",\"deptId\":9,\"status\":1,\"remark\":\"\"}', NULL, '2026-09-17 11:56:08');
+INSERT INTO `sys_audit_log` VALUES (1239, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-18 11:55:59');
+INSERT INTO `sys_audit_log` VALUES (1240, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 12:03:05');
+INSERT INTO `sys_audit_log` VALUES (1241, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 12:03:10');
+INSERT INTO `sys_audit_log` VALUES (1242, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 12:03:14');
+INSERT INTO `sys_audit_log` VALUES (1243, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-20 12:42:31');
+INSERT INTO `sys_audit_log` VALUES (1244, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 12:42:35');
+INSERT INTO `sys_audit_log` VALUES (1245, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 12:43:35');
+INSERT INTO `sys_audit_log` VALUES (1246, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 12:43:41');
+INSERT INTO `sys_audit_log` VALUES (1247, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-20 12:44:08');
+INSERT INTO `sys_audit_log` VALUES (1248, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 12:44:11');
+INSERT INTO `sys_audit_log` VALUES (1249, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 12:44:34');
+INSERT INTO `sys_audit_log` VALUES (1250, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 12:44:39');
+INSERT INTO `sys_audit_log` VALUES (1251, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-20 12:44:52');
+INSERT INTO `sys_audit_log` VALUES (1252, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 12:44:55');
+INSERT INTO `sys_audit_log` VALUES (1253, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '7', '[37,38,41,42,52,54,55,56,68,72,76,80,86,90,93,94,95,96,108,109,110,111,112,113,131,135,136,137,138,139,160,161,162,163,164,165,166]', '[37,52,68,38,53,108,109,110,111,112,113,41,42,72,76,80,86,90,131,93,94,95,96,8]', NULL, '2026-09-20 12:45:02');
+INSERT INTO `sys_audit_log` VALUES (1254, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 12:45:06');
+INSERT INTO `sys_audit_log` VALUES (1255, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 12:45:11');
+INSERT INTO `sys_audit_log` VALUES (1256, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-20 12:45:31');
+INSERT INTO `sys_audit_log` VALUES (1257, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 12:45:35');
+INSERT INTO `sys_audit_log` VALUES (1258, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 13:00:24');
+INSERT INTO `sys_audit_log` VALUES (1259, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 13:00:27');
+INSERT INTO `sys_audit_log` VALUES (1260, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 13:23:10');
+INSERT INTO `sys_audit_log` VALUES (1261, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 13:23:33');
+INSERT INTO `sys_audit_log` VALUES (1262, 0, 1, '集团超级管理员', '0:0:0:0:0:0:0:1', 'org', '编辑', '7', '[8,37,38,41,42,43,44,45,46,47,48,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,93,94,95,96,97,98,99,100,101,102,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,200,201,202]', '[1,2,3,1,2,3]', NULL, '2026-09-20 13:23:33');
+INSERT INTO `sys_audit_log` VALUES (1263, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '7', '[1,2,3]', '[12,13,14,60,61,62,63,64,65,66,67]', NULL, '2026-09-20 14:35:13');
+INSERT INTO `sys_audit_log` VALUES (1264, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 14:35:20');
+INSERT INTO `sys_audit_log` VALUES (1265, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:35:27');
+INSERT INTO `sys_audit_log` VALUES (1266, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-20 14:36:27');
+INSERT INTO `sys_audit_log` VALUES (1267, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 14:36:30');
+INSERT INTO `sys_audit_log` VALUES (1268, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1,\"employeeId\":null}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1,\"employeeId\":null}', NULL, '2026-09-20 14:36:45');
+INSERT INTO `sys_audit_log` VALUES (1269, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 14:37:03');
+INSERT INTO `sys_audit_log` VALUES (1270, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 14:37:06');
+INSERT INTO `sys_audit_log` VALUES (1271, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 14:37:09');
+INSERT INTO `sys_audit_log` VALUES (1272, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:37:17');
+INSERT INTO `sys_audit_log` VALUES (1273, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-20 14:37:33');
+INSERT INTO `sys_audit_log` VALUES (1274, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 14:37:36');
+INSERT INTO `sys_audit_log` VALUES (1275, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '7', '[12,13,14,60,61,62,63,64,65,66,67]', '[12,13,14,60,61,62,63,64,65,66,67]', NULL, '2026-09-20 14:37:47');
+INSERT INTO `sys_audit_log` VALUES (1276, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '7', '[12,13,14,60,61,62,63,64,65,66,67]', '[12,13,14,60,61,62,63,64,65,66,67]', NULL, '2026-09-20 14:37:59');
+INSERT INTO `sys_audit_log` VALUES (1277, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '7', '[12,13,14,60,61,62,63,64,65,66,67]', '[12,13,14,60,61,62,63,64,65,66,67]', NULL, '2026-09-20 14:38:14');
+INSERT INTO `sys_audit_log` VALUES (1278, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 14:38:18');
+INSERT INTO `sys_audit_log` VALUES (1279, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:38:23');
+INSERT INTO `sys_audit_log` VALUES (1280, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:43:16');
+INSERT INTO `sys_audit_log` VALUES (1281, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:44:20');
+INSERT INTO `sys_audit_log` VALUES (1282, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:46:14');
+INSERT INTO `sys_audit_log` VALUES (1283, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:48:03');
+INSERT INTO `sys_audit_log` VALUES (1284, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:56:17');
+INSERT INTO `sys_audit_log` VALUES (1285, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 14:56:38');
+INSERT INTO `sys_audit_log` VALUES (1286, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 15:08:03');
+INSERT INTO `sys_audit_log` VALUES (1287, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-20 17:47:43');
+INSERT INTO `sys_audit_log` VALUES (1288, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-20 17:47:50');
+INSERT INTO `sys_audit_log` VALUES (1289, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '6', '[37,38,41,42,43,44,45,46,47,48,51,52,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,93,94,95,96,97,98,99,100,101,102,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195]', '[40,41,51,42,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,131,132,133,134]', NULL, '2026-09-20 17:48:30');
+INSERT INTO `sys_audit_log` VALUES (1290, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '2', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1,\"employeeId\":null}', '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-07T12:24:25\",\"updateBy\":1,\"updateTime\":\"2026-09-16T16:01:59\",\"isDelete\":0,\"companyId\":0,\"username\":\"test\",\"password\":\"$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq\",\"realName\":\"test\",\"phone\":\"\",\"email\":\"\",\"avatar\":null,\"status\":1,\"employeeId\":null}', NULL, '2026-09-20 17:48:55');
+INSERT INTO `sys_audit_log` VALUES (1291, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-20 17:49:11');
+INSERT INTO `sys_audit_log` VALUES (1292, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-20 17:49:21');
+INSERT INTO `sys_audit_log` VALUES (1293, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-21 09:21:42');
+INSERT INTO `sys_audit_log` VALUES (1294, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 09:21:45');
+INSERT INTO `sys_audit_log` VALUES (1295, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 10:25:45');
+INSERT INTO `sys_audit_log` VALUES (1296, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 10:25:54');
+INSERT INTO `sys_audit_log` VALUES (1297, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 10:26:29');
+INSERT INTO `sys_audit_log` VALUES (1298, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 10:28:16');
+INSERT INTO `sys_audit_log` VALUES (1299, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 10:28:28');
+INSERT INTO `sys_audit_log` VALUES (1300, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-21 11:12:30');
+INSERT INTO `sys_audit_log` VALUES (1301, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:13:21');
+INSERT INTO `sys_audit_log` VALUES (1302, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-21 11:13:39');
+INSERT INTO `sys_audit_log` VALUES (1303, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:13:44');
+INSERT INTO `sys_audit_log` VALUES (1304, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-21 11:25:50');
+INSERT INTO `sys_audit_log` VALUES (1305, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:25:54');
+INSERT INTO `sys_audit_log` VALUES (1306, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-21 11:26:50');
+INSERT INTO `sys_audit_log` VALUES (1307, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:26:53');
+INSERT INTO `sys_audit_log` VALUES (1308, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-21 11:28:13');
+INSERT INTO `sys_audit_log` VALUES (1309, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:28:19');
+INSERT INTO `sys_audit_log` VALUES (1310, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:33:44');
+INSERT INTO `sys_audit_log` VALUES (1311, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:34:13');
+INSERT INTO `sys_audit_log` VALUES (1312, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:39:54');
+INSERT INTO `sys_audit_log` VALUES (1313, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:42:50');
+INSERT INTO `sys_audit_log` VALUES (1314, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:43:32');
+INSERT INTO `sys_audit_log` VALUES (1315, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:44:29');
+INSERT INTO `sys_audit_log` VALUES (1316, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:47:18');
+INSERT INTO `sys_audit_log` VALUES (1317, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:48:53');
+INSERT INTO `sys_audit_log` VALUES (1318, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:50:16');
+INSERT INTO `sys_audit_log` VALUES (1319, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:52:52');
+INSERT INTO `sys_audit_log` VALUES (1320, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:53:44');
+INSERT INTO `sys_audit_log` VALUES (1321, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:57:18');
+INSERT INTO `sys_audit_log` VALUES (1322, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:57:41');
+INSERT INTO `sys_audit_log` VALUES (1323, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:58:34');
+INSERT INTO `sys_audit_log` VALUES (1324, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:58:57');
+INSERT INTO `sys_audit_log` VALUES (1325, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 11:59:34');
+INSERT INTO `sys_audit_log` VALUES (1326, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 12:00:41');
+INSERT INTO `sys_audit_log` VALUES (1327, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '203', '{\"id\":203,\"createBy\":0,\"createTime\":\"2026-09-21T10:06:00\",\"updateBy\":null,\"updateTime\":\"2026-09-21T13:35:27\",\"isDelete\":0,\"parentId\":54,\"menuName\":\"铺位画布\",\"permission\":\"lease:stall:canvas\",\"path\":\"/property/lease/stall/canvas\",\"icon\":\"Coordinate\",\"sortOrder\":4,\"menuType\":2,\"visible\":1}', '{\"id\":203,\"createBy\":0,\"createTime\":\"2026-09-21T10:06:00\",\"updateBy\":1,\"updateTime\":\"2026-09-21T13:35:27\",\"isDelete\":0,\"parentId\":53,\"menuName\":\"铺位画布\",\"permission\":\"lease:stall:canvas\",\"path\":\"/property/lease/stall/canvas\",\"icon\":\"Coordinate\",\"sortOrder\":4,\"menuType\":2,\"visible\":1}', NULL, '2026-09-21 13:37:44');
+INSERT INTO `sys_audit_log` VALUES (1328, 0, 0, 'system', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 13:45:02');
+INSERT INTO `sys_audit_log` VALUES (1329, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '删除', '199', '{\"id\":199,\"createBy\":0,\"createTime\":\"2026-09-20T13:10:30\",\"updateBy\":null,\"updateTime\":\"2026-09-21T10:06:00\",\"isDelete\":0,\"parentId\":36,\"menuName\":\"缴费管理\",\"permission\":\"property:feePay:list\",\"path\":\"/property/feePay\",\"icon\":\"Money\",\"sortOrder\":5,\"menuType\":2,\"visible\":1}', NULL, NULL, '2026-09-21 13:45:40');
+INSERT INTO `sys_audit_log` VALUES (1330, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-21 13:45:57');
+INSERT INTO `sys_audit_log` VALUES (1331, 0, 0, 'system', '127.0.0.1', 'base', '登录', '2', NULL, NULL, NULL, '2026-09-21 13:46:10');
+INSERT INTO `sys_audit_log` VALUES (1332, 0, 2, 'test', '127.0.0.1', 'base', '退出', '2', NULL, NULL, NULL, '2026-09-21 13:46:59');
+INSERT INTO `sys_audit_log` VALUES (1333, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 13:47:03');
+INSERT INTO `sys_audit_log` VALUES (1334, 0, 1, '集团超级管理员', '127.0.0.1', 'base', '退出', '1', NULL, NULL, NULL, '2026-09-21 13:47:55');
+INSERT INTO `sys_audit_log` VALUES (1335, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-21 13:47:59');
+INSERT INTO `sys_audit_log` VALUES (1336, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件上传', '1', NULL, '{\"id\":1,\"createBy\":1,\"createTime\":\"2026-09-21T17:49:45.1806557\",\"updateBy\":1,\"updateTime\":\"2026-09-21T17:49:45.1806557\",\"isDelete\":null,\"companyId\":0,\"bizType\":\"hr_entry\",\"bizId\":0,\"fileKey\":\"0/hr_entry/20260921/f3f04141e622496eab70496bd777a7de.png\",\"md5\":\"de94fe45239ad0e8eded1b34d2d42052\",\"fileName\":\"23.png\",\"fileSize\":41662,\"fileType\":\"image/png\",\"fileExt\":\"png\",\"storageType\":\"local\"}', NULL, '2026-09-21 17:49:45');
+INSERT INTO `sys_audit_log` VALUES (1337, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '22', NULL, '{\"id\":22,\"createBy\":1,\"createTime\":\"2026-09-21T17:49:45.4224656\",\"updateBy\":1,\"updateTime\":\"2026-09-21T17:49:45.4224656\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609211749459741\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"15\",\"title\":\"照片7 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-21T17:49:45.4199467\",\"finishTime\":null}', NULL, '2026-09-21 17:49:45');
+INSERT INTO `sys_audit_log` VALUES (1338, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '15', NULL, '{\"id\":15,\"createBy\":1,\"createTime\":\"2026-09-21T17:49:45.3899812\",\"updateBy\":1,\"updateTime\":\"2026-09-21T17:49:45.3899812\",\"isDelete\":null,\"companyId\":0,\"employeeNo\":\"00007\",\"name\":\"照片7\",\"idCardNo\":null,\"phone\":null,\"gender\":null,\"birthdate\":null,\"entryDate\":\"2026-09-21\",\"employmentType\":1,\"orgId\":null,\"postId\":null,\"basicSalary\":null,\"bankAccount\":null,\"autoCreateUser\":0,\"flowInstanceId\":22,\"status\":1,\"remark\":\"\",\"experienceData\":\"{\\\"workExps\\\":[],\\\"eduExps\\\":[]}\",\"photoFileId\":1}', NULL, '2026-09-21 17:49:45');
+INSERT INTO `sys_audit_log` VALUES (1339, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 11:34:38');
+INSERT INTO `sys_audit_log` VALUES (1340, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 11:34:39');
+INSERT INTO `sys_audit_log` VALUES (1341, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 11:34:41');
+INSERT INTO `sys_audit_log` VALUES (1342, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 11:34:42');
+INSERT INTO `sys_audit_log` VALUES (1343, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 11:42:56');
+INSERT INTO `sys_audit_log` VALUES (1344, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 11:42:56');
+INSERT INTO `sys_audit_log` VALUES (1345, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:03:12');
+INSERT INTO `sys_audit_log` VALUES (1346, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:03:12');
+INSERT INTO `sys_audit_log` VALUES (1347, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:03:21');
+INSERT INTO `sys_audit_log` VALUES (1348, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:03:22');
+INSERT INTO `sys_audit_log` VALUES (1349, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:12:51');
+INSERT INTO `sys_audit_log` VALUES (1350, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:12:52');
+INSERT INTO `sys_audit_log` VALUES (1351, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:13:07');
+INSERT INTO `sys_audit_log` VALUES (1352, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:13:07');
+INSERT INTO `sys_audit_log` VALUES (1353, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:29:30');
+INSERT INTO `sys_audit_log` VALUES (1354, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:29:30');
+INSERT INTO `sys_audit_log` VALUES (1355, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:42:48');
+INSERT INTO `sys_audit_log` VALUES (1356, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 12:42:49');
+INSERT INTO `sys_audit_log` VALUES (1357, 0, 1, '集团超级管理员', '127.0.0.1', 'org', '编辑', '137', '{\"id\":137,\"createBy\":1,\"createTime\":\"2026-09-11T15:29:28\",\"updateBy\":null,\"updateTime\":null,\"isDelete\":0,\"parentId\":112,\"menuName\":\"薪资档案v2\",\"permission\":\"hr:salary:archive:list\",\"path\":\"/hr/salary/archive\",\"icon\":\"DocumentChecked\",\"sortOrder\":8,\"menuType\":2,\"visible\":1}', '{\"id\":137,\"createBy\":1,\"createTime\":\"2026-09-11T15:29:28\",\"updateBy\":1,\"updateTime\":\"2026-09-22T13:20:44.4269451\",\"isDelete\":0,\"parentId\":112,\"menuName\":\"薪资档案\",\"permission\":\"hr:salary:archive:list\",\"path\":\"/hr/salary\",\"icon\":\"DocumentChecked\",\"sortOrder\":8,\"menuType\":2,\"visible\":1}', NULL, '2026-09-22 13:20:44');
+INSERT INTO `sys_audit_log` VALUES (1358, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 13:21:45');
+INSERT INTO `sys_audit_log` VALUES (1359, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 13:21:45');
+INSERT INTO `sys_audit_log` VALUES (1360, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 13:26:05');
+INSERT INTO `sys_audit_log` VALUES (1361, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 13:26:05');
+INSERT INTO `sys_audit_log` VALUES (1362, 0, 0, 'system', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-22 14:19:48');
+INSERT INTO `sys_audit_log` VALUES (1363, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:19:56');
+INSERT INTO `sys_audit_log` VALUES (1364, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:20:01');
+INSERT INTO `sys_audit_log` VALUES (1365, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:20:01');
+INSERT INTO `sys_audit_log` VALUES (1366, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:23:12');
+INSERT INTO `sys_audit_log` VALUES (1367, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:23:12');
+INSERT INTO `sys_audit_log` VALUES (1368, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:23:34');
+INSERT INTO `sys_audit_log` VALUES (1369, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:23:34');
+INSERT INTO `sys_audit_log` VALUES (1370, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:25:43');
+INSERT INTO `sys_audit_log` VALUES (1371, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:25:43');
+INSERT INTO `sys_audit_log` VALUES (1372, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:25:47');
+INSERT INTO `sys_audit_log` VALUES (1373, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:25:48');
+INSERT INTO `sys_audit_log` VALUES (1374, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:25:56');
+INSERT INTO `sys_audit_log` VALUES (1375, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:25:56');
+INSERT INTO `sys_audit_log` VALUES (1376, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:26:38');
+INSERT INTO `sys_audit_log` VALUES (1377, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:26:38');
+INSERT INTO `sys_audit_log` VALUES (1378, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:26:40');
+INSERT INTO `sys_audit_log` VALUES (1379, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:26:40');
+INSERT INTO `sys_audit_log` VALUES (1380, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:26:41');
+INSERT INTO `sys_audit_log` VALUES (1381, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:26:42');
+INSERT INTO `sys_audit_log` VALUES (1382, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:28:21');
+INSERT INTO `sys_audit_log` VALUES (1383, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:28:21');
+INSERT INTO `sys_audit_log` VALUES (1384, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:41:25');
+INSERT INTO `sys_audit_log` VALUES (1385, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 14:41:25');
+INSERT INTO `sys_audit_log` VALUES (1386, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:02:54');
+INSERT INTO `sys_audit_log` VALUES (1387, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:02:54');
+INSERT INTO `sys_audit_log` VALUES (1388, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:03:44');
+INSERT INTO `sys_audit_log` VALUES (1389, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:03:45');
+INSERT INTO `sys_audit_log` VALUES (1390, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:06:23');
+INSERT INTO `sys_audit_log` VALUES (1391, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:06:24');
+INSERT INTO `sys_audit_log` VALUES (1392, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:07:36');
+INSERT INTO `sys_audit_log` VALUES (1393, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:07:36');
+INSERT INTO `sys_audit_log` VALUES (1394, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:07:49');
+INSERT INTO `sys_audit_log` VALUES (1395, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:07:50');
+INSERT INTO `sys_audit_log` VALUES (1396, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:10:54');
+INSERT INTO `sys_audit_log` VALUES (1397, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:10:54');
+INSERT INTO `sys_audit_log` VALUES (1398, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:15:25');
+INSERT INTO `sys_audit_log` VALUES (1399, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:15:26');
+INSERT INTO `sys_audit_log` VALUES (1400, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:15:30');
+INSERT INTO `sys_audit_log` VALUES (1401, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:15:30');
+INSERT INTO `sys_audit_log` VALUES (1402, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:18:59');
+INSERT INTO `sys_audit_log` VALUES (1403, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:19:00');
+INSERT INTO `sys_audit_log` VALUES (1404, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:19:09');
+INSERT INTO `sys_audit_log` VALUES (1405, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:19:09');
+INSERT INTO `sys_audit_log` VALUES (1406, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:23:12');
+INSERT INTO `sys_audit_log` VALUES (1407, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:23:12');
+INSERT INTO `sys_audit_log` VALUES (1408, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:25:17');
+INSERT INTO `sys_audit_log` VALUES (1409, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:25:18');
+INSERT INTO `sys_audit_log` VALUES (1410, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:30:29');
+INSERT INTO `sys_audit_log` VALUES (1411, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:30:29');
+INSERT INTO `sys_audit_log` VALUES (1412, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:31:53');
+INSERT INTO `sys_audit_log` VALUES (1413, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:31:53');
+INSERT INTO `sys_audit_log` VALUES (1414, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:32:14');
+INSERT INTO `sys_audit_log` VALUES (1415, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:32:14');
+INSERT INTO `sys_audit_log` VALUES (1416, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:32:41');
+INSERT INTO `sys_audit_log` VALUES (1417, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:32:42');
+INSERT INTO `sys_audit_log` VALUES (1418, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:34:46');
+INSERT INTO `sys_audit_log` VALUES (1419, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:34:46');
+INSERT INTO `sys_audit_log` VALUES (1420, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:35:17');
+INSERT INTO `sys_audit_log` VALUES (1421, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:35:18');
+INSERT INTO `sys_audit_log` VALUES (1422, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:35:29');
+INSERT INTO `sys_audit_log` VALUES (1423, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:35:30');
+INSERT INTO `sys_audit_log` VALUES (1424, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件上传', '2', NULL, '{\"id\":2,\"createBy\":1,\"createTime\":\"2026-09-22T16:35:40.0791158\",\"updateBy\":1,\"updateTime\":\"2026-09-22T16:35:40.0791158\",\"isDelete\":null,\"companyId\":0,\"bizType\":\"hr_entry\",\"bizId\":0,\"fileKey\":\"0/hr_entry/20260922/a6b68d1bee424c6096115656482802e3.png\",\"md5\":\"de94fe45239ad0e8eded1b34d2d42052\",\"fileName\":\"23.png\",\"fileSize\":41662,\"fileType\":\"image/png\",\"fileExt\":\"png\",\"storageType\":\"local\"}', NULL, '2026-09-22 16:35:40');
+INSERT INTO `sys_audit_log` VALUES (1425, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:39:31');
+INSERT INTO `sys_audit_log` VALUES (1426, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:39:32');
+INSERT INTO `sys_audit_log` VALUES (1427, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:39:46');
+INSERT INTO `sys_audit_log` VALUES (1428, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:39:46');
+INSERT INTO `sys_audit_log` VALUES (1429, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:39:56');
+INSERT INTO `sys_audit_log` VALUES (1430, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:39:56');
+INSERT INTO `sys_audit_log` VALUES (1431, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件上传', '3', NULL, '{\"id\":3,\"createBy\":1,\"createTime\":\"2026-09-22T16:40:06.3583074\",\"updateBy\":1,\"updateTime\":\"2026-09-22T16:40:06.3583074\",\"isDelete\":null,\"companyId\":0,\"bizType\":\"hr_entry\",\"bizId\":0,\"fileKey\":\"0/hr_entry/20260922/0c00ecfec7454982a86162fd16a1153f.png\",\"md5\":\"de94fe45239ad0e8eded1b34d2d42052\",\"fileName\":\"23.png\",\"fileSize\":41662,\"fileType\":\"image/png\",\"fileExt\":\"png\",\"storageType\":\"local\"}', NULL, '2026-09-22 16:40:06');
+INSERT INTO `sys_audit_log` VALUES (1432, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:41:27');
+INSERT INTO `sys_audit_log` VALUES (1433, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:41:28');
+INSERT INTO `sys_audit_log` VALUES (1434, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:41:55');
+INSERT INTO `sys_audit_log` VALUES (1435, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:41:55');
+INSERT INTO `sys_audit_log` VALUES (1436, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件上传', '4', NULL, '{\"id\":4,\"createBy\":1,\"createTime\":\"2026-09-22T16:42:02.773708\",\"updateBy\":1,\"updateTime\":\"2026-09-22T16:42:02.773708\",\"isDelete\":null,\"companyId\":0,\"bizType\":\"hr_entry\",\"bizId\":0,\"fileKey\":\"0/hr_entry/20260922/d7db3cca19184886b98433e8d5df4e54.png\",\"md5\":\"de94fe45239ad0e8eded1b34d2d42052\",\"fileName\":\"23.png\",\"fileSize\":41662,\"fileType\":\"image/png\",\"fileExt\":\"png\",\"storageType\":\"local\"}', NULL, '2026-09-22 16:42:03');
+INSERT INTO `sys_audit_log` VALUES (1437, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:46:12');
+INSERT INTO `sys_audit_log` VALUES (1438, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:46:12');
+INSERT INTO `sys_audit_log` VALUES (1439, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:47:55');
+INSERT INTO `sys_audit_log` VALUES (1440, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:47:55');
+INSERT INTO `sys_audit_log` VALUES (1441, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件上传', '5', NULL, '{\"id\":5,\"createBy\":1,\"createTime\":\"2026-09-22T16:48:05.1339967\",\"updateBy\":1,\"updateTime\":\"2026-09-22T16:48:05.1339967\",\"isDelete\":null,\"companyId\":0,\"bizType\":\"hr_entry\",\"bizId\":0,\"fileKey\":\"0/hr_entry/20260922/0bf9243a9a264b009ed56c1c8b911938.png\",\"md5\":\"de94fe45239ad0e8eded1b34d2d42052\",\"fileName\":\"23.png\",\"fileSize\":41662,\"fileType\":\"image/png\",\"fileExt\":\"png\",\"storageType\":\"local\"}', NULL, '2026-09-22 16:48:05');
+INSERT INTO `sys_audit_log` VALUES (1442, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:52:54');
+INSERT INTO `sys_audit_log` VALUES (1443, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:52:54');
+INSERT INTO `sys_audit_log` VALUES (1444, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:54:11');
+INSERT INTO `sys_audit_log` VALUES (1445, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:54:12');
+INSERT INTO `sys_audit_log` VALUES (1446, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:06');
+INSERT INTO `sys_audit_log` VALUES (1447, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:06');
+INSERT INTO `sys_audit_log` VALUES (1448, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:15');
+INSERT INTO `sys_audit_log` VALUES (1449, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:16');
+INSERT INTO `sys_audit_log` VALUES (1450, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:39');
+INSERT INTO `sys_audit_log` VALUES (1451, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:39');
+INSERT INTO `sys_audit_log` VALUES (1452, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:53');
+INSERT INTO `sys_audit_log` VALUES (1453, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:53');
+INSERT INTO `sys_audit_log` VALUES (1454, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:54');
+INSERT INTO `sys_audit_log` VALUES (1455, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:57:54');
+INSERT INTO `sys_audit_log` VALUES (1456, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:59:19');
+INSERT INTO `sys_audit_log` VALUES (1457, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 16:59:19');
+INSERT INTO `sys_audit_log` VALUES (1458, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:00:08');
+INSERT INTO `sys_audit_log` VALUES (1459, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:00:08');
+INSERT INTO `sys_audit_log` VALUES (1460, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:00:20');
+INSERT INTO `sys_audit_log` VALUES (1461, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:00:21');
+INSERT INTO `sys_audit_log` VALUES (1462, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:06:43');
+INSERT INTO `sys_audit_log` VALUES (1463, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:06:43');
+INSERT INTO `sys_audit_log` VALUES (1464, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:14:07');
+INSERT INTO `sys_audit_log` VALUES (1465, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:14:07');
+INSERT INTO `sys_audit_log` VALUES (1466, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:14:22');
+INSERT INTO `sys_audit_log` VALUES (1467, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:14:22');
+INSERT INTO `sys_audit_log` VALUES (1468, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件上传', '6', NULL, '{\"id\":6,\"createBy\":1,\"createTime\":\"2026-09-22T17:14:43.167176\",\"updateBy\":1,\"updateTime\":\"2026-09-22T17:14:43.167176\",\"isDelete\":null,\"companyId\":0,\"bizType\":\"hr_entry\",\"bizId\":0,\"fileKey\":\"0/hr_entry/20260922/91c032c9c25645ea97fc849a71d0ed7f.png\",\"md5\":\"de94fe45239ad0e8eded1b34d2d42052\",\"fileName\":\"23.png\",\"fileSize\":41662,\"fileType\":\"image/png\",\"fileExt\":\"png\",\"storageType\":\"local\"}', NULL, '2026-09-22 17:14:43');
+INSERT INTO `sys_audit_log` VALUES (1469, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:15:22');
+INSERT INTO `sys_audit_log` VALUES (1470, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:15:23');
+INSERT INTO `sys_audit_log` VALUES (1471, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件上传', '7', NULL, '{\"id\":7,\"createBy\":1,\"createTime\":\"2026-09-22T17:15:42.2308204\",\"updateBy\":1,\"updateTime\":\"2026-09-22T17:15:42.2308204\",\"isDelete\":null,\"companyId\":0,\"bizType\":\"hr_entry\",\"bizId\":0,\"fileKey\":\"0/hr_entry/20260922/5e30be41091b4771af4b5bc963b18322.png\",\"md5\":\"de94fe45239ad0e8eded1b34d2d42052\",\"fileName\":\"23.png\",\"fileSize\":41662,\"fileType\":\"image/png\",\"fileExt\":\"png\",\"storageType\":\"local\"}', NULL, '2026-09-22 17:15:42');
+INSERT INTO `sys_audit_log` VALUES (1472, 0, 1, '集团超级管理员', '127.0.0.1', 'flow_engine', '提交', '23', NULL, '{\"id\":23,\"createBy\":1,\"createTime\":\"2026-09-22T17:15:48.1464338\",\"updateBy\":1,\"updateTime\":\"2026-09-22T17:15:48.1464338\",\"isDelete\":null,\"companyId\":0,\"instanceNo\":\"FL202609221715484465\",\"defId\":10,\"defName\":\"入职申请审批\",\"bizType\":\"hr_entry\",\"sourceType\":\"hr_entry_apply\",\"sourceId\":\"16\",\"title\":\"8号员工 入职申请\",\"applyUserId\":1,\"applyUserName\":\"集团超级管理员\",\"instanceStatus\":0,\"currentNodeName\":\"子公司经理审批\",\"currentHandlers\":\"[1]\",\"submitTime\":\"2026-09-22T17:15:48.1421279\",\"finishTime\":null}', NULL, '2026-09-22 17:15:48');
+INSERT INTO `sys_audit_log` VALUES (1473, 0, 1, '集团超级管理员', '127.0.0.1', 'hr_transfer', '提交', '16', NULL, '{\"id\":16,\"createBy\":1,\"createTime\":\"2026-09-22T17:15:48.0863845\",\"updateBy\":1,\"updateTime\":\"2026-09-22T17:15:48.0863845\",\"isDelete\":null,\"companyId\":0,\"employeeNo\":\"0008\",\"name\":\"8号员工\",\"idCardNo\":null,\"phone\":null,\"gender\":null,\"birthdate\":null,\"entryDate\":\"2026-09-22\",\"employmentType\":1,\"orgId\":null,\"postId\":null,\"basicSalary\":null,\"bankAccount\":null,\"autoCreateUser\":0,\"flowInstanceId\":23,\"status\":1,\"remark\":\"\",\"experienceData\":\"{\\\"workExps\\\":[],\\\"eduExps\\\":[]}\",\"photoFileId\":null,\"attachmentContent\":\"<p><img src=\\\"/upload/0/hr_entry/20260922/5e30be41091b4771af4b5bc963b18322.png\\\" alt=\\\"\\\" data-href=\\\"\\\" style=\\\"\\\"/>测试测试</p>\"}', NULL, '2026-09-22 17:15:48');
+INSERT INTO `sys_audit_log` VALUES (1474, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:15:49');
+INSERT INTO `sys_audit_log` VALUES (1475, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:15:52');
+INSERT INTO `sys_audit_log` VALUES (1476, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:15:53');
+INSERT INTO `sys_audit_log` VALUES (1477, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:21:56');
+INSERT INTO `sys_audit_log` VALUES (1478, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:21:56');
+INSERT INTO `sys_audit_log` VALUES (1479, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:41:54');
+INSERT INTO `sys_audit_log` VALUES (1480, 0, 1, '集团超级管理员', '127.0.0.1', 'file', '文件预览', '1', NULL, NULL, NULL, '2026-09-22 17:41:54');
+INSERT INTO `sys_audit_log` VALUES (1481, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-28 15:39:06');
+INSERT INTO `sys_audit_log` VALUES (1482, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-28 15:39:06');
+INSERT INTO `sys_audit_log` VALUES (1483, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:39:09');
+INSERT INTO `sys_audit_log` VALUES (1484, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:39:16');
+INSERT INTO `sys_audit_log` VALUES (1485, 0, 0, '', '0:0:0:0:0:0:0:1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-28 15:42:13');
+INSERT INTO `sys_audit_log` VALUES (1486, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:44:04');
+INSERT INTO `sys_audit_log` VALUES (1487, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:47:53');
+INSERT INTO `sys_audit_log` VALUES (1488, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:51:25');
+INSERT INTO `sys_audit_log` VALUES (1489, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:51:28');
+INSERT INTO `sys_audit_log` VALUES (1490, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:51:30');
+INSERT INTO `sys_audit_log` VALUES (1491, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:51:37');
+INSERT INTO `sys_audit_log` VALUES (1492, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 15:52:40');
+INSERT INTO `sys_audit_log` VALUES (1493, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-28 16:37:58');
+INSERT INTO `sys_audit_log` VALUES (1494, 0, 0, '', '127.0.0.1', 'base', '登录', '1', NULL, NULL, NULL, '2026-09-29 11:07:47');
+INSERT INTO `sys_audit_log` VALUES (1495, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 11:08:48');
+INSERT INTO `sys_audit_log` VALUES (1496, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 11:08:48');
+INSERT INTO `sys_audit_log` VALUES (1497, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 11:08:51');
+INSERT INTO `sys_audit_log` VALUES (1498, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 11:08:53');
+INSERT INTO `sys_audit_log` VALUES (1499, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 11:08:53');
+INSERT INTO `sys_audit_log` VALUES (1500, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 11:08:57');
+INSERT INTO `sys_audit_log` VALUES (1501, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 11:08:57');
+INSERT INTO `sys_audit_log` VALUES (1502, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 11:08:57');
+INSERT INTO `sys_audit_log` VALUES (1503, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 11:09:01');
+INSERT INTO `sys_audit_log` VALUES (1504, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 11:09:01');
+INSERT INTO `sys_audit_log` VALUES (1505, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 11:19:40');
+INSERT INTO `sys_audit_log` VALUES (1506, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 11:19:41');
+INSERT INTO `sys_audit_log` VALUES (1507, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 13:43:24');
+INSERT INTO `sys_audit_log` VALUES (1508, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 13:43:24');
+INSERT INTO `sys_audit_log` VALUES (1509, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 14:20:16');
+INSERT INTO `sys_audit_log` VALUES (1510, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 14:20:16');
+INSERT INTO `sys_audit_log` VALUES (1511, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 14:20:18');
+INSERT INTO `sys_audit_log` VALUES (1512, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 14:20:18');
+INSERT INTO `sys_audit_log` VALUES (1513, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 14:20:19');
+INSERT INTO `sys_audit_log` VALUES (1514, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 14:20:19');
+INSERT INTO `sys_audit_log` VALUES (1515, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 14:20:20');
+INSERT INTO `sys_audit_log` VALUES (1516, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 14:20:25');
+INSERT INTO `sys_audit_log` VALUES (1517, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 14:20:25');
+INSERT INTO `sys_audit_log` VALUES (1518, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 14:20:26');
+INSERT INTO `sys_audit_log` VALUES (1519, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 14:20:27');
+INSERT INTO `sys_audit_log` VALUES (1520, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:04:53');
+INSERT INTO `sys_audit_log` VALUES (1521, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:11:51');
+INSERT INTO `sys_audit_log` VALUES (1522, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:11:53');
+INSERT INTO `sys_audit_log` VALUES (1523, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:11:55');
+INSERT INTO `sys_audit_log` VALUES (1524, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:13:29');
+INSERT INTO `sys_audit_log` VALUES (1525, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:13:32');
+INSERT INTO `sys_audit_log` VALUES (1526, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 15:13:56');
+INSERT INTO `sys_audit_log` VALUES (1527, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 15:13:57');
+INSERT INTO `sys_audit_log` VALUES (1528, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:13:57');
+INSERT INTO `sys_audit_log` VALUES (1529, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 15:13:58');
+INSERT INTO `sys_audit_log` VALUES (1530, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 15:13:58');
+INSERT INTO `sys_audit_log` VALUES (1531, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:15:19');
+INSERT INTO `sys_audit_log` VALUES (1532, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:34:40');
+INSERT INTO `sys_audit_log` VALUES (1533, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:34:43');
+INSERT INTO `sys_audit_log` VALUES (1534, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:34:44');
+INSERT INTO `sys_audit_log` VALUES (1535, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:35:06');
+INSERT INTO `sys_audit_log` VALUES (1536, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:44:55');
+INSERT INTO `sys_audit_log` VALUES (1537, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:45:00');
+INSERT INTO `sys_audit_log` VALUES (1538, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:45:03');
+INSERT INTO `sys_audit_log` VALUES (1539, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:45:16');
+INSERT INTO `sys_audit_log` VALUES (1540, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:46:00');
+INSERT INTO `sys_audit_log` VALUES (1541, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:46:07');
+INSERT INTO `sys_audit_log` VALUES (1542, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:46:08');
+INSERT INTO `sys_audit_log` VALUES (1543, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:46:08');
+INSERT INTO `sys_audit_log` VALUES (1544, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 15:46:09');
+INSERT INTO `sys_audit_log` VALUES (1545, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:29:05');
+INSERT INTO `sys_audit_log` VALUES (1546, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:30:41');
+INSERT INTO `sys_audit_log` VALUES (1547, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:30:44');
+INSERT INTO `sys_audit_log` VALUES (1548, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:30:44');
+INSERT INTO `sys_audit_log` VALUES (1549, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:30:45');
+INSERT INTO `sys_audit_log` VALUES (1550, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:30:56');
+INSERT INTO `sys_audit_log` VALUES (1551, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:31:01');
+INSERT INTO `sys_audit_log` VALUES (1552, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:31:05');
+INSERT INTO `sys_audit_log` VALUES (1553, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:31:07');
+INSERT INTO `sys_audit_log` VALUES (1554, 0, 1, '集团超级管理员', '127.0.0.1', 'hr', '加班补偿核算', '2026-09', NULL, NULL, NULL, '2026-09-29 16:31:11');
+INSERT INTO `sys_audit_log` VALUES (1555, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:31:13');
+INSERT INTO `sys_audit_log` VALUES (1556, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:31:17');
+INSERT INTO `sys_audit_log` VALUES (1557, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 16:32:15');
+INSERT INTO `sys_audit_log` VALUES (1558, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:04:00');
+INSERT INTO `sys_audit_log` VALUES (1559, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:05:32');
+INSERT INTO `sys_audit_log` VALUES (1560, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:05:33');
+INSERT INTO `sys_audit_log` VALUES (1561, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:05:34');
+INSERT INTO `sys_audit_log` VALUES (1562, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:05:35');
+INSERT INTO `sys_audit_log` VALUES (1563, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:06:04');
+INSERT INTO `sys_audit_log` VALUES (1564, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:06:26');
+INSERT INTO `sys_audit_log` VALUES (1565, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:06:26');
+INSERT INTO `sys_audit_log` VALUES (1566, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:00');
+INSERT INTO `sys_audit_log` VALUES (1567, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:03');
+INSERT INTO `sys_audit_log` VALUES (1568, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:11');
+INSERT INTO `sys_audit_log` VALUES (1569, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:14');
+INSERT INTO `sys_audit_log` VALUES (1570, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:14');
+INSERT INTO `sys_audit_log` VALUES (1571, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 17:55:23');
+INSERT INTO `sys_audit_log` VALUES (1572, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 17:55:23');
+INSERT INTO `sys_audit_log` VALUES (1573, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:29');
+INSERT INTO `sys_audit_log` VALUES (1574, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:29');
+INSERT INTO `sys_audit_log` VALUES (1575, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 17:55:39');
+INSERT INTO `sys_audit_log` VALUES (1576, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 17:55:39');
+INSERT INTO `sys_audit_log` VALUES (1577, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 17:55:40');
+INSERT INTO `sys_audit_log` VALUES (1578, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '1', NULL, NULL, NULL, '2026-09-29 17:55:40');
+INSERT INTO `sys_audit_log` VALUES (1579, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:46');
+INSERT INTO `sys_audit_log` VALUES (1580, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:55:46');
+INSERT INTO `sys_audit_log` VALUES (1581, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:01');
+INSERT INTO `sys_audit_log` VALUES (1582, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:06');
+INSERT INTO `sys_audit_log` VALUES (1583, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:07');
+INSERT INTO `sys_audit_log` VALUES (1584, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:07');
+INSERT INTO `sys_audit_log` VALUES (1585, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:11');
+INSERT INTO `sys_audit_log` VALUES (1586, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:14');
+INSERT INTO `sys_audit_log` VALUES (1587, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:14');
+INSERT INTO `sys_audit_log` VALUES (1588, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:16');
+INSERT INTO `sys_audit_log` VALUES (1589, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:49');
+INSERT INTO `sys_audit_log` VALUES (1590, 0, 1, '集团超级管理员', '127.0.0.1', 'file', 'file_preview', '13', NULL, NULL, NULL, '2026-09-29 17:56:49');
 
 -- ----------------------------
 -- Table structure for sys_city
@@ -3619,6 +4502,7 @@ CREATE TABLE `sys_city`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `city_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '城市编码，如 BJ/GZ/SZ',
   `city_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '城市名称，如 北京/广州/深圳',
+  `min_wage` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '当月最低工资标准（元），0表示未配置不执行保护',
   `province` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '省份',
   `sort` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0停用 1启用',
@@ -3635,15 +4519,15 @@ CREATE TABLE `sys_city`  (
 -- ----------------------------
 -- Records of sys_city
 -- ----------------------------
-INSERT INTO `sys_city` VALUES (1, 'QD', '青岛', '山东', 1, 1, '计划单列市', 0, '2026-09-13 19:47:42', NULL, '2026-09-14 00:11:12', 0);
-INSERT INTO `sys_city` VALUES (2, 'BJ', '北京', '北京', 1, 1, '直辖市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
-INSERT INTO `sys_city` VALUES (3, 'SH', '上海', '上海', 2, 1, '直辖市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
-INSERT INTO `sys_city` VALUES (4, 'GZ', '广州', '广东', 3, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
-INSERT INTO `sys_city` VALUES (5, 'SZ', '深圳', '广东', 4, 1, '特区', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
-INSERT INTO `sys_city` VALUES (6, 'HZ', '杭州', '浙江', 5, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
-INSERT INTO `sys_city` VALUES (7, 'NJ', '南京', '江苏', 6, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
-INSERT INTO `sys_city` VALUES (8, 'CD', '成都', '四川', 7, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
-INSERT INTO `sys_city` VALUES (9, 'WH', '武汉', '湖北', 8, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (1, 'QD', '青岛', 0.00, '山东', 1, 1, '计划单列市', 0, '2026-09-13 19:47:42', NULL, '2026-09-14 00:11:12', 0);
+INSERT INTO `sys_city` VALUES (2, 'BJ', '北京', 0.00, '北京', 1, 1, '直辖市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (3, 'SH', '上海', 0.00, '上海', 2, 1, '直辖市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (4, 'GZ', '广州', 0.00, '广东', 3, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (5, 'SZ', '深圳', 0.00, '广东', 4, 1, '特区', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (6, 'HZ', '杭州', 0.00, '浙江', 5, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (7, 'NJ', '南京', 0.00, '江苏', 6, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (8, 'CD', '成都', 0.00, '四川', 7, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
+INSERT INTO `sys_city` VALUES (9, 'WH', '武汉', 0.00, '湖北', 8, 1, '省会城市', 0, '2026-09-14 00:25:15', NULL, '2026-09-14 00:25:15', 0);
 
 -- ----------------------------
 -- Table structure for sys_client_device_auth
@@ -3690,7 +4574,7 @@ CREATE TABLE `sys_config`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_config_key_company`(`config_key` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统参数配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 69 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统参数配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_config
@@ -3714,6 +4598,53 @@ INSERT INTO `sys_config` VALUES (18, 0, 'hr.salary.rule.require_audit', '1', '�
 INSERT INTO `sys_config` VALUES (19, 0, 'device.auth.enabled', 'true', '客户端设备校验开关', '开启后登录需校验设备授权', 0, '2026-09-14 10:44:25', 1, '2026-09-14 14:27:14', 0);
 INSERT INTO `sys_config` VALUES (20, 0, 'device.auth.rsa_private_key', '', '设备校验RSA私钥', 'PEM格式私钥，仅后端使用', 0, '2026-09-14 10:44:25', NULL, NULL, 0);
 INSERT INTO `sys_config` VALUES (21, 0, 'device.auth.rsa_public_key', '', '设备校验RSA公钥', 'PEM格式公钥，用于验签', 0, '2026-09-14 10:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (22, 0, 'file.storage.type', 'local', '文件存储类型', '枚举：local / alioss / tianyoss，仅集团管理员可修改。生产环境必须使用云存储', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (23, 0, 'file.max-size', '20', '文件最大上传大小(MB)', '单个文件最大上传大小，单位MB', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (24, 0, 'file.aes-key', '', '文件加密密钥', 'AES加密密钥，用于加密存储云存储AK/SK，通过环境变量注入，禁止硬编码', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (25, 0, 'file.oss-alibaba.endpoint', '', '阿里云OSS Endpoint', '示例：oss-cn-hangzhou.aliyuncs.com，请在控制台获取', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (26, 0, 'file.oss-alibaba.bucket', '', '阿里云OSS Bucket名称', '请在控制台获取', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (27, 0, 'file.oss-alibaba.access-key', '', '阿里云OSS AccessKey', '加密存储，禁止明文日志打印', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (28, 0, 'file.oss-alibaba.secret-key', '', '阿里云OSS SecretKey', '加密存储，禁止明文日志打印', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (29, 0, 'file.oss-alibaba.domain', '', '阿里云OSS CDN域名', '示例：https://cdn.example.com，私有桶必填', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (30, 0, 'file.oss-tianyi.endpoint', '', '天翼云ZOS Endpoint', '示例：https://cos.ap-nanjing.myhwclouds.com', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (31, 0, 'file.oss-tianyi.bucket', '', '天翼云ZOS Bucket名称', '请在控制台获取', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (32, 0, 'file.oss-tianyi.access-key', '', '天翼云ZOS AccessKey', '加密存储，禁止明文日志打印', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (33, 0, 'file.oss-tianyi.secret-key', '', '天翼云ZOS SecretKey', '加密存储，禁止明文日志打印', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (34, 0, 'file.oss-tianyi.domain', '', '天翼云ZOS CDN域名', '示例：https://cdn.example.com，私有桶必填', 0, '2026-09-21 14:44:25', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (35, 0, 'attendance.late_threshold', '30', '迟到认定阈值', '超过此分钟数认定为迟到，默认30分钟', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (36, 0, 'attendance.absent_threshold', '480', '旷工认定阈值', '迟到超过此分钟数（8小时）认定为旷工，默认480分钟', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (37, 0, 'attendance.early_threshold', '30', '早退认定阈值', '早退超过此分钟数认定为早退，默认30分钟', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (38, 0, 'attendance.normal_clockin_start', '08:30', '正常打卡上班时间', '此时间前打卡为正常，默认08:30', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (39, 0, 'attendance.normal_clockout_end', '18:30', '正常打卡下班时间', '此时间后打卡为正常，默认18:30', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (40, 0, 'attendance.absent_reminder_threshold', '3', '连续缺卡提醒阈值', '连续缺卡超过此天数触发异常提醒，默认3天', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (41, 0, 'attendance.late_frequent_threshold', '5', '月度迟到频繁阈值', '月迟到超过此次数标记为频繁，默认5次', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (42, 0, 'attendance.shift_morning_start', '08:00', '早班上班时间', '早班正常打卡时间上限，默认08:00', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (43, 0, 'attendance.shift_morning_end', '17:00', '早班下班时间', '早班正常打卡时间下限，默认17:00', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (44, 0, 'attendance.shift_evening_start', '14:00', '晚班上班时间', '晚班正常打卡时间上限，默认14:00', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (45, 0, 'attendance.shift_evening_end', '23:00', '晚班下班时间', '晚班正常打卡时间下限，默认23:00', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (46, 0, 'attendance.shift_night_start', '22:00', '夜班上班时间', '夜班正常打卡时间上限，默认22:00', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (47, 0, 'attendance.shift_night_end', '07:00', '夜班下班时间', '夜班正常打卡时间下限（次日），默认07:00', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (48, 0, 'attendance.exempt_enabled', '1', '免考勤功能开关', '0关闭 1启用，控制是否允许设置免考勤员工', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (49, 0, 'attendance.reminder_enabled', '1', '考勤异常提醒开关', '0关闭 1启用', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (50, 0, 'attendance.reminder_method', 'system', '异常提醒方式', 'system=系统消息 wechat=企业微信 email=邮件', 0, '2026-09-27 17:26:11', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (51, 0, 'wecom.sync.attendance.enabled', '0', '打卡数据同步开关', '默认关闭，上线后手动开启', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (52, 0, 'wecom.sync.contact.enabled', '0', '通讯录同步开关', '默认关闭，上线后手动开启', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (53, 0, 'wecom.sync.attendance.cron', '0 0 1 * * ?', '打卡同步Cron表达式', '每日凌晨1点执行', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (54, 0, 'wecom.sync.contact.cron', '0 0 2 * * ?', '通讯录同步Cron表达式', '每日凌晨2点执行', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (55, 0, 'wecom.api.timeout.connect', '5000', 'API连接超时(ms)', '默认5秒', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (56, 0, 'wecom.api.timeout.read', '10000', 'API读取超时(ms)', '默认10秒', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (57, 0, 'wecom.api.retry.count', '3', '重试次数', '失败自动重试', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (58, 0, 'wecom.api.retry.delay.seconds', '2', '重试间隔(秒)', '指数退避基础间隔', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (59, 0, 'wecom.agent.approval.id', '1000001', '审批通知AgentId', '在企微管理后台获取', 1, '2026-09-29 12:34:41', NULL, '2026-09-29 13:42:43', 0);
+INSERT INTO `sys_config` VALUES (60, 0, 'wecom.agent.attendance.id', '1000002', '考勤提醒AgentId', '在企微管理后台获取', 1, '2026-09-29 12:34:41', NULL, '2026-09-29 13:42:43', 0);
+INSERT INTO `sys_config` VALUES (61, 0, 'wecom.agent.salary.id', '1000004', '薪资通知AgentId', '在企微管理后台获取', 1, '2026-09-29 12:34:41', NULL, '2026-09-29 13:42:43', 0);
+INSERT INTO `sys_config` VALUES (62, 0, 'wecom.message.approval.enabled', '1', '审批消息通知开关', '默认开启', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (63, 0, 'wecom.message.attendance.enabled', '1', '考勤异常通知开关', '默认开启', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (64, 0, 'wecom.message.salary.enabled', '0', '薪资通知开关', '默认关闭', 1, '2026-09-29 12:34:41', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (65, 0, 'wecom.agent.overtime.id', '1000003', '加班应用AgentId', '企微加班审批应用ID', 1, '2026-09-29 13:02:56', NULL, '2026-09-29 13:42:43', 0);
+INSERT INTO `sys_config` VALUES (66, 0, 'wecom.corp_id', 'ww1234567890abcdef', '企业微信企业ID', '企业微信企业管理后台获取', 1, '2026-09-29 13:42:43', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (67, 0, 'wecom.callback.url', 'https://your-domain.com/api/wecom/callback', '消息回调URL', '需公网可访问，HTTP+HTTPS均可', 1, '2026-09-29 13:42:43', NULL, NULL, 0);
+INSERT INTO `sys_config` VALUES (68, 0, 'wecom.web_url', 'https://your-domain.com', '系统Web地址', '用于消息中的跳转链接', 1, '2026-09-29 13:42:43', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for sys_dict_data
@@ -3782,10 +4713,81 @@ CREATE TABLE `sys_ding_sync_record`  (
   `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id`(`company_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '钉钉同步记录表【预留，一期不执行业务写入】' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '钉钉同步记录表【预留，一期不执行业务写入】' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_ding_sync_record
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_file
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_file`;
+CREATE TABLE `sys_file`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户ID，0=集团全局',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '业务类型：contract/oa/hr/finance/property/audit等',
+  `biz_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '关联业务单据ID',
+  `file_key` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '跨存储统一相对路径唯一标识（不含域名）',
+  `md5` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '文件MD5值，用于去重提示和完整性校验',
+  `file_name` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '原始文件名（含后缀）',
+  `file_size` bigint(20) NOT NULL DEFAULT 0 COMMENT '文件大小（字节）',
+  `file_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'MIME类型，如 image/png application/pdf',
+  `file_ext` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '文件后缀，如 jpg pdf',
+  `storage_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'local' COMMENT '存储类型快照（审计追溯用，运行时不以此为驱动依据）',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0=正常 1=已删除',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人user_id',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人user_id',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_company_file_key`(`company_id` ASC, `file_key` ASC) USING BTREE,
+  INDEX `idx_company_biz`(`company_id` ASC, `biz_type` ASC, `biz_id` ASC) USING BTREE,
+  INDEX `idx_md5`(`md5` ASC) USING BTREE,
+  INDEX `idx_create_time`(`create_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统文件记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_file
+-- ----------------------------
+INSERT INTO `sys_file` VALUES (1, 0, 'hr_entry', 0, '0/hr_entry/20260921/f3f04141e622496eab70496bd777a7de.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-21 17:49:45', 1, '2026-09-21 17:49:45');
+INSERT INTO `sys_file` VALUES (2, 0, 'hr_entry', 0, '0/hr_entry/20260922/a6b68d1bee424c6096115656482802e3.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-22 16:35:40', 1, '2026-09-22 16:35:40');
+INSERT INTO `sys_file` VALUES (3, 0, 'hr_entry', 0, '0/hr_entry/20260922/0c00ecfec7454982a86162fd16a1153f.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-22 16:40:06', 1, '2026-09-22 16:40:06');
+INSERT INTO `sys_file` VALUES (4, 0, 'hr_entry', 0, '0/hr_entry/20260922/d7db3cca19184886b98433e8d5df4e54.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-22 16:42:03', 1, '2026-09-22 16:42:03');
+INSERT INTO `sys_file` VALUES (5, 0, 'hr_entry', 0, '0/hr_entry/20260922/0bf9243a9a264b009ed56c1c8b911938.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-22 16:48:05', 1, '2026-09-22 16:48:05');
+INSERT INTO `sys_file` VALUES (6, 0, 'hr_entry', 0, '0/hr_entry/20260922/91c032c9c25645ea97fc849a71d0ed7f.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-22 17:14:43', 1, '2026-09-22 17:14:43');
+INSERT INTO `sys_file` VALUES (7, 0, 'hr_entry', 0, '0/hr_entry/20260922/5e30be41091b4771af4b5bc963b18322.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-22 17:15:42', 1, '2026-09-22 17:15:42');
+INSERT INTO `sys_file` VALUES (8, 0, 'hr_employee', 0, '0/hr_employee/20260923/b6eb81671e624e17878cd9646325d13c.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-23 10:07:14', 1, '2026-09-23 10:07:14');
+INSERT INTO `sys_file` VALUES (9, 0, 'hr_employee', 0, '0/hr_employee/20260923/703013588cc44dae82a7586f6c918dd9.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-23 10:07:16', 1, '2026-09-23 10:07:16');
+INSERT INTO `sys_file` VALUES (10, 0, 'hr_employee', 0, '0/hr_employee/20260923/b0832260ba4e4851996940f1f493d081.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-23 10:08:02', 1, '2026-09-23 10:08:02');
+INSERT INTO `sys_file` VALUES (11, 0, 'hr_employee', 0, '0/hr_employee/20260923/7cb1b4132e1c48ea9547fea648d42165.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-23 10:08:04', 1, '2026-09-23 10:08:04');
+INSERT INTO `sys_file` VALUES (12, 0, 'hr_employee', 0, '0/hr_employee/20260923/3883163157da4714a36e324e8a471828.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-23 10:21:45', 1, '2026-09-23 10:21:45');
+INSERT INTO `sys_file` VALUES (13, 0, 'hr_employee', 0, '0/hr_employee/20260923/f2ca848887584dea8c4b00825f534839.png', 'de94fe45239ad0e8eded1b34d2d42052', '23.png', 41662, 'image/png', 'png', 'local', 0, 1, '2026-09-23 10:21:49', 1, '2026-09-23 10:21:49');
+
+-- ----------------------------
+-- Table structure for sys_holiday_config
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_holiday_config`;
+CREATE TABLE `sys_holiday_config`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团全局',
+  `holiday_date` date NOT NULL COMMENT '节假日日期',
+  `holiday_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '节假日名称',
+  `holiday_type` tinyint(4) NOT NULL COMMENT '类型：1法定假日 2调休日 3补班日',
+  `is_workday` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否为工作日 0否 1是（补班日）',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0禁用 1启用',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_date`(`holiday_date` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '法定节假日配置表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_holiday_config
 -- ----------------------------
 
 -- ----------------------------
@@ -3891,13 +4893,13 @@ CREATE TABLE `sys_menu`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 187 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限菜单表（集团全局）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 260 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限菜单表（集团全局）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
 -- ----------------------------
 INSERT INTO `sys_menu` VALUES (1, 0, '中台管理', NULL, '/org', 'office-building', 1, 1, 1, 1, '2026-08-18 12:51:36', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (2, 0, '系统设置', NULL, '/sys', 'setting', 2, 1, 1, 1, '2026-08-18 12:51:36', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (2, 1, '系统设置', NULL, '/sys', 'setting', 2, 1, 1, 1, '2026-08-18 12:51:36', NULL, '2026-09-21 10:06:00', 0);
 INSERT INTO `sys_menu` VALUES (3, 1, '组织管理', 'org:list', '/org', 'office-building', 1, 2, 1, 1, '2026-08-18 12:51:36', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (4, 1, '用户管理', 'user:list', '/org/user', 'user', 2, 2, 1, 1, '2026-08-18 12:51:36', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (5, 1, '角色管理', 'role:list', '/org/role', 'avatar', 3, 2, 1, 1, '2026-08-18 12:51:36', NULL, NULL, 0);
@@ -3932,10 +4934,10 @@ INSERT INTO `sys_menu` VALUES (33, 9, '主题保存', 'theme:edit', NULL, NULL, 
 INSERT INTO `sys_menu` VALUES (34, 10, '日志导出', 'audit:export', NULL, NULL, 1, 3, 0, 1, '2026-08-18 12:51:36', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (35, 11, '复核处理', 'permission:audit:audit', NULL, NULL, 1, 3, 0, 1, '2026-08-18 12:51:36', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (36, 0, '物业管理', NULL, '/property', 'Odometer', 3, 1, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 16:38:27', 0);
-INSERT INTO `sys_menu` VALUES (37, 36, '水电表管理', 'waterElec:list', '/property/meter', 'Cpu', 1, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 16:38:27', 0);
-INSERT INTO `sys_menu` VALUES (38, 36, '水电费账单', 'waterElec:bill:list', '/property/bill', 'Document', 2, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-24 07:28:31', 0);
+INSERT INTO `sys_menu` VALUES (37, 36, '水电表管理', 'waterElec:list', '/property/meter', 'Cpu', 1, 2, 1, 1, '2026-08-18 15:53:31', 1, '2026-09-21 10:06:00', 0);
+INSERT INTO `sys_menu` VALUES (38, 36, '水电费账单', 'waterElec:bill:list', '/property/bill', 'Document', 2, 2, 1, 1, '2026-08-18 15:53:31', 1, '2026-09-21 10:06:00', 0);
 INSERT INTO `sys_menu` VALUES (40, 0, '财务管理', NULL, '/finance', 'Money', 4, 1, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
-INSERT INTO `sys_menu` VALUES (41, 40, '财务流水', 'finance:flow:list', '/finance/flow', 'List', 1, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
+INSERT INTO `sys_menu` VALUES (41, 40, '财务流水', 'finance:flow:list', '/finance/flow', 'List', 1, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-09-21 09:20:46', 0);
 INSERT INTO `sys_menu` VALUES (42, 40, '营收统计', 'finance:report:list', '/finance/report', 'TrendCharts', 2, 2, 1, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (43, 37, '设备新增', 'waterElec:add', NULL, NULL, 1, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (44, 37, '设备编辑', 'waterElec:edit', NULL, NULL, 2, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
@@ -3946,7 +4948,7 @@ INSERT INTO `sys_menu` VALUES (48, 38, '生成账单', 'waterElec:bill:generate'
 INSERT INTO `sys_menu` VALUES (51, 41, '流水导出', 'finance:flow:export', NULL, NULL, 1, 3, 0, 1, '2026-08-18 15:53:31', NULL, '2026-08-18 15:54:22', 0);
 INSERT INTO `sys_menu` VALUES (52, 36, '租户管理', 'tenant:list', '/property/tenant', 'User', 1, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (53, 36, '租赁管理', NULL, '/property/lease', 'Goods', 2, 1, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (54, 53, '摊位管理', 'lease:stall:list', '/property/lease/stall', 'OfficeBuilding', 1, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (54, 53, '铺位管理', 'lease:stall:list', '/property/lease/stall', 'OfficeBuilding', 1, 2, 1, 1, '2026-08-18 16:38:27', NULL, '2026-09-21 10:06:00', 0);
 INSERT INTO `sys_menu` VALUES (55, 53, '租赁分类', 'lease:category:list', '/property/lease/category', 'Menu', 2, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (56, 53, '合同管理', 'lease:contract:list', '/property/lease/contract', 'Document', 3, 2, 1, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (57, 52, '租户新增', 'tenant:add', NULL, NULL, 1, 3, 0, 1, '2026-08-18 16:38:27', NULL, NULL, 0);
@@ -4011,21 +5013,17 @@ INSERT INTO `sys_menu` VALUES (119, 109, '编辑岗位', 'hr:org:post:edit', NUL
 INSERT INTO `sys_menu` VALUES (120, 109, '删除岗位', 'hr:org:post:delete', NULL, NULL, 3, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (121, 110, '入职申请', 'hr:entry:add', NULL, NULL, 1, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (122, 110, '离职申请', 'hr:resign:add', NULL, NULL, 2, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (123, 111, '同步考勤', 'hr:attendance:sync', NULL, NULL, 1, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (124, 111, '导出', 'hr:attendance:export', NULL, NULL, 2, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (123, 233, '同步考勤', 'hr:attendance:sync', NULL, NULL, 1, 3, 0, 1, '2026-08-25 17:51:45', NULL, '2026-09-27 18:42:25', 0);
+INSERT INTO `sys_menu` VALUES (124, 233, '导出', 'hr:attendance:export', NULL, NULL, 2, 3, 0, 1, '2026-08-25 17:51:45', NULL, '2026-09-27 18:42:28', 0);
 INSERT INTO `sys_menu` VALUES (125, 112, '生成核算', 'hr:salary:month:generate', NULL, NULL, 1, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (126, 112, '薪资发放', 'hr:salary:month:pay', NULL, NULL, 2, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (127, 112, '导出', 'hr:salary:month:export', NULL, NULL, 3, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (128, 113, '新增', 'hr:social:add', NULL, NULL, 1, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (129, 113, '编辑', 'hr:social:edit', NULL, NULL, 2, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (130, 113, '删除', 'hr:social:delete', NULL, NULL, 3, 3, 0, 1, '2026-08-25 17:51:45', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (131, 40, '优惠阈值配置', 'discount:threshold:list', '/finance/discountThreshold', 'config', 10, 2, 1, 0, '2026-09-06 12:23:10', NULL, '2026-09-11 15:29:01', 0);
-INSERT INTO `sys_menu` VALUES (132, 131, '新增', 'discount:threshold:add', NULL, NULL, 1, 3, 1, 0, '2026-09-06 12:23:10', NULL, '2026-09-11 15:29:01', 0);
-INSERT INTO `sys_menu` VALUES (133, 131, '编辑', 'discount:threshold:edit', NULL, NULL, 2, 3, 1, 0, '2026-09-06 12:23:10', NULL, '2026-09-11 15:29:01', 0);
-INSERT INTO `sys_menu` VALUES (134, 131, '删除', 'discount:threshold:delete', NULL, NULL, 3, 3, 1, 0, '2026-09-06 12:23:10', NULL, '2026-09-11 15:29:01', 0);
 INSERT INTO `sys_menu` VALUES (135, 112, '薪酬级别', 'hr:salary:grade:list', '/hr/salary/grade', 'Rank', 6, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (136, 112, '薪资模板', 'hr:salary:rule:list', '/hr/salary/rule', 'EditPen', 7, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (137, 112, '薪资档案v2', 'hr:salary:archive:list', '/hr/salary/archive', 'DocumentChecked', 8, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (137, 112, '薪资档案', 'hr:salary:archive:list', '/hr/salary', 'DocumentChecked', 8, 2, 1, 1, '2026-09-11 15:29:28', 1, '2026-09-22 13:20:44', 0);
 INSERT INTO `sys_menu` VALUES (138, 112, '批量调薪', 'hr:salary:batch:list', '/hr/salary/batchAdjust', 'Sort', 9, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (139, 112, '年终奖管理', 'hr:salary:yearBonus:list', '/hr/salary/yearBonus', 'Present', 10, 2, 1, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (148, 135, '新增', 'hr:salary:grade:add', NULL, NULL, 1, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
@@ -4040,33 +5038,97 @@ INSERT INTO `sys_menu` VALUES (156, 138, '提交审批', 'hr:salary:batch:submit
 INSERT INTO `sys_menu` VALUES (157, 139, '新增', 'hr:salary:yearBonus:add', NULL, NULL, 1, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (158, 139, '编辑', 'hr:salary:yearBonus:edit', NULL, NULL, 2, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (159, 139, '提交审批', 'hr:salary:yearBonus:submit', NULL, NULL, 3, 3, 0, 1, '2026-09-11 15:29:28', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (160, 8, '城市字典', 'hr:city:list', '/platform/city', 'Location', 1, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (161, 8, '险种字典', 'hr:insurance:list', '/platform/insuranceType', 'Tickets', 2, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (162, 8, '行业字典', 'hr:industry:list', '/platform/industry', 'Briefcase', 3, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (163, 8, '社保参数配置', 'hr:social:param:list', '/platform/socialParam', 'Setting', 4, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (164, 8, '公积金参数配置', 'hr:housing:fund:list', '/platform/housingFundConfig', 'Coin', 5, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (160, 207, '城市字典', 'hr:city:list', '/platform/city', 'Location', 1, 2, 1, 0, '2026-09-13 19:47:38', NULL, '2026-09-21 10:06:00', 0);
+INSERT INTO `sys_menu` VALUES (161, 207, '险种字典', 'hr:insurance:list', '/platform/insuranceType', 'Tickets', 2, 2, 1, 0, '2026-09-13 19:47:38', NULL, '2026-09-21 10:06:00', 0);
+INSERT INTO `sys_menu` VALUES (162, 207, '行业字典', 'hr:industry:list', '/platform/industry', 'Briefcase', 3, 2, 1, 0, '2026-09-13 19:47:38', NULL, '2026-09-21 10:06:00', 0);
+INSERT INTO `sys_menu` VALUES (163, 207, '社保参数配置', 'hr:social:param:list', '/platform/socialParam', 'Setting', 4, 2, 1, 0, '2026-09-13 19:47:38', NULL, '2026-09-21 10:06:00', 0);
+INSERT INTO `sys_menu` VALUES (164, 207, '公积金参数配置', 'hr:housing:fund:list', '/platform/housingFundConfig', 'Coin', 5, 2, 1, 0, '2026-09-13 19:47:38', NULL, '2026-09-21 10:06:00', 0);
 INSERT INTO `sys_menu` VALUES (165, 113, '社保核算明细', 'hr:social:calc:list', '/hr/socialCalc', 'Document', 1, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
 INSERT INTO `sys_menu` VALUES (166, 113, '年度基数重算', 'hr:recalc:trigger', '/hr/annualRecalc', 'Refresh', 2, 2, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (167, 160, '新增', 'hr:city:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (168, 160, '编辑', 'hr:city:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (169, 160, '删除', 'hr:city:delete', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (170, 161, '新增', 'hr:insurance:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (171, 161, '编辑', 'hr:insurance:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (172, 161, '删除', 'hr:insurance:delete', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (173, 162, '新增', 'hr:industry:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (174, 162, '编辑', 'hr:industry:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (175, 162, '删除', 'hr:industry:delete', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (176, 163, '新增', 'hr:social:param:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (177, 163, '编辑', 'hr:social:param:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (178, 163, '激活', 'hr:social:param:activate', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (179, 163, '停用', 'hr:social:param:deactivate', '', '', 4, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (180, 163, '删除', 'hr:social:param:delete', '', '', 5, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (181, 164, '新增', 'hr:housing:fund:add', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (182, 164, '编辑', 'hr:housing:fund:edit', '', '', 2, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (183, 164, '激活', 'hr:housing:fund:activate', '', '', 3, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (184, 164, '删除', 'hr:housing:fund:delete', '', '', 4, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (185, 165, '导出', 'hr:social:calc:export', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
-INSERT INTO `sys_menu` VALUES (186, 166, '执行重算', 'hr:recalc:execute', '', '', 1, 3, 1, 0, '2026-09-13 19:47:38', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (167, 160, '新增', 'hr:city:add', '', '', 1, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (168, 160, '编辑', 'hr:city:edit', '', '', 2, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (169, 160, '删除', 'hr:city:delete', '', '', 3, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (170, 161, '新增', 'hr:insurance:add', '', '', 1, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (171, 161, '编辑', 'hr:insurance:edit', '', '', 2, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (172, 161, '删除', 'hr:insurance:delete', '', '', 3, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (173, 162, '新增', 'hr:industry:add', '', '', 1, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (174, 162, '编辑', 'hr:industry:edit', '', '', 2, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (175, 162, '删除', 'hr:industry:delete', '', '', 3, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (176, 163, '新增', 'hr:social:param:add', '', '', 1, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (177, 163, '编辑', 'hr:social:param:edit', '', '', 2, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (178, 163, '激活', 'hr:social:param:activate', '', '', 3, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (179, 163, '停用', 'hr:social:param:deactivate', '', '', 4, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (180, 163, '删除', 'hr:social:param:delete', '', '', 5, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (181, 164, '新增', 'hr:housing:fund:add', '', '', 1, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (182, 164, '编辑', 'hr:housing:fund:edit', '', '', 2, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (183, 164, '激活', 'hr:housing:fund:activate', '', '', 3, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (184, 164, '删除', 'hr:housing:fund:delete', '', '', 4, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (185, 165, '导出', 'hr:social:calc:export', '', '', 1, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (186, 166, '执行重算', 'hr:recalc:execute', '', '', 1, 3, 0, 0, '2026-09-13 19:47:38', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (187, 1, '设备授权管理', 'device:auth:list', '/platform/deviceAuth', 'Lock', 16, 2, 1, 0, '2026-09-20 13:09:32', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (188, 0, 'OA办公', NULL, '/oa', 'Notebook', 4, 1, 1, 0, '2026-09-20 13:09:32', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (189, 188, '公告管理', 'oa:announcement:list', '/oa/announcement', 'Bell', 1, 2, 1, 0, '2026-09-20 13:09:32', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (190, 188, '会议室管理', 'oa:meeting-room:list', '/oa/meetingRoom', 'Calendar', 2, 2, 1, 0, '2026-09-20 13:09:32', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (191, 188, '打卡管理', 'oa:clock:list', '/oa/clock', 'Watch', 3, 2, 1, 0, '2026-09-20 13:09:32', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (192, 188, '工作汇报', 'oa:work-report:list', '/oa/workReport', 'Files', 4, 2, 1, 0, '2026-09-20 13:09:32', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (193, 36, '物业费账单', '', '/property/feeBill', 'Money', 3, 2, 1, 0, '2026-09-20 13:09:32', 1, '2026-09-24 09:19:40', 1);
+INSERT INTO `sys_menu` VALUES (194, 36, '物业费账单', 'property:feeBill:list', '/property/feeBill/list', 'Document', 1, 2, 1, 0, '2026-09-20 13:09:32', 1, '2026-09-24 08:52:17', 0);
+INSERT INTO `sys_menu` VALUES (195, 36, '未支付订单', 'property:unpaidBill:list', '/property/unpaidBill', 'Wallet', 4, 2, 1, 0, '2026-09-20 13:09:32', NULL, '2026-09-21 10:06:00', 0);
+INSERT INTO `sys_menu` VALUES (196, 36, '缴费管理', 'waterElec:pay:list', '/property/meter/pay', 'Money', 3, 2, 1, 0, '2026-09-20 13:10:30', 1, '2026-09-24 08:51:17', 0);
+INSERT INTO `sys_menu` VALUES (197, 188, '请假管理', 'oa:leave:list', '/oa/leave', 'Document', 5, 2, 1, 0, '2026-09-20 13:10:30', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (198, 188, '会议室预约', 'oa:meeting:booking:list', '/oa/meetingBooking', 'Calendar', 6, 2, 1, 0, '2026-09-20 13:10:30', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (199, 36, '缴费管理', 'property:feePay:list', '/property/feePay', 'Money', 5, 2, 1, 0, '2026-09-20 13:10:30', 1, '2026-09-21 13:45:40', 1);
+INSERT INTO `sys_menu` VALUES (200, 196, '在线缴费', 'waterElec:pay:add', NULL, NULL, 1, 3, 0, 0, '2026-09-20 13:10:59', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (201, 196, '退费处理', 'waterElec:pay:refund', NULL, NULL, 2, 3, 0, 0, '2026-09-20 13:10:59', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (202, 197, '新增申请', 'oa:leave:add', NULL, NULL, 1, 3, 0, 0, '2026-09-20 13:10:59', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (203, 53, '铺位画布', 'lease:stall:canvas', '/property/lease/stall/canvas', 'Coordinate', 4, 2, 1, 0, '2026-09-21 10:06:00', 1, '2026-09-21 13:35:27', 0);
+INSERT INTO `sys_menu` VALUES (204, 40, '缴费明细单', 'finance:payOrder:list', '/finance/payOrder', 'DocumentChecked', 8, 2, 1, 0, '2026-09-21 10:06:00', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (207, 1, '社保参数', NULL, '/platform/socialParam', 'Setting', 10, 1, 1, 0, '2026-09-21 10:06:00', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (208, 110, '撤销入职', 'hr:entry:revoke', NULL, NULL, 2, 3, 0, 1, '2026-09-23 21:23:43', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (210, 110, '新增转正', 'hr:regular:add', NULL, NULL, 1, 3, 0, 1, '2026-09-23 21:23:43', NULL, '2026-09-23 21:32:37', 0);
+INSERT INTO `sys_menu` VALUES (211, 110, '撤销转正', 'hr:regular:revoke', NULL, NULL, 2, 3, 0, 1, '2026-09-23 21:23:43', NULL, '2026-09-23 21:32:37', 0);
+INSERT INTO `sys_menu` VALUES (213, 110, '新增调岗', 'hr:transfer:add', NULL, NULL, 1, 3, 0, 1, '2026-09-23 21:23:43', NULL, '2026-09-23 21:32:37', 0);
+INSERT INTO `sys_menu` VALUES (214, 110, '撤销调岗', 'hr:transfer:revoke', NULL, NULL, 2, 3, 0, 1, '2026-09-23 21:23:43', NULL, '2026-09-23 21:32:37', 0);
+INSERT INTO `sys_menu` VALUES (217, 110, '撤销离职', 'hr:resign:revoke', NULL, NULL, 2, 3, 0, 1, '2026-09-23 21:23:43', NULL, '2026-09-23 21:32:37', 0);
+INSERT INTO `sys_menu` VALUES (218, 137, '提交审批', 'hr:salary:archive:submit', NULL, NULL, 1, 3, 0, 1, '2026-09-23 21:23:43', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (219, 137, '审批通过', 'hr:salary:archive:approve', NULL, NULL, 2, 3, 0, 1, '2026-09-23 21:23:43', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (220, 112, '待处理档案', 'hr:salary:month:pending', NULL, NULL, 4, 3, 0, 1, '2026-09-23 21:23:43', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (221, 137, '待审批档案', 'hr:salary:pending:archive', NULL, NULL, 3, 3, 0, 1, '2026-09-23 21:23:43', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (222, 136, '按岗位查询', 'hr:salary:rule:listByPost', NULL, NULL, 5, 3, 0, 1, '2026-09-23 21:23:43', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (223, 111, '考勤异常管理', 'hr:attendance:exception:view', '/hr/attendance/exception', 'Bell', 1, 3, 0, 1, '2026-09-27 17:40:02', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (225, 111, '同步预览', 'hr:attendance:preview', NULL, '', 3, 3, 0, 1, '2026-09-27 17:40:02', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (226, 111, '异常查看', 'hr:attendance:exception:view', NULL, '', 4, 3, 0, 1, '2026-09-27 17:40:02', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (227, 111, '异常处理', 'hr:attendance:exception:handle', NULL, '', 5, 3, 0, 1, '2026-09-27 17:40:02', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (229, 226, '参数编辑', 'hr:config:attendance:edit', NULL, '', 1, 3, 0, 1, '2026-09-27 17:40:02', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (230, 226, '班次配置', 'hr:config:shift', NULL, '', 2, 3, 0, 1, '2026-09-27 17:40:02', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (231, 226, '休息日配置', 'hr:config:workweek', NULL, '', 3, 3, 0, 1, '2026-09-27 17:40:02', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (232, 226, '节假日配置', 'hr:config:holiday', NULL, '', 4, 3, 0, 1, '2026-09-27 17:40:02', NULL, '2026-09-28 08:21:33', 0);
+INSERT INTO `sys_menu` VALUES (234, 0, '企微配置管理', 'wecom:config:list', NULL, NULL, 99, 1, 0, 1, '2026-09-29 12:34:47', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (235, 234, '基础配置', 'wecom:config:view', NULL, NULL, 1, 2, 0, 1, '2026-09-29 12:34:47', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (236, 234, '同步记录', 'wecom:sync:view', NULL, NULL, 2, 2, 0, 1, '2026-09-29 12:34:47', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (237, 234, '消息记录', 'wecom:message:view', NULL, NULL, 3, 2, 0, 1, '2026-09-29 12:34:47', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (238, 234, '编辑配置', 'wecom:config:edit', NULL, NULL, 1, 3, 0, 1, '2026-09-29 12:34:47', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (239, 234, '刷新Token', 'wecom:token:refresh', NULL, NULL, 2, 3, 0, 1, '2026-09-29 12:34:47', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (240, 234, '手动触发同步', 'wecom:sync:trigger', NULL, NULL, 3, 3, 0, 1, '2026-09-29 12:34:47', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (241, 234, '导出同步记录', 'wecom:sync:export', NULL, NULL, 4, 3, 0, 1, '2026-09-29 12:34:47', NULL, NULL, 0);
+INSERT INTO `sys_menu` VALUES (242, 107, '加班管理', 'hr:overtime:list', '', 'Clock', 99, 1, 1, 1, '2026-09-29 13:03:08', 1, '2026-09-29 14:54:21', 0);
+INSERT INTO `sys_menu` VALUES (243, 242, '加班申请', 'hr:overtime:apply:list', '/hr/overtime/apply', 'Document', 1, 2, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:54:33', 0);
+INSERT INTO `sys_menu` VALUES (244, 242, '加班记录', 'hr:overtime:record:list', '/hr/overtime/record', 'List', 2, 2, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:54:37', 0);
+INSERT INTO `sys_menu` VALUES (245, 242, '加班补偿', 'hr:overtime:compensate:list', '/hr/overtime/compensate', 'Money', 3, 2, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:54:42', 0);
+INSERT INTO `sys_menu` VALUES (246, 242, '加班配置', 'hr:overtime:config:list', '/hr/overtime/config', 'Setting', 4, 2, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:54:44', 0);
+INSERT INTO `sys_menu` VALUES (247, 242, '新增加班申请', 'hr:overtime:apply:add', NULL, NULL, 1, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (248, 242, '编辑加班申请', 'hr:overtime:apply:edit', NULL, NULL, 2, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (249, 242, '删除加班申请', 'hr:overtime:apply:delete', NULL, NULL, 3, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (250, 242, '撤回加班申请', 'hr:overtime:apply:revoke', NULL, NULL, 4, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (251, 242, '确认加班记录', 'hr:overtime:record:confirm', NULL, NULL, 1, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (252, 242, '驳回加班记录', 'hr:overtime:record:reject', NULL, NULL, 2, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (253, 242, '触发自动识别', 'hr:overtime:record:detect', NULL, NULL, 3, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (254, 242, '导出加班记录', 'hr:overtime:record:export', NULL, NULL, 4, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (255, 242, '核算加班补偿', 'hr:overtime:compensate:calculate', NULL, NULL, 1, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (256, 242, '发放加班费', 'hr:overtime:compensate:pay', NULL, NULL, 2, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (257, 242, '导出补偿明细', 'hr:overtime:compensate:export', NULL, NULL, 3, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (258, 242, '保存配置', 'hr:overtime:config:save', NULL, NULL, 1, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
+INSERT INTO `sys_menu` VALUES (259, 242, '启用/禁用', 'hr:overtime:config:status', NULL, NULL, 2, 3, 1, 1, '2026-09-29 13:03:08', NULL, '2026-09-29 14:49:45', 0);
 
 -- ----------------------------
 -- Table structure for sys_org
@@ -4077,7 +5139,8 @@ CREATE TABLE `sys_org`  (
   `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属子公司ID，0集团总公司',
   `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '上级组织ID',
   `org_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '组织部门名称',
-  `org_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '组织类型：1集团 2子公司 3部门',
+  `org_type` tinyint(4) NOT NULL COMMENT '组织类型：1=集团 2=子公司 3=部门 4=科室/班组',
+  `default_workweek_config_id` bigint(20) NULL DEFAULT 1 COMMENT '默认休息日配置ID',
   `sort_order` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态0禁用1启用',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
@@ -4088,23 +5151,65 @@ CREATE TABLE `sys_org`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 27 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '组织部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 36 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '组织部门表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_org
 -- ----------------------------
-INSERT INTO `sys_org` VALUES (1, 0, 0, '琰越控股集团', 1, 1, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (2, 0, 1, '总经办', 3, 1, 1, 1, '2026-08-21 09:20:52', 1, '2026-09-07 11:10:43', 0);
-INSERT INTO `sys_org` VALUES (3, 0, 1, '财务部', 3, 2, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (4, 0, 1, '人力资源部', 3, 3, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (5, 0, 1, '技术中心', 3, 4, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
-INSERT INTO `sys_org` VALUES (6, 1, 1, '飞宇汽车城', 2, 5, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:07', 0);
-INSERT INTO `sys_org` VALUES (7, 1, 6, '飞宇‑销售部', 3, 1, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:10', 0);
-INSERT INTO `sys_org` VALUES (8, 1, 6, '飞宇‑运维部', 3, 2, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:13', 0);
-INSERT INTO `sys_org` VALUES (9, 1, 6, '飞宇‑综合管理部', 3, 3, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:15', 0);
-INSERT INTO `sys_org` VALUES (10, 2, 1, '幼儿园', 2, 6, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:19', 0);
-INSERT INTO `sys_org` VALUES (11, 2, 10, '幼儿园‑业务部', 3, 1, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:22', 0);
-INSERT INTO `sys_org` VALUES (12, 2, 10, '幼儿园‑后勤保障部', 3, 2, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:25', 0);
+INSERT INTO `sys_org` VALUES (1, 0, 0, '琰越控股集团', 1, 1, 1, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (2, 0, 1, '总经办', 3, 1, 1, 1, 1, '2026-08-21 09:20:52', 1, '2026-09-07 11:10:43', 0);
+INSERT INTO `sys_org` VALUES (3, 0, 1, '财务部', 3, 1, 2, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (4, 0, 1, '人力资源部', 3, 1, 3, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (5, 0, 1, '技术中心', 3, 1, 4, 1, 1, '2026-08-21 09:20:52', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (6, 1, 1, '飞宇汽车城', 2, 1, 5, 1, 1, '2026-08-21 09:20:52', 1, '2026-09-07 10:04:07', 0);
+INSERT INTO `sys_org` VALUES (7, 1, 6, '飞宇‑销售部', 3, 1, 1, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:10', 0);
+INSERT INTO `sys_org` VALUES (8, 1, 6, '飞宇‑运维部', 3, 1, 2, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:13', 0);
+INSERT INTO `sys_org` VALUES (9, 1, 6, '飞宇‑综合管理部', 3, 1, 3, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:15', 0);
+INSERT INTO `sys_org` VALUES (10, 2, 1, '幼儿园', 2, 1, 6, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:19', 0);
+INSERT INTO `sys_org` VALUES (11, 2, 10, '幼儿园‑业务部', 3, 1, 1, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:22', 0);
+INSERT INTO `sys_org` VALUES (12, 2, 10, '幼儿园‑后勤保障部', 3, 1, 2, 1, 1, '2026-08-21 09:20:52', NULL, '2026-09-07 10:04:25', 0);
+INSERT INTO `sys_org` VALUES (27, 0, 2, '总经办科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (28, 0, 3, '财务部科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (29, 0, 4, '人力资源部科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (30, 0, 5, '技术中心科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (31, 1, 7, '飞宇‑销售部科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (32, 1, 8, '飞宇‑运维部科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (33, 1, 9, '飞宇‑综合管理部科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (34, 2, 11, '幼儿园‑业务部科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+INSERT INTO `sys_org` VALUES (35, 2, 12, '幼儿园‑后勤保障部科室', 4, 1, 999, 1, 0, '2026-09-17 10:46:40', NULL, NULL, 0);
+
+-- ----------------------------
+-- Table structure for sys_overtime_config
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_overtime_config`;
+CREATE TABLE `sys_overtime_config`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团全局',
+  `config_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '配置名称',
+  `overtime_min_hours` decimal(5, 2) NOT NULL DEFAULT 0.50 COMMENT '最小加班时长（小时）',
+  `overtime_round_mode` tinyint(4) NOT NULL DEFAULT 1 COMMENT '时长取整模式 1向上取整 2四舍五入 3向下取整',
+  `workday_rate` decimal(5, 2) NOT NULL DEFAULT 1.50 COMMENT '工作日加班倍数',
+  `restday_rate` decimal(5, 2) NOT NULL DEFAULT 2.00 COMMENT '休息日加班倍数',
+  `holiday_rate` decimal(5, 2) NOT NULL DEFAULT 3.00 COMMENT '法定节假日加班倍数',
+  `max_overtime_hours` decimal(5, 2) NULL DEFAULT NULL COMMENT '每月最大加班时长上限（NULL表示不限）',
+  `compensate_priority` tinyint(4) NOT NULL DEFAULT 1 COMMENT '补偿优先级 1调休优先 2加班费优先',
+  `auto_detect_enabled` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否启用自动识别 0否 1是',
+  `auto_detect_cron` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '0 0 22 * * ?' COMMENT '自动识别Cron表达式',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0禁用 1启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人ID',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_company_id`(`company_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '加班配置表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_overtime_config
+-- ----------------------------
+INSERT INTO `sys_overtime_config` VALUES (1, 0, '集团默认加班配置', 0.50, 1, 1.50, 2.00, 3.00, NULL, 1, 0, '0 0 22 * * ?', 1, '默认配置，可根据子公司需求调整', 1, '2026-09-29 13:02:43', 1, '2026-09-29 15:13:27', 0);
 
 -- ----------------------------
 -- Table structure for sys_permission_audit
@@ -4149,17 +5254,17 @@ CREATE TABLE `sys_role`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_role_code_company`(`role_code` ASC, `company_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role
 -- ----------------------------
 INSERT INTO `sys_role` VALUES (1, 0, '超级管理员', 'super_admin', '集团中台专属角色，拥有全部权限', 1, '2026-08-18 12:51:36', NULL, NULL, 0);
 INSERT INTO `sys_role` VALUES (2, 0, '审计员', 'auditor', '审计日志查看/导出与权限复核审批角色', 1, '2026-08-18 12:51:36', NULL, NULL, 0);
-INSERT INTO `sys_role` VALUES (3, 1, 'test', 'test1', '', 1, '2026-09-07 12:39:05', 1, '2026-09-07 12:39:05', 0);
 INSERT INTO `sys_role` VALUES (4, 0, '子公司经理', 'sub_manager', '子公司经理审批角色，用于OA请假/合同等流程节点', 1, '2026-09-10 19:53:15', NULL, NULL, 0);
 INSERT INTO `sys_role` VALUES (5, 0, '财务管理员', 'finance_admin', '财务审批角色，用于大额优惠/冲红等流程节点', 1, '2026-09-10 19:53:15', NULL, NULL, 0);
 INSERT INTO `sys_role` VALUES (6, 0, '集团财务', 'group_finance', '集团财务复核角色，用于合同终止等流程节点', 1, '2026-09-10 19:53:15', NULL, NULL, 0);
+INSERT INTO `sys_role` VALUES (7, 0, '业务操作员', 'business_operator', '默认业务操作员角色，拥有所有业务模块操作权限，无系统管理权限', 1, '2026-09-20 12:30:14', NULL, NULL, 0);
 
 -- ----------------------------
 -- Table structure for sys_role_menu_rel
@@ -4172,164 +5277,526 @@ CREATE TABLE `sys_role_menu_rel`  (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_role_menu`(`role_id` ASC, `menu_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 253 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色菜单权限关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1942 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色菜单权限关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role_menu_rel
 -- ----------------------------
-INSERT INTO `sys_role_menu_rel` VALUES (1, 1, 1, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (2, 1, 2, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (3, 1, 3, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (4, 1, 4, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (5, 1, 5, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (6, 1, 6, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (7, 1, 7, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (8, 1, 8, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (9, 1, 9, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (10, 1, 10, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (11, 1, 11, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (12, 1, 12, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (13, 1, 13, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (14, 1, 14, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (15, 1, 15, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (16, 1, 16, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (17, 1, 17, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (18, 1, 18, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (19, 1, 19, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (20, 1, 20, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (21, 1, 21, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (22, 1, 22, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (23, 1, 23, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (24, 1, 24, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (25, 1, 25, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (26, 1, 26, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (27, 1, 27, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (28, 1, 28, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (29, 1, 29, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (30, 1, 30, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (31, 1, 31, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (32, 1, 32, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (33, 1, 33, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (34, 1, 34, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (35, 1, 35, '2026-08-18 12:51:36');
-INSERT INTO `sys_role_menu_rel` VALUES (64, 1, 36, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (65, 1, 37, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (66, 1, 38, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (68, 1, 40, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (69, 1, 41, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (70, 1, 42, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (71, 1, 43, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (72, 1, 44, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (73, 1, 45, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (74, 1, 46, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (75, 1, 47, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (76, 1, 48, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (79, 1, 51, '2026-08-18 15:53:31');
-INSERT INTO `sys_role_menu_rel` VALUES (95, 1, 52, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (96, 1, 53, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (97, 1, 54, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (98, 1, 55, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (99, 1, 56, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (100, 1, 57, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (101, 1, 58, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (102, 1, 59, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (103, 1, 60, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (104, 1, 61, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (105, 1, 62, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (106, 1, 63, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (107, 1, 64, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (108, 1, 65, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (109, 1, 66, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (110, 1, 67, '2026-08-18 16:38:27');
-INSERT INTO `sys_role_menu_rel` VALUES (126, 1, 68, '2026-08-18 18:17:04');
-INSERT INTO `sys_role_menu_rel` VALUES (127, 1, 69, '2026-08-18 18:17:04');
-INSERT INTO `sys_role_menu_rel` VALUES (128, 1, 70, '2026-08-18 18:17:04');
-INSERT INTO `sys_role_menu_rel` VALUES (129, 1, 71, '2026-08-18 18:17:04');
-INSERT INTO `sys_role_menu_rel` VALUES (130, 1, 72, '2026-08-19 12:24:43');
-INSERT INTO `sys_role_menu_rel` VALUES (131, 1, 73, '2026-08-19 12:24:43');
-INSERT INTO `sys_role_menu_rel` VALUES (132, 1, 74, '2026-08-19 12:24:43');
-INSERT INTO `sys_role_menu_rel` VALUES (133, 1, 75, '2026-08-19 12:24:43');
-INSERT INTO `sys_role_menu_rel` VALUES (134, 1, 76, '2026-08-19 12:24:43');
-INSERT INTO `sys_role_menu_rel` VALUES (135, 1, 77, '2026-08-19 12:24:43');
-INSERT INTO `sys_role_menu_rel` VALUES (136, 1, 78, '2026-08-19 12:24:43');
-INSERT INTO `sys_role_menu_rel` VALUES (137, 1, 79, '2026-08-19 12:24:43');
-INSERT INTO `sys_role_menu_rel` VALUES (145, 1, 80, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (146, 1, 81, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (147, 1, 82, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (148, 1, 83, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (149, 1, 84, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (150, 1, 85, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (151, 1, 86, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (152, 1, 87, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (153, 1, 88, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (154, 1, 89, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (155, 1, 90, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (156, 1, 91, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (157, 1, 92, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (158, 1, 93, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (159, 1, 94, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (160, 1, 95, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (161, 1, 96, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (162, 1, 97, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (163, 1, 98, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (164, 1, 99, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (165, 1, 100, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (166, 1, 101, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (167, 1, 102, '2026-08-20 13:42:31');
-INSERT INTO `sys_role_menu_rel` VALUES (168, 1, 107, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (169, 1, 108, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (170, 1, 109, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (171, 1, 110, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (172, 1, 111, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (173, 1, 112, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (174, 1, 113, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (175, 1, 114, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (176, 1, 115, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (177, 1, 116, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (178, 1, 117, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (179, 1, 118, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (180, 1, 119, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (181, 1, 120, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (182, 1, 121, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (183, 1, 122, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (184, 1, 123, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (185, 1, 124, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (186, 1, 125, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (187, 1, 126, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (188, 1, 127, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (189, 1, 128, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (190, 1, 129, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (191, 1, 130, '2026-08-25 17:55:15');
-INSERT INTO `sys_role_menu_rel` VALUES (195, 2, 37, '2026-09-07 12:26:16');
-INSERT INTO `sys_role_menu_rel` VALUES (196, 2, 43, '2026-09-07 12:26:16');
-INSERT INTO `sys_role_menu_rel` VALUES (197, 2, 44, '2026-09-07 12:26:16');
-INSERT INTO `sys_role_menu_rel` VALUES (198, 2, 45, '2026-09-07 12:26:16');
-INSERT INTO `sys_role_menu_rel` VALUES (199, 2, 46, '2026-09-07 12:26:16');
-INSERT INTO `sys_role_menu_rel` VALUES (200, 2, 47, '2026-09-07 12:26:16');
-INSERT INTO `sys_role_menu_rel` VALUES (201, 2, 36, '2026-09-07 12:26:16');
-INSERT INTO `sys_role_menu_rel` VALUES (214, 3, 37, '2026-09-07 12:54:12');
-INSERT INTO `sys_role_menu_rel` VALUES (215, 3, 52, '2026-09-07 12:54:12');
-INSERT INTO `sys_role_menu_rel` VALUES (216, 1, 131, '2026-09-11 15:27:47');
-INSERT INTO `sys_role_menu_rel` VALUES (217, 1, 132, '2026-09-11 15:27:47');
-INSERT INTO `sys_role_menu_rel` VALUES (218, 1, 133, '2026-09-11 15:27:47');
-INSERT INTO `sys_role_menu_rel` VALUES (219, 1, 134, '2026-09-11 15:27:47');
-INSERT INTO `sys_role_menu_rel` VALUES (236, 1, 135, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (237, 1, 136, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (238, 1, 137, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (239, 1, 138, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (240, 1, 139, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (241, 1, 148, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (242, 1, 149, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (243, 1, 150, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (244, 1, 151, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (245, 1, 152, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (246, 1, 153, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (247, 1, 154, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (248, 1, 155, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (249, 1, 156, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (250, 1, 157, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (251, 1, 158, '2026-09-11 15:29:28');
-INSERT INTO `sys_role_menu_rel` VALUES (252, 1, 159, '2026-09-11 15:29:28');
+INSERT INTO `sys_role_menu_rel` VALUES (253, 5, 41, '2026-09-16 16:02:54');
+INSERT INTO `sys_role_menu_rel` VALUES (254, 5, 42, '2026-09-16 16:02:54');
+INSERT INTO `sys_role_menu_rel` VALUES (255, 5, 72, '2026-09-16 16:02:54');
+INSERT INTO `sys_role_menu_rel` VALUES (256, 5, 76, '2026-09-16 16:02:54');
+INSERT INTO `sys_role_menu_rel` VALUES (257, 5, 80, '2026-09-16 16:02:54');
+INSERT INTO `sys_role_menu_rel` VALUES (258, 5, 86, '2026-09-16 16:02:54');
+INSERT INTO `sys_role_menu_rel` VALUES (259, 5, 90, '2026-09-16 16:02:54');
+INSERT INTO `sys_role_menu_rel` VALUES (1411, 7, 3, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1412, 7, 12, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1413, 7, 13, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1414, 7, 14, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1415, 7, 207, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1416, 7, 160, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1417, 7, 167, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1418, 7, 168, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1419, 7, 169, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1420, 7, 161, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1421, 7, 170, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1422, 7, 171, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1423, 7, 172, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1424, 7, 162, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1425, 7, 173, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1426, 7, 174, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1427, 7, 175, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1428, 7, 163, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1429, 7, 176, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1430, 7, 177, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1431, 7, 178, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1432, 7, 179, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1433, 7, 180, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1434, 7, 164, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1435, 7, 181, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1436, 7, 182, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1437, 7, 183, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1438, 7, 184, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1439, 7, 210, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1440, 7, 213, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1441, 7, 208, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1442, 7, 211, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1443, 7, 214, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1444, 7, 217, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1445, 7, 220, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1446, 7, 222, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1447, 7, 137, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1448, 7, 218, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1449, 7, 219, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1450, 7, 221, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1451, 7, 204, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1452, 7, 1, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1453, 7, 107, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1454, 7, 110, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1455, 7, 112, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1456, 7, 136, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1457, 7, 40, '2026-09-24 08:55:22');
+INSERT INTO `sys_role_menu_rel` VALUES (1458, 6, 207, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1459, 6, 160, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1460, 6, 167, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1461, 6, 168, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1462, 6, 169, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1463, 6, 161, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1464, 6, 170, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1465, 6, 171, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1466, 6, 172, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1467, 6, 162, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1468, 6, 173, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1469, 6, 174, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1470, 6, 175, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1471, 6, 163, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1472, 6, 176, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1473, 6, 177, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1474, 6, 178, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1475, 6, 179, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1476, 6, 180, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1477, 6, 164, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1478, 6, 181, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1479, 6, 182, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1480, 6, 183, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1481, 6, 184, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1482, 6, 210, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1483, 6, 213, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1484, 6, 208, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1485, 6, 211, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1486, 6, 214, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1487, 6, 217, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1488, 6, 220, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1489, 6, 222, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1490, 6, 137, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1491, 6, 218, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1492, 6, 219, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1493, 6, 221, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1494, 6, 40, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1495, 6, 41, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1496, 6, 51, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1497, 6, 42, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1498, 6, 72, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1499, 6, 73, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1500, 6, 74, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1501, 6, 75, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1502, 6, 76, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1503, 6, 77, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1504, 6, 78, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1505, 6, 79, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1506, 6, 80, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1507, 6, 81, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1508, 6, 82, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1509, 6, 83, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1510, 6, 84, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1511, 6, 85, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1512, 6, 86, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1513, 6, 87, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1514, 6, 88, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1515, 6, 89, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1516, 6, 90, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1517, 6, 91, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1518, 6, 204, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1519, 6, 1, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1520, 6, 107, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1521, 6, 110, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1522, 6, 112, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1523, 6, 136, '2026-09-24 08:55:49');
+INSERT INTO `sys_role_menu_rel` VALUES (1524, 2, 1, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1525, 2, 3, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1526, 2, 12, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1527, 2, 13, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1528, 2, 14, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1529, 2, 2, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1530, 2, 7, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1531, 2, 27, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1532, 2, 28, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1533, 2, 29, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1534, 2, 8, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1535, 2, 30, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1536, 2, 31, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1537, 2, 32, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1538, 2, 9, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1539, 2, 33, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1540, 2, 10, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1541, 2, 34, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1542, 2, 11, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1543, 2, 35, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1544, 2, 4, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1545, 2, 15, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1546, 2, 16, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1547, 2, 17, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1548, 2, 18, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1549, 2, 19, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1550, 2, 5, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1551, 2, 20, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1552, 2, 21, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1553, 2, 22, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1554, 2, 23, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1555, 2, 6, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1556, 2, 24, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1557, 2, 25, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1558, 2, 26, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1559, 2, 207, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1560, 2, 160, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1561, 2, 167, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1562, 2, 168, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1563, 2, 169, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1564, 2, 161, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1565, 2, 170, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1566, 2, 171, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1567, 2, 172, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1568, 2, 162, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1569, 2, 173, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1570, 2, 174, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1571, 2, 175, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1572, 2, 163, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1573, 2, 176, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1574, 2, 177, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1575, 2, 178, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1576, 2, 179, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1577, 2, 180, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1578, 2, 164, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1579, 2, 181, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1580, 2, 182, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1581, 2, 183, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1582, 2, 184, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1583, 2, 187, '2026-09-24 08:56:14');
+INSERT INTO `sys_role_menu_rel` VALUES (1584, 1, 1, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1585, 1, 3, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1586, 1, 12, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1587, 1, 13, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1588, 1, 14, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1589, 1, 2, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1590, 1, 7, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1591, 1, 27, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1592, 1, 28, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1593, 1, 29, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1594, 1, 8, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1595, 1, 30, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1596, 1, 31, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1597, 1, 32, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1598, 1, 9, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1599, 1, 33, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1600, 1, 10, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1601, 1, 34, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1602, 1, 11, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1603, 1, 35, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1604, 1, 4, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1605, 1, 15, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1606, 1, 16, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1607, 1, 17, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1608, 1, 18, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1609, 1, 19, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1610, 1, 5, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1611, 1, 20, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1612, 1, 21, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1613, 1, 22, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1614, 1, 23, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1615, 1, 6, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1616, 1, 24, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1617, 1, 25, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1618, 1, 26, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1619, 1, 207, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1620, 1, 160, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1621, 1, 167, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1622, 1, 168, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1623, 1, 169, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1624, 1, 161, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1625, 1, 170, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1626, 1, 171, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1627, 1, 172, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1628, 1, 162, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1629, 1, 173, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1630, 1, 174, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1631, 1, 175, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1632, 1, 163, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1633, 1, 176, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1634, 1, 177, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1635, 1, 178, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1636, 1, 179, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1637, 1, 180, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1638, 1, 164, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1639, 1, 181, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1640, 1, 182, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1641, 1, 183, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1642, 1, 184, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1643, 1, 187, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1644, 1, 107, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1645, 1, 108, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1646, 1, 114, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1647, 1, 115, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1648, 1, 116, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1649, 1, 117, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1650, 1, 109, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1651, 1, 118, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1652, 1, 119, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1653, 1, 120, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1654, 1, 110, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1655, 1, 121, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1656, 1, 210, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1657, 1, 213, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1658, 1, 122, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1659, 1, 208, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1660, 1, 211, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1661, 1, 214, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1662, 1, 217, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1663, 1, 111, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1664, 1, 123, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1665, 1, 124, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1666, 1, 112, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1667, 1, 125, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1668, 1, 126, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1669, 1, 127, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1670, 1, 220, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1671, 1, 135, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1672, 1, 148, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1673, 1, 149, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1674, 1, 150, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1675, 1, 136, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1676, 1, 151, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1677, 1, 152, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1678, 1, 153, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1679, 1, 154, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1680, 1, 222, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1681, 1, 137, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1682, 1, 218, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1683, 1, 219, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1684, 1, 221, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1685, 1, 138, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1686, 1, 155, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1687, 1, 156, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1688, 1, 139, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1689, 1, 157, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1690, 1, 158, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1691, 1, 159, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1692, 1, 113, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1693, 1, 128, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1694, 1, 165, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1695, 1, 185, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1696, 1, 129, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1697, 1, 166, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1698, 1, 186, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1699, 1, 130, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1700, 1, 40, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1701, 1, 41, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1702, 1, 51, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1703, 1, 42, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1704, 1, 72, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1705, 1, 73, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1706, 1, 74, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1707, 1, 75, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1708, 1, 76, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1709, 1, 77, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1710, 1, 78, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1711, 1, 79, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1712, 1, 80, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1713, 1, 81, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1714, 1, 82, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1715, 1, 83, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1716, 1, 84, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1717, 1, 85, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1718, 1, 86, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1719, 1, 87, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1720, 1, 88, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1721, 1, 89, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1722, 1, 90, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1723, 1, 91, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1724, 1, 204, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1725, 1, 92, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1726, 1, 93, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1727, 1, 97, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1728, 1, 98, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1729, 1, 94, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1730, 1, 99, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1731, 1, 95, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1732, 1, 100, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1733, 1, 101, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1734, 1, 102, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1735, 1, 96, '2026-09-24 08:56:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1736, 4, 207, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1737, 4, 160, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1738, 4, 167, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1739, 4, 168, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1740, 4, 169, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1741, 4, 161, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1742, 4, 170, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1743, 4, 171, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1744, 4, 172, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1745, 4, 162, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1746, 4, 173, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1747, 4, 174, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1748, 4, 175, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1749, 4, 163, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1750, 4, 176, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1751, 4, 177, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1752, 4, 178, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1753, 4, 179, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1754, 4, 180, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1755, 4, 164, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1756, 4, 181, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1757, 4, 182, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1758, 4, 183, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1759, 4, 184, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1760, 4, 187, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1761, 4, 107, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1762, 4, 108, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1763, 4, 114, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1764, 4, 115, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1765, 4, 116, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1766, 4, 117, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1767, 4, 109, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1768, 4, 118, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1769, 4, 119, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1770, 4, 120, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1771, 4, 110, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1772, 4, 121, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1773, 4, 210, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1774, 4, 213, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1775, 4, 122, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1776, 4, 208, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1777, 4, 211, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1778, 4, 214, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1779, 4, 217, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1780, 4, 111, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1781, 4, 123, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1782, 4, 124, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1783, 4, 112, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1784, 4, 125, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1785, 4, 126, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1786, 4, 127, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1787, 4, 220, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1788, 4, 135, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1789, 4, 148, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1790, 4, 149, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1791, 4, 150, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1792, 4, 136, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1793, 4, 151, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1794, 4, 152, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1795, 4, 153, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1796, 4, 154, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1797, 4, 222, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1798, 4, 137, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1799, 4, 218, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1800, 4, 219, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1801, 4, 221, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1802, 4, 138, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1803, 4, 155, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1804, 4, 156, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1805, 4, 139, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1806, 4, 157, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1807, 4, 158, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1808, 4, 159, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1809, 4, 113, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1810, 4, 128, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1811, 4, 165, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1812, 4, 185, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1813, 4, 129, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1814, 4, 166, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1815, 4, 186, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1816, 4, 130, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1817, 4, 40, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1818, 4, 41, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1819, 4, 51, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1820, 4, 42, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1821, 4, 72, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1822, 4, 73, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1823, 4, 74, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1824, 4, 75, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1825, 4, 76, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1826, 4, 77, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1827, 4, 78, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1828, 4, 79, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1829, 4, 80, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1830, 4, 81, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1831, 4, 82, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1832, 4, 83, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1833, 4, 84, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1834, 4, 85, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1835, 4, 86, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1836, 4, 87, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1837, 4, 88, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1838, 4, 89, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1839, 4, 90, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1840, 4, 91, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1841, 4, 204, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1842, 4, 188, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1843, 4, 189, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1844, 4, 190, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1845, 4, 191, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1846, 4, 192, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1847, 4, 197, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1848, 4, 202, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1849, 4, 198, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1850, 4, 92, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1851, 4, 93, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1852, 4, 97, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1853, 4, 98, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1854, 4, 94, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1855, 4, 99, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1856, 4, 95, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1857, 4, 100, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1858, 4, 101, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1859, 4, 102, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1860, 4, 96, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1861, 4, 1, '2026-09-24 09:19:26');
+INSERT INTO `sys_role_menu_rel` VALUES (1862, 7, 223, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1863, 7, 224, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1864, 7, 225, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1865, 7, 226, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1866, 7, 227, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1867, 7, 228, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1868, 7, 229, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1869, 7, 230, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1870, 7, 231, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1871, 4, 223, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1872, 4, 224, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1873, 4, 225, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1874, 4, 226, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1875, 4, 227, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1876, 4, 228, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1877, 4, 229, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1878, 4, 230, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1879, 4, 231, '2026-09-27 17:40:02');
+INSERT INTO `sys_role_menu_rel` VALUES (1880, 7, 234, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1881, 7, 235, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1882, 7, 236, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1883, 7, 237, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1884, 7, 238, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1885, 7, 239, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1886, 7, 240, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1887, 7, 241, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1895, 4, 234, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1896, 4, 235, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1897, 4, 236, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1898, 4, 237, '2026-09-29 12:34:53');
+INSERT INTO `sys_role_menu_rel` VALUES (1902, 7, 242, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1903, 7, 243, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1904, 7, 244, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1905, 7, 245, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1906, 7, 246, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1907, 7, 247, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1908, 7, 248, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1909, 7, 249, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1910, 7, 250, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1911, 7, 251, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1912, 7, 252, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1913, 7, 253, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1914, 7, 254, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1915, 7, 255, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1916, 7, 256, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1917, 7, 257, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1918, 7, 258, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1919, 7, 259, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1933, 4, 242, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1934, 4, 243, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1935, 4, 244, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1936, 4, 245, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1937, 4, 246, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1938, 4, 248, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1939, 4, 251, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1940, 4, 254, '2026-09-29 13:03:15');
+INSERT INTO `sys_role_menu_rel` VALUES (1941, 4, 257, '2026-09-29 13:03:15');
 
 -- ----------------------------
 -- Table structure for sys_ui_theme
@@ -4370,6 +5837,7 @@ CREATE TABLE `sys_user`  (
   `email` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '邮箱',
   `avatar` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '头像OSS地址',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '账号状态 0禁用 1正常',
+  `employee_id` bigint(20) NULL DEFAULT NULL COMMENT '关联hr_employee.id',
   `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人用户ID',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人用户ID',
@@ -4377,14 +5845,15 @@ CREATE TABLE `sys_user`  (
   `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_username`(`username` ASC, `is_delete` ASC) USING BTREE,
-  INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE
+  INDEX `idx_company_id_is_delete`(`company_id` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_employee_id`(`employee_id` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 0, 'admin', '$2a$10$0zgq2ilQLN0kC6XLyR17COxA./GDdftY659m/FOsGoHxOfGQMVtwS', '集团超级管理员', '13698668278', '36412314@qq.com', NULL, 1, 0, '2026-08-18 12:34:31', 0, '2026-08-26 07:25:05', 0);
-INSERT INTO `sys_user` VALUES (2, 0, 'test', '$2a$10$dC8NacyhYNPxnyUGHb066.0J/DQ89YSZpwxUqhtZKyDi5pStYwpc2', 'test', '', '', NULL, 1, 1, '2026-09-07 12:24:25', 1, '2026-09-07 12:25:00', 1);
+INSERT INTO `sys_user` VALUES (1, 0, 'admin', '$2a$10$0zgq2ilQLN0kC6XLyR17COxA./GDdftY659m/FOsGoHxOfGQMVtwS', '集团超级管理员', '13698668278', '36412314@qq.com', NULL, 1, NULL, 0, '2026-08-18 12:34:31', 0, '2026-08-26 07:25:05', 0);
+INSERT INTO `sys_user` VALUES (2, 0, 'test', '$2a$10$/wRxaMm2rNmd.I.68eZpPOtm74tGfF5WKvDeRJLs8erQtbFyPsrTq', 'test', '', '', NULL, 1, NULL, 1, '2026-09-07 12:24:25', 1, '2026-09-16 16:01:59', 0);
 
 -- ----------------------------
 -- Table structure for sys_user_role_rel
@@ -4398,7 +5867,7 @@ CREATE TABLE `sys_user_role_rel`  (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_role`(`user_id` ASC, `role_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户角色关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户角色关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_role_rel
@@ -4407,5 +5876,118 @@ INSERT INTO `sys_user_role_rel` VALUES (2, 1, 1, 0, '2026-09-07 11:17:42');
 INSERT INTO `sys_user_role_rel` VALUES (6, 1, 4, 1, '2026-09-10 19:53:38');
 INSERT INTO `sys_user_role_rel` VALUES (7, 1, 5, 1, '2026-09-10 19:53:38');
 INSERT INTO `sys_user_role_rel` VALUES (8, 1, 6, 1, '2026-09-10 19:53:38');
+INSERT INTO `sys_user_role_rel` VALUES (21, 2, 6, 0, '2026-09-20 17:48:55');
+INSERT INTO `sys_user_role_rel` VALUES (22, 2, 7, 0, '2026-09-20 17:48:55');
+
+-- ----------------------------
+-- Table structure for sys_workweek_config
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_workweek_config`;
+CREATE TABLE `sys_workweek_config`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团全局',
+  `config_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '配置名称，如：双休、单休、做五休二',
+  `workweek_type` tinyint(4) NOT NULL COMMENT '休息日类型：1单休 2双休 3做五休二 4做六休一 5综合工时',
+  `rest_day_pattern` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '休息日模式，如：周六日、周日、周一',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0禁用 1启用',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_by` bigint(20) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_company_id`(`company_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '休息日配置表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_workweek_config
+-- ----------------------------
+INSERT INTO `sys_workweek_config` VALUES (1, 0, '双休（默认）', 2, '周六、周日', 1, '标准双休', 0, '2026-09-27 17:26:09', NULL, NULL, 0);
+INSERT INTO `sys_workweek_config` VALUES (2, 0, '单休', 1, '周日', 1, '单休制', 0, '2026-09-27 17:26:09', NULL, NULL, 0);
+INSERT INTO `sys_workweek_config` VALUES (3, 0, '做五休二', 3, '周五、周六', 1, '周五六休息', 0, '2026-09-27 17:26:09', NULL, NULL, 0);
+INSERT INTO `sys_workweek_config` VALUES (4, 0, '做六休一', 4, '周日', 1, '周日休息', 0, '2026-09-27 17:26:09', NULL, NULL, 0);
+
+-- ----------------------------
+-- Table structure for wecom_message_record
+-- ----------------------------
+DROP TABLE IF EXISTS `wecom_message_record`;
+CREATE TABLE `wecom_message_record`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID',
+  `msg_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '企业微信消息ID',
+  `msg_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息类型: text/markdown/news等',
+  `from_user` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '发送者UserID',
+  `to_user` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '接收者UserID',
+  `agent_id` int(11) NOT NULL DEFAULT 0 COMMENT '应用ID',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '消息内容',
+  `media_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '媒体文件ID',
+  `send_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '发送状态 0待发送 1成功 2失败',
+  `error_msg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '错误信息',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `send_time` datetime NULL DEFAULT NULL COMMENT '发送时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_msg_id`(`msg_id` ASC) USING BTREE,
+  INDEX `idx_msg_company`(`company_id` ASC) USING BTREE,
+  INDEX `idx_msg_to_user`(`to_user` ASC) USING BTREE,
+  INDEX `idx_msg_send_status`(`send_status` ASC) USING BTREE,
+  INDEX `idx_msg_create_time`(`create_time` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '企业微信消息记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of wecom_message_record
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for wecom_sync_record
+-- ----------------------------
+DROP TABLE IF EXISTS `wecom_sync_record`;
+CREATE TABLE `wecom_sync_record`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID',
+  `sync_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '同步类型: contact/attendance/leave等',
+  `sync_direction` tinyint(4) NOT NULL COMMENT '同步方向 1系统→企微 2企微→系统',
+  `source_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '源数据ID',
+  `target_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '目标数据ID',
+  `sync_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '同步状态 0待同步 1成功 2失败',
+  `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
+  `error_msg` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '错误信息',
+  `sync_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '同步时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_sync_company`(`company_id` ASC) USING BTREE,
+  INDEX `idx_sync_type`(`sync_type` ASC) USING BTREE,
+  INDEX `idx_sync_status`(`sync_status` ASC) USING BTREE,
+  INDEX `idx_sync_time`(`sync_time` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '企业微信同步记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of wecom_sync_record
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for wecom_tenant_config
+-- ----------------------------
+DROP TABLE IF EXISTS `wecom_tenant_config`;
+CREATE TABLE `wecom_tenant_config`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `company_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '所属公司ID，0=集团全局默认',
+  `corp_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '企业微信企业ID',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 0禁用 1启用',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_by` bigint(20) NOT NULL DEFAULT 0 COMMENT '创建人ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人ID',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `is_delete` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_company_isdelete`(`company_id` ASC, `is_delete` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '企微租户配置表（支持多企微实例）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of wecom_tenant_config
+-- ----------------------------
+INSERT INTO `wecom_tenant_config` VALUES (1, 0, '', 1, '集团级默认企微配置，上线前请填写真实corpId', 1, '2026-09-29 12:34:18', NULL, NULL, 0);
 
 SET FOREIGN_KEY_CHECKS = 1;

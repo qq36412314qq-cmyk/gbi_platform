@@ -17,6 +17,7 @@
         <el-table-column prop="postName" label="岗位名称" width="150" align="center" />
         <el-table-column prop="postLevel" label="岗位职级" width="120" align="center" />
         <el-table-column prop="orgName" label="所属部门" width="400" show-overflow-tooltip />
+        <el-table-column prop="workweekConfigName" label="休息日配置" width="150" align="center" />
         <el-table-column prop="statusText" label="状态" width="80" align="center">
           <template #default="{ row }"><el-tag size="small" :type="row.status === 1 ? 'success' : 'info'">{{ row.statusText || '-' }}</el-tag></template>
         </el-table-column>
@@ -49,6 +50,12 @@
           />
         </el-form-item>
         <el-form-item label="状态"><el-radio-group v-model="postForm.status"><el-radio :value="1">启用</el-radio><el-radio :value="0">停用</el-radio></el-radio-group></el-form-item>
+        <el-form-item label="休息日配置">
+          <el-select v-model="postForm.workweekConfigId" placeholder="可选，默认沿用集团配置" clearable filterable style="width:100%">
+            <el-option v-for="cfg in workweekConfigList" :key="cfg.id" :label="cfg.configName" :value="cfg.id" />
+          </el-select>
+          <div style="color:#909399;font-size:12px;margin-top:4px">为岗位设置默认休息日规则，未设置时员工使用组织或集团的默认配置</div>
+        </el-form-item>
         <el-form-item label="备注"><el-input v-model="postForm.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
       </el-form>
       <template #footer><el-button @click="postDialogVisible=false">取消</el-button><el-button type="primary" :loading="postSubmitLoading" @click="handlePostSubmit">确定</el-button></template>
@@ -62,12 +69,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTable } from '@/hooks/useTable'
 import * as api from '@/api/hr'
 import { getOrgTreeApi } from '@/api/org'
+import { getWorkweekConfigListApi } from '@/api/hr'
 
 const { query, records, total, loading, loadData } = useTable(api.getPostPageApi, { pageNum: 1, pageSize: 20, status: undefined })
 const postDialogVisible = ref(false)
 const postSubmitLoading = ref(false)
 const postFormRef = ref()
-const postForm = reactive<api.PostDTO>({ postCode: '', postName: '', status: 1 })
+const postForm = reactive<api.PostDTO>({ postCode: '', postName: '', status: 1, workweekConfigId: undefined})
 const postRules = { postCode: [{ required: true, message: '岗位编码不能为空' }], postName: [{ required: true, message: '岗位名称不能为空' }] }
 
 // 组织树数据（用于 el-tree-select，保留层级）
@@ -91,11 +99,16 @@ function markDisabledNodes(nodes: any[]): any[] {
   }))
 }
 
-const openAddPost = () => { Object.assign(postForm, { id: undefined, postCode: '', postName: '', postLevel: '', status: 1, remark: '' }); postDialogVisible.value = true }
-const openEditPost = (row: api.HrPostVO) => { Object.assign(postForm, { id: row.id, postCode: row.postCode, postName: row.postName, postLevel: row.postLevel, status: row.status, deptId: row.deptId, remark: row.remark }); postDialogVisible.value = true }
+const openAddPost = () => { Object.assign(postForm, { id: undefined, postCode: '', postName: '', postLevel: '', status: 1, workweekConfigId: undefined, shiftType: undefined, remark: '' }); postDialogVisible.value = true }
+const openEditPost = (row: api.HrPostVO) => { Object.assign(postForm, { id: row.id, postCode: row.postCode, postName: row.postName, postLevel: row.postLevel, status: row.status, deptId: row.deptId, workweekConfigId: row.workweekConfigId, shiftType: row.shiftType, remark: row.remark }); postDialogVisible.value = true }
 const handleDeletePost = (row: api.HrPostVO) => { ElMessageBox.confirm('确认删除该岗位?', '提示').then(async () => { await api.deletePostApi(row.id!); ElMessage.success('删除成功'); loadData() }) }
 const handlePostSubmit = async () => { await postFormRef.value.validate(); postSubmitLoading.value = true; try { if (postForm.id) { await api.updatePostApi(postForm); ElMessage.success('编辑成功') } else { await api.addPostApi(postForm); ElMessage.success('新增成功') } postDialogVisible.value = false; loadData() } finally { postSubmitLoading.value = false } }
 const handleReset = () => { query.status = undefined; loadData() }
 
-onMounted(() => { loadOrgTree(); loadData() })
+onMounted(() => { loadOrgTree(); loadData(); loadWorkweekConfigList() })
+// ---- 休息日配置下拉 ----
+const workweekConfigList = ref<api.WorkweekConfigVO[]>([])
+const loadWorkweekConfigList = async () => {
+  try { workweekConfigList.value = await getWorkweekConfigListApi() } catch (e) { console.error('[org] 加载休息日配置列表失败', e) }
+}
 </script>

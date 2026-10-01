@@ -9,7 +9,9 @@ import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.dto.hr.*;
 import com.gbi.platform.entity.SysUser;
 import com.gbi.platform.entity.hr.*;
+import com.gbi.platform.entity.sys.SysWorkweekConfig;
 import com.gbi.platform.mapper.hr.*;
+import com.gbi.platform.mapper.sys.SysWorkweekConfigMapper;
 import com.gbi.platform.service.hr.HrEmployeeService;
 import com.gbi.platform.service.hr.HrTransferService;
 import com.gbi.platform.vo.hr.*;
@@ -39,6 +41,9 @@ public class HrTransferServiceImpl implements HrTransferService {
     private final AuditLogUtil auditLogUtil;
     private final com.gbi.platform.mapper.SysUserMapper sysUserMapper;
     private final com.gbi.platform.service.FileService fileService;
+    private final HrCityMapper hrCityMapper;
+    private final HrSalaryRuleMapper hrSalaryRuleMapper;
+    private final SysWorkweekConfigMapper workweekConfigMapper;
 
     @Override
     public PageVO<HrEntryApplyVO> pageEntry(Long pageNum, Long pageSize, Integer status) {
@@ -59,7 +64,7 @@ public class HrTransferServiceImpl implements HrTransferService {
         LoginUser loginUser = UserContext.getLoginUser();
         String employeeNo = dto.getEmployeeNo();
 
-        // 工号唯一性校验：排除已撤回/已驳回记录
+        // 工号唯一性校验
         LambdaQueryWrapper<HrEntryApply> dupCheck = new LambdaQueryWrapper<HrEntryApply>()
                 .eq(HrEntryApply::getCompanyId, loginUser.getCompanyId())
                 .eq(HrEntryApply::getEmployeeNo, employeeNo)
@@ -101,8 +106,7 @@ public class HrTransferServiceImpl implements HrTransferService {
         entryApplyMapper.insert(apply);
 
         Long instanceId = flowEngineService.submit(CommonConst.FLOW_DEF_HR_ENTRY, "hr_entry_apply",
-                String.valueOf(apply.getId()),
-                dto.getName() + " 入职申请");
+                String.valueOf(apply.getId()), dto.getName() + " 入职申请");
         apply.setFlowInstanceId(instanceId);
         apply.setStatus(CommonConst.APPLY_STATUS_AUDITING);
         entryApplyMapper.updateById(apply);
@@ -160,7 +164,9 @@ public class HrTransferServiceImpl implements HrTransferService {
         entryApplyMapper.updateById(apply);
         log.info("入职审批驳回：entryApplyId={}", entryApplyId);
     }
-
+    /**
+     * 分页查询转正申请
+     */
     @Override
     public PageVO<HrRegularApplyVO> pageRegular(Long pageNum, Long pageSize, Integer status) {
         LoginUser loginUser = UserContext.getLoginUser();
@@ -173,14 +179,22 @@ public class HrTransferServiceImpl implements HrTransferService {
         List<HrRegularApplyVO> voList = result.getRecords().stream().map(this::toRegularVO).collect(Collectors.toList());
         return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
     }
-
+    /**
+     * 提交转正申请
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long submitRegular(RegularApplyDTO dto) {
         LoginUser loginUser = UserContext.getLoginUser();
+        HrEmployee employee = employeeMapper.selectById(dto.getEmployeeId());
+        if (employee == null) throw new BizException("员工不存在");
+        if (employee.getName() == null || employee.getName().isBlank()) {
+            throw new BizException("员工姓名不能为空，无法提交转正申请");
+        }
         HrRegularApply apply = new HrRegularApply();
         apply.setCompanyId(loginUser.getCompanyId());
         apply.setEmployeeId(dto.getEmployeeId());
+        apply.setEmployeeName(employee.getName());
         apply.setRegularDate(dto.getRegularDate());
         apply.setRemark(dto.getRemark());
         apply.setStatus(CommonConst.APPLY_STATUS_DRAFT);
@@ -196,7 +210,9 @@ public class HrTransferServiceImpl implements HrTransferService {
                 String.valueOf(apply.getId()), null, apply);
         return apply.getId();
     }
-
+    /**
+     * 撤回转正申请
+     */
     @Override
     public void revokeRegular(Long id) {
         HrRegularApply apply = regularApplyMapper.selectById(id);
@@ -207,7 +223,40 @@ public class HrTransferServiceImpl implements HrTransferService {
         apply.setStatus(CommonConst.APPLY_STATUS_VOID);
         regularApplyMapper.updateById(apply);
     }
-
+    /**
+     * 转正申请通过
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void onRegularApproved(Long regularApplyId) {
+        HrRegularApply apply = regularApplyMapper.selectById(regularApplyId);
+        if (apply == null) throw new BizException("转正申请不存在");
+        HrEmployee employee = employeeMapper.selectById(apply.getEmployeeId());
+        if (employee != null) {
+            employee.setEmploymentType(CommonConst.EMPLOYMENT_TYPE_REGULAR);  // 新增：用工类型改为正式
+            employee.setEmployeeStatus(CommonConst.STATUS_ENABLED);//员工在职状态
+            employee.setRegularDate(apply.getRegularDate());//设置转正日期
+            employeeMapper.updateById(employee);
+        }
+        apply.setStatus(CommonConst.APPLY_STATUS_PASS);
+        regularApplyMapper.updateById(apply);
+        log.info("onRegularApproved: regularApplyId={}, employeeId={}", regularApplyId, apply.getEmployeeId());
+    }
+    /**
+     * 转正申请驳回
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void onRegularRejected(Long regularApplyId) {
+        HrRegularApply apply = regularApplyMapper.selectById(regularApplyId);
+        if (apply == null) throw new BizException("转正申请不存在");
+        apply.setStatus(CommonConst.APPLY_STATUS_REJECT);
+        regularApplyMapper.updateById(apply);
+        log.info("onRegularRejected: regularApplyId={}", regularApplyId);
+    }
+    /**
+     * 分页查询调岗申请
+     */
     @Override
     public PageVO<HrTransferApplyVO> pageTransfer(Long pageNum, Long pageSize, Integer status) {
         LoginUser loginUser = UserContext.getLoginUser();
@@ -220,14 +269,22 @@ public class HrTransferServiceImpl implements HrTransferService {
         List<HrTransferApplyVO> voList = result.getRecords().stream().map(this::toTransferVO).collect(Collectors.toList());
         return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
     }
-
+    /**
+     * 提交调岗申请
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long submitTransfer(TransferApplyDTO dto) {
         LoginUser loginUser = UserContext.getLoginUser();
+        HrEmployee employee = employeeMapper.selectById(dto.getEmployeeId());
+        if (employee == null) throw new BizException("员工不存在");
+        if (employee.getName() == null || employee.getName().isBlank()) {
+            throw new BizException("员工姓名不能为空，无法提交调岗申请");
+        }
         HrTransferApply apply = new HrTransferApply();
         apply.setCompanyId(loginUser.getCompanyId());
         apply.setEmployeeId(dto.getEmployeeId());
+        apply.setEmployeeName(employee.getName());
         apply.setNewOrgId(dto.getNewOrgId());
         apply.setNewPostId(dto.getNewPostId());
         apply.setTransferDate(dto.getTransferDate());
@@ -245,7 +302,9 @@ public class HrTransferServiceImpl implements HrTransferService {
                 String.valueOf(apply.getId()), null, apply);
         return apply.getId();
     }
-
+    /**
+     * 撤回调岗申请
+     */
     @Override
     public void revokeTransfer(Long id) {
         HrTransferApply apply = transferApplyMapper.selectById(id);
@@ -256,7 +315,39 @@ public class HrTransferServiceImpl implements HrTransferService {
         apply.setStatus(CommonConst.APPLY_STATUS_VOID);
         transferApplyMapper.updateById(apply);
     }
-
+    /**
+     * 调岗申请通过
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void onTransferApproved(Long transferApplyId) {
+        HrTransferApply apply = transferApplyMapper.selectById(transferApplyId);
+        if (apply == null) throw new BizException("调岗申请不存在");
+        HrEmployee employee = employeeMapper.selectById(apply.getEmployeeId());
+        if (employee != null) {
+            employee.setOrgId(apply.getNewOrgId());
+            employee.setPostId(apply.getNewPostId());
+            employeeMapper.updateById(employee);
+        }
+        apply.setStatus(CommonConst.APPLY_STATUS_PASS);
+        transferApplyMapper.updateById(apply);
+        log.info("onTransferApproved: transferApplyId={}, employeeId={}", transferApplyId, apply.getEmployeeId());
+    }
+    /**
+     * 调岗申请驳回
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void onTransferRejected(Long transferApplyId) {
+        HrTransferApply apply = transferApplyMapper.selectById(transferApplyId);
+        if (apply == null) throw new BizException("调岗申请不存在");
+        apply.setStatus(CommonConst.APPLY_STATUS_REJECT);
+        transferApplyMapper.updateById(apply);
+        log.info("onTransferRejected: transferApplyId={}", transferApplyId);
+    }
+    /**
+     * 分页查询离职申请
+     */
     @Override
     public PageVO<HrResignApplyVO> pageResign(Long pageNum, Long pageSize, Integer status) {
         LoginUser loginUser = UserContext.getLoginUser();
@@ -269,14 +360,22 @@ public class HrTransferServiceImpl implements HrTransferService {
         List<HrResignApplyVO> voList = result.getRecords().stream().map(this::toResignVO).collect(Collectors.toList());
         return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
     }
-
+    /**
+     * 提交离职申请
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long submitResign(ResignApplyDTO dto) {
         LoginUser loginUser = UserContext.getLoginUser();
+        HrEmployee employee = employeeMapper.selectById(dto.getEmployeeId());
+        if (employee == null) throw new BizException("员工不存在");
+        if (employee.getName() == null || employee.getName().isBlank()) {
+            throw new BizException("员工姓名不能为空，无法提交离职申请");
+        }
         HrResignApply apply = new HrResignApply();
         apply.setCompanyId(loginUser.getCompanyId());
         apply.setEmployeeId(dto.getEmployeeId());
+        apply.setEmployeeName(employee.getName());
         apply.setResignDate(dto.getResignDate());
         apply.setResignType(dto.getResignType());
         apply.setReason(dto.getReason());
@@ -294,7 +393,9 @@ public class HrTransferServiceImpl implements HrTransferService {
                 String.valueOf(apply.getId()), null, apply);
         return apply.getId();
     }
-
+    /**
+     * 撤回离职申请
+     */
     @Override
     public void revokeResign(Long id) {
         HrResignApply apply = resignApplyMapper.selectById(id);
@@ -305,37 +406,9 @@ public class HrTransferServiceImpl implements HrTransferService {
         apply.setStatus(CommonConst.APPLY_STATUS_VOID);
         resignApplyMapper.updateById(apply);
     }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void onRegularApproved(Long regularApplyId) {
-        HrRegularApply apply = regularApplyMapper.selectById(regularApplyId);
-        if (apply == null) throw new BizException("转正申请不存在");
-        HrEmployee employee = employeeMapper.selectById(apply.getEmployeeId());
-        if (employee != null) {
-            employee.setEmployeeStatus(CommonConst.STATUS_ENABLED);
-            employee.setRegularDate(apply.getRegularDate());
-            employeeMapper.updateById(employee);
-        }
-        apply.setStatus(CommonConst.APPLY_STATUS_PASS);
-        regularApplyMapper.updateById(apply);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void onTransferApproved(Long transferApplyId) {
-        HrTransferApply apply = transferApplyMapper.selectById(transferApplyId);
-        if (apply == null) throw new BizException("调岗申请不存在");
-        HrEmployee employee = employeeMapper.selectById(apply.getEmployeeId());
-        if (employee != null) {
-            employee.setOrgId(apply.getNewOrgId());
-            employee.setPostId(apply.getNewPostId());
-            employeeMapper.updateById(employee);
-        }
-        apply.setStatus(CommonConst.APPLY_STATUS_PASS);
-        transferApplyMapper.updateById(apply);
-    }
-
+    /**
+     * 离职申请通过
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void onResignApproved(Long resignApplyId) {
@@ -343,11 +416,9 @@ public class HrTransferServiceImpl implements HrTransferService {
         if (apply == null) throw new BizException("离职申请不存在");
         HrEmployee employee = employeeMapper.selectById(apply.getEmployeeId());
         if (employee != null) {
-            employee.setEmployeeStatus(3);
+            employee.setEmployeeStatus(3); // 离职
             employee.setResignDate(apply.getResignDate());
             employeeMapper.updateById(employee);
-
-            // 方案B：自动停用关联账号
             if (employee.getUserId() != null) {
                 SysUser user = sysUserMapper.selectById(employee.getUserId());
                 if (user != null) {
@@ -358,8 +429,23 @@ public class HrTransferServiceImpl implements HrTransferService {
         }
         apply.setStatus(CommonConst.APPLY_STATUS_PASS);
         resignApplyMapper.updateById(apply);
+        log.info("onResignApproved: resignApplyId={}, employeeId={}", resignApplyId, apply.getEmployeeId());
     }
-
+    /**
+     * 离职申请驳回
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void onResignRejected(Long resignApplyId) {
+        HrResignApply apply = resignApplyMapper.selectById(resignApplyId);
+        if (apply == null) throw new BizException("离职申请不存在");
+        apply.setStatus(CommonConst.APPLY_STATUS_REJECT);
+        resignApplyMapper.updateById(apply);
+        log.info("onResignRejected: resignApplyId={}", resignApplyId);
+    }
+    /**
+     * 轃岗申请通过
+     */
     private HrEntryApplyVO toEntryVO(HrEntryApply entity) {
         HrEntryApplyVO vo = new HrEntryApplyVO();
         vo.setId(entity.getId());
@@ -392,9 +478,23 @@ public class HrTransferServiceImpl implements HrTransferService {
                 log.warn("[toEntryVO] 获取照片预览URL失败 - photoFileId={}", entity.getPhotoFileId(), e);
             }
         }
+        // 城市、薪资模板、休息日配置名称（关联查询）
+        if (entity.getCityId() != null && entity.getCityId() > 0) {
+            try { HrCity city = hrCityMapper.selectById(entity.getCityId()); if (city != null) vo.setCityName(city.getCityName()); } catch (Exception e) { log.warn("[toEntryVO] 查询城市失败 cityId={}", entity.getCityId(), e); }
+        }
+        if (entity.getSalaryRuleId() != null && entity.getSalaryRuleId() > 0) {
+            try { HrSalaryRule rule = hrSalaryRuleMapper.selectById(entity.getSalaryRuleId()); if (rule != null) vo.setSalaryRuleName(rule.getRuleName()); } catch (Exception e) { log.warn("[toEntryVO] 查询薪资模板失败 ruleId={}", entity.getSalaryRuleId(), e); }
+        }
+        if (entity.getWorkweekConfigId() != null && entity.getWorkweekConfigId() > 0) {
+            try { SysWorkweekConfig config = workweekConfigMapper.selectById(entity.getWorkweekConfigId()); if (config != null) vo.setWorkweekConfigName(config.getConfigName()); } catch (Exception e) { log.warn("[toEntryVO] 查询休息日配置失败 workweekConfigId={}", entity.getWorkweekConfigId(), e); }
+        }
+        vo.setExemptAttendance(entity.getExemptAttendance());
+        vo.setExemptAttendanceText(entity.getExemptAttendance() != null && entity.getExemptAttendance() == 1 ? "不参与" : "参与");
         return vo;
     }
-
+    /**
+     * 轃岗申请驳回
+     */
     private HrRegularApplyVO toRegularVO(HrRegularApply entity) {
         HrRegularApplyVO vo = new HrRegularApplyVO();
         vo.setId(entity.getId());
@@ -409,7 +509,9 @@ public class HrTransferServiceImpl implements HrTransferService {
         vo.setCreateTime(entity.getCreateTime());
         return vo;
     }
-
+    /**
+     * 轃岗申请通过
+     */
     private HrTransferApplyVO toTransferVO(HrTransferApply entity) {
         HrTransferApplyVO vo = new HrTransferApplyVO();
         vo.setId(entity.getId());
@@ -428,7 +530,9 @@ public class HrTransferServiceImpl implements HrTransferService {
         vo.setStatusText(toStatusText(entity.getStatus()));
         return vo;
     }
-
+    /**
+     * 离职申请通过
+     */
     private HrResignApplyVO toResignVO(HrResignApply entity) {
         HrResignApplyVO vo = new HrResignApplyVO();
         vo.setId(entity.getId());
@@ -446,7 +550,9 @@ public class HrTransferServiceImpl implements HrTransferService {
         vo.setCreateTime(entity.getCreateTime());
         return vo;
     }
-
+    /**
+     * 离职申请驳回
+     */
     private String toStatusText(Integer status) {
         if (status == null) return null;
         switch (status) {
@@ -458,7 +564,9 @@ public class HrTransferServiceImpl implements HrTransferService {
             default: return "未知";
         }
     }
-
+    /**
+     * 用工类型
+     */
     private String toEmploymentTypeText(Integer type) {
         if (type == null) return null;
         switch (type) {
@@ -469,7 +577,9 @@ public class HrTransferServiceImpl implements HrTransferService {
             default: return "未知";
         }
     }
-
+    /**
+     * 离职类型
+     */
     private String toResignTypeText(Integer type) {
         if (type == null) return null;
         switch (type) {
@@ -480,7 +590,9 @@ public class HrTransferServiceImpl implements HrTransferService {
             default: return "未知";
         }
     }
-
+    /**
+     * 解密敏感信息
+     */
     private String decodeSensitive(String value) {
         if (value == null) return null;
         return value;

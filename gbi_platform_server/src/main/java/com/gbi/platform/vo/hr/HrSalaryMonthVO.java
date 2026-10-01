@@ -24,6 +24,7 @@ import java.math.BigDecimal; import java.time.LocalDateTime;
     @Schema(description="早退扣款") private BigDecimal earlyDeduction;
     @Schema(description="无薪事假扣款") private BigDecimal unpaidLeaveDeduction;
     @Schema(description="是否触发最低工资保护 0否 1是") private Integer minWageProtected;
+    @Schema(description="加班补偿金额（元）") private BigDecimal overtimeAmount;
     @Schema(description="应发合计") private BigDecimal grossAmount;
     @Schema(description="实发合计") private BigDecimal netAmount;
     @Schema(description="发放状态 0未发放 1已发放 2发放失败") private Integer payStatus;

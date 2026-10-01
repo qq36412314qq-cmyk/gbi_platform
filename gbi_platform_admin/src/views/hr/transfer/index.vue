@@ -37,6 +37,12 @@
             <el-table-column prop="postName" label="入职岗位" width="120" align="center" show-overflow-tooltip />
             <el-table-column prop="entryDate" label="入职日期" width="110" align="center" />
             <el-table-column prop="employmentTypeText" label="用工类型" width="90" align="center" />
+            <el-table-column prop="workweekConfigName" label="休息日配置" width="120" align="center" show-overflow-tooltip />
+            <el-table-column prop="exemptAttendanceText" label="是否参与考勤" width="110" align="center">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.exemptAttendance === 1 ? 'info' : 'success'">{{ row.exemptAttendanceText }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="basicSalary" label="基本工资" width="100" align="right">
               <template #default="{ row }">{{ row.basicSalary ? '¥' + row.basicSalary.toLocaleString() : '—' }}</template>
             </el-table-column>
@@ -138,9 +144,9 @@
     <!-- 入职申请弹窗 -->
     <el-dialog v-model="entryDialogVisible" title="新增入职申请" width="1200px" :close-on-click-modal="false" destroy-on-close>
       <el-form ref="entryFormRef" :model="entryForm" :rules="entryRules" label-width="100px">
-        <el-row :gutter="20">
+        <el-row :gutter="23">
           <!-- ========== 左侧表单区域 ========== -->
-          <el-col :span="12">
+          <el-col :span="14">
             <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="员工工号" prop="employeeNo">
@@ -151,6 +157,18 @@
                 <el-form-item label="姓名" prop="name">
                   <el-input v-model="entryForm.name" placeholder="请输入" />
                 </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-form-item label="性别" prop="gender">
+                  <el-radio-group v-model="entryForm.gender">
+                    <el-radio :value="1">男</el-radio><el-radio :value="2">女</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="入职日期"><el-date-picker v-model="entryForm.entryDate" type="date" placeholder="请选择" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="16">
@@ -178,32 +196,72 @@
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="入职日期" prop="entryDate">
-                  <el-date-picker v-model="entryForm.entryDate" type="date" placeholder="请选择" value-format="YYYY-MM-DD" style="width:100%" />
+                <el-form-item label="身份证号" prop="idCardNo">
+                  <el-input v-model="entryForm.idCardNo" placeholder="请输入" />
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-form-item label="所属组织" prop="orgId">
-              <el-tree-select
-                v-model="entryForm.orgId"
-                :data="orgTreeData"
-                :props="{ label: 'orgName', value: 'id', children: 'children' }"
-                check-strictly
-                node-key="id"
-                placeholder="请选择部门"
-                clearable
-                filterable
-                style="width:100%"
-                :render-after-expand="false"
-              />
-            </el-form-item>
-            <el-form-item label="目标岗位" prop="postId">
-              <el-select v-model="entryForm.postId" placeholder="请先选择所属组织" clearable filterable style="width:100%" :loading="postLoading">
-                <el-option v-for="post in filteredPostList" :key="post.id" :label="post.postName" :value="post.id" />
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-form-item label="用工类型" prop="employmentType">
+                  <el-select v-model="entryForm.employmentType" placeholder="请选择" style="width:100%">
+                    <el-option label="正式" :value="1" /><el-option label="试用期" :value="2" /><el-option label="劳务派遣" :value="3" /><el-option label="临时工" :value="4" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="就职城市" prop="cityId">
+                  <el-select v-model="entryForm.cityId" placeholder="请选择就职城市" clearable filterable style="width:100%" :loading="cityLoading">
+                    <el-option v-for="city in cityList" :key="city.id" :label="city.cityCode + '、' + city.cityName" :value="city.id" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row> 
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-form-item label="所属组织" prop="orgId">
+                  <el-tree-select
+                    v-model="entryForm.orgId"
+                    :data="orgTreeData"
+                    :props="{ label: 'orgName', value: 'id', children: 'children' }"
+                    check-strictly
+                    node-key="id"
+                    placeholder="请选择部门"
+                    clearable
+                    filterable
+                    style="width:100%"
+                    :render-after-expand="false"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="目标岗位">
+                  <el-select v-model="entryForm.postId" placeholder="请先选择所属组织" clearable filterable style="width:100%" :loading="postLoading">
+                    <el-option v-for="post in filteredPostList" :key="post.id" :label="post.postName" :value="post.id" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row> 
+            <el-form-item label="薪资模板">
+              <el-select v-model="entryForm.salaryRuleId" placeholder="请选择薪资模板" clearable filterable style="width:100%" :loading="salaryRuleLoading" @change="handleSalaryRuleChange">
+                <el-option v-for="rule in salaryRuleList" :key="rule.id" :label="rule.ruleName" :value="rule.id" />
               </el-select>
             </el-form-item>
+            <el-form-item label="休息日配置">
+              <el-select v-model="entryForm.workweekConfigId" placeholder="可选，默认沿用岗位配置" clearable filterable style="width:100%">
+                <el-option v-for="cfg in workweekConfigList" :key="cfg.id" :label="cfg.configName" :value="cfg.id" />
+              </el-select>
+              <div style="color:#909399;font-size:12px;margin-top:4px">为本次入职员工指定休息日规则；留空则使用岗位或组织默认配置</div>
+            </el-form-item>
+            <el-form-item label="是否参与考勤">
+              <el-radio-group v-model="entryForm.exemptAttendance">
+                <el-radio :value="0">参与</el-radio>
+                <el-radio :value="1">不参与</el-radio>
+              </el-radio-group>
+              <div style="color:#909399;font-size:12px;margin-top:4px">不参与考勤的员工，同步打卡时默认为满勤</div>
+            </el-form-item>
             <el-form-item label="基本工资">
-              <el-input-number v-model="entryForm.basicSalary" :precision="2" :min="0" placeholder="请输入" style="width:100%" />
+              <el-input-number v-model="entryForm.basicSalary" :precision="2" :min="0" placeholder="选择模板后自动填充或手动输入" style="width:100%" />
             </el-form-item>
 
             <!-- 工作经历 -->
@@ -290,7 +348,7 @@
           </el-col>
 
           <!-- ========== 右侧：富文本附件内容（红色框区域） ========== -->
-          <el-col :span="12">
+          <el-col :span="10">
             <!-- label-position="top" 标签放到顶部，标题在上，编辑器在下 -->
             <el-form-item label="附件内容" label-position="top" style="height:100%;margin-bottom:0;">
               <div class="wang-editor-wrapper">
@@ -371,6 +429,8 @@
                 <el-descriptions-item label="用工类型">{{ employmentTypeText(viewRecord?.employmentType) }}</el-descriptions-item>
                 <el-descriptions-item label="入职组织">{{ viewRecord?.orgName || orgNameMap[viewRecord?.orgId ?? 0] || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="入职岗位">{{ viewRecord?.postName || getPostName(viewRecord?.postId) || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="就职城市">{{ viewRecord?.cityName || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="薪资模板">{{ viewRecord?.salaryRuleName || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="基本工资">{{ viewRecord?.basicSalary ? '¥' + viewRecord.basicSalary.toLocaleString() : '-' }}</el-descriptions-item>
                 <el-descriptions-item label="工资卡号">{{ viewRecord?.bankAccount || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="自动创建账号">{{ viewRecord?.autoCreateUser === 1 ? '是' : '否' }}</el-descriptions-item>
@@ -438,6 +498,96 @@
         </el-tab-pane>
       </el-tabs>
     </el-dialog>
+
+    <!-- 转正申请弹窗 -->
+    <el-dialog v-model="regularDialogVisible" title="新增转正申请" width="560px" :close-on-click-modal="false" destroy-on-close>
+      <el-form ref="regularFormRef" :model="regularForm" :rules="regularRules" label-width="100px">
+        <el-form-item label="在职员工" prop="employeeId">
+          <el-select v-model="regularForm.employeeId" placeholder="请选择员工" clearable filterable style="width:100%" :loading="employeeListLoading">
+            <el-option v-for="emp in employeeList" :key="emp.id" :label="emp.employeeNo + '、' + emp.name" :value="emp.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="转正日期" prop="regularDate">
+          <el-date-picker v-model="regularForm.regularDate" type="date" placeholder="请选择" value-format="YYYY-MM-DD" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="regularForm.remark" type="textarea" :rows="2" placeholder="请输入备注" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="regularDialogVisible=false">取消</el-button>
+        <el-button type="primary" :loading="regularSubmitLoading" @click="handleSubmitRegular">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 调岗申请弹窗 -->
+    <el-dialog v-model="transferDialogVisible" title="新增调岗申请" width="560px" :close-on-click-modal="false" destroy-on-close>
+      <el-form ref="transferFormRef" :model="transferForm" :rules="transferRules" label-width="100px">
+        <el-form-item label="在职员工" prop="employeeId">
+          <el-select v-model="transferForm.employeeId" placeholder="请选择员工" clearable filterable style="width:100%" :loading="employeeListLoading">
+            <el-option v-for="emp in employeeList" :key="emp.id" :label="emp.employeeNo + '、' + emp.name" :value="emp.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="新组织" prop="newOrgId">
+          <el-tree-select
+            v-model="transferForm.newOrgId"
+            :data="orgTreeData"
+            :props="{ label: 'orgName', value: 'id', children: 'children' }"
+            check-strictly node-key="id"
+            placeholder="请选择新组织"
+            clearable filterable
+            style="width:100%" :render-after-expand="false"
+          />
+        </el-form-item>
+        <el-form-item label="新岗位" prop="newPostId">
+          <el-select v-model="transferForm.newPostId" placeholder="请先选择新组织" clearable filterable style="width:100%" :loading="postLoading">
+            <el-option v-for="post in filteredTransferPostList" :key="post.id" :label="post.postName" :value="post.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="调岗日期" prop="transferDate">
+          <el-date-picker v-model="transferForm.transferDate" type="date" placeholder="请选择" value-format="YYYY-MM-DD" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="调岗原因">
+          <el-input v-model="transferForm.reason" type="textarea" :rows="2" placeholder="请输入调岗原因" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="transferDialogVisible=false">取消</el-button>
+        <el-button type="primary" :loading="transferSubmitLoading" @click="handleSubmitTransfer">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 离职申请弹窗 -->
+    <el-dialog v-model="resignDialogVisible" title="新增离职申请" width="560px" :close-on-click-modal="false" destroy-on-close>
+      <el-form ref="resignFormRef" :model="resignForm" :rules="resignRules" label-width="100px">
+        <el-form-item label="在职员工" prop="employeeId">
+          <el-select v-model="resignForm.employeeId" placeholder="请选择员工" clearable filterable style="width:100%" :loading="employeeListLoading">
+            <el-option v-for="emp in employeeList" :key="emp.id" :label="emp.employeeNo + '、' + emp.name" :value="emp.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="离职日期" prop="resignDate">
+          <el-date-picker v-model="resignForm.resignDate" type="date" placeholder="请选择" value-format="YYYY-MM-DD" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="离职类型" prop="resignType">
+          <el-radio-group v-model="resignForm.resignType">
+            <el-radio :value="1">主动辞职</el-radio>
+            <el-radio :value="2">合同到期</el-radio>
+            <el-radio :value="3">辞退</el-radio>
+            <el-radio :value="4">终止合同</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="离职原因">
+          <el-input v-model="resignForm.reason" type="textarea" :rows="2" placeholder="请输入离职原因" />
+        </el-form-item>
+        <el-form-item label="交接备注">
+          <el-input v-model="resignForm.handoverRemark" type="textarea" :rows="2" placeholder="请输入工作交接备注" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="resignDialogVisible=false">取消</el-button>
+        <el-button type="primary" :loading="resignSubmitLoading" @click="handleSubmitResign">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -451,6 +601,9 @@ import '@wangeditor/editor/dist/css/style.css'
 import { useTable } from '@/hooks/useTable'
 import * as api from '@/api/hr'
 import * as fileApi from '@/api/file'
+import { getCityListApi } from '@/api/hrSocialParam'
+import { getSalaryRuleListApi, type HrSalaryRuleVO } from '@/api/hrSalary'
+import { getWorkweekConfigListApi } from '@/api/hr'
 import { getOrgTreeApi } from '@/api/org'
 import { getStorage } from '@/utils/storage'
 
@@ -496,7 +649,7 @@ const loadAllPosts = async () => {
   postLoading.value = true
   try {
     const result = await api.getPostFlatListApi()
-    allPostList.value = result
+    allPostList.value = result as unknown as api.HrPostVO[]
   } finally {
     postLoading.value = false
   }
@@ -550,15 +703,39 @@ const entryRules = {
 
 const openAdd = (tab: string) => {
   if (tab === 'entry') {
-    Object.assign(entryForm, { employeeNo: '', name: '', entryDate: '', employmentType: 1, orgId: undefined, postId: undefined, basicSalary: undefined, remark: '' })
+    Object.assign(entryForm, { employeeNo: '', name: '', entryDate: '', employmentType: 1, orgId: undefined, postId: undefined, basicSalary: undefined, cityId: 1, salaryRuleId: undefined, workweekConfigId: undefined, exemptAttendance: 0, remark: '' })
     entryPhotoFile.value = null
     entryPhotoUrl.value = ''
     entryPhotoFileId.value = undefined
-    // 清空富文本内容，不手动创建editor实例
     attachmentHtml.value = ''
     workExps.value = []
     eduExps.value = []
     entryDialogVisible.value = true
+  } else if (tab === 'regular') {
+    Object.assign(regularForm, { employeeId: undefined, regularDate: '', remark: '' })
+    // 转正只展示试用期且非派遣/临时工员工
+    employeeListLoading.value = true
+    api.getEmployeeListApi({ employeeStatus: 2 }).then((list: any[]) => {
+      employeeList.value = list.filter(e => e.employmentType !== 3 && e.employmentType !== 4)
+      employeeListLoading.value = false
+    }).catch(() => { employeeListLoading.value = false })
+    regularDialogVisible.value = true
+  } else if (tab === 'transfer') {
+    Object.assign(transferForm, { employeeId: undefined, newOrgId: undefined, newPostId: undefined, transferDate: '', reason: '' })
+    employeeListLoading.value = true
+    api.getEmployeeListApi({ employeeStatus: 1 }).then((list: any[]) => {
+      employeeList.value = list
+      employeeListLoading.value = false
+    }).catch(() => { employeeListLoading.value = false })
+    transferDialogVisible.value = true
+  } else if (tab === 'resign') {
+    Object.assign(resignForm, { employeeId: undefined, resignDate: '', resignType: undefined, reason: '', handoverRemark: '' })
+    employeeListLoading.value = true
+    api.getEmployeeListApi({ employeeStatus: 1 }).then((list: any[]) => {
+      employeeList.value = list
+      employeeListLoading.value = false
+    }).catch(() => { employeeListLoading.value = false })
+    resignDialogVisible.value = true
   }
 }
 
@@ -738,7 +915,7 @@ const entryStatusType = (status?: number) => {
 
 const transferStatusType = (status?: number) => entryStatusType(status)
 
-/* ---- 转正 / 调岗 / 离职（占位） ---- */
+/* ---- 转正 / 调岗 / 离职 ---- */
 const regularQuery = reactive({ pageNum: 1, pageSize: 20, status: undefined as number | undefined })
 const { records: regularRecords, total: regularTotal, loading: regularLoading, loadData: loadRegularData } = useTable(api.getRegularPageApi, regularQuery)
 
@@ -747,6 +924,62 @@ const { records: transferRecords, total: transferTotal, loading: transferLoading
 
 const resignQuery = reactive({ pageNum: 1, pageSize: 20, status: undefined as number | undefined })
 const { records: resignRecords, total: resignTotal, loading: resignLoading, loadData: loadResignData } = useTable(api.getResignPageApi, resignQuery)
+
+/* ---- 转正申请 ---- */
+const regularDialogVisible = ref(false)
+const regularSubmitLoading = ref(false)
+const regularFormRef = ref()
+const regularForm = reactive<api.RegularApplyDTO>({ employeeId: undefined!, regularDate: '' })
+const regularRules = { employeeId: [{ required: true, message: '请选择员工' }], regularDate: [{ required: true, message: '请选择转正日期' }] }
+const handleSubmitRegular = async () => {
+  await regularFormRef.value.validate()
+  regularSubmitLoading.value = true
+  try {
+    await api.submitRegularApi(regularForm as any)
+    ElMessage.success('提交成功')
+    regularDialogVisible.value = false
+    loadRegularData()
+  } finally { regularSubmitLoading.value = false }
+}
+
+/* ---- 调岗申请 ---- */
+const transferDialogVisible = ref(false)
+const transferSubmitLoading = ref(false)
+const transferFormRef = ref()
+const transferForm = reactive<api.TransferApplyDTO>({ employeeId: undefined!, newOrgId: undefined!, newPostId: undefined!, transferDate: '' })
+const transferRules = { employeeId: [{ required: true, message: '请选择员工' }], newOrgId: [{ required: true, message: '请选择新组织' }], newPostId: [{ required: true, message: '请选择新岗位' }], transferDate: [{ required: true, message: '请选择调岗日期' }] }
+// 调岗弹窗内的岗位过滤（基于新组织）
+const filteredTransferPostList = computed(() => {
+  if (!transferForm.newOrgId) return []
+  return allPostList.value.filter(p => p.deptId === transferForm.newOrgId)
+})
+const handleSubmitTransfer = async () => {
+  await transferFormRef.value.validate()
+  transferSubmitLoading.value = true
+  try {
+    await api.submitTransferApi(transferForm as any)
+    ElMessage.success('提交成功')
+    transferDialogVisible.value = false
+    loadTransferData()
+  } finally { transferSubmitLoading.value = false }
+}
+
+/* ---- 离职申请 ---- */
+const resignDialogVisible = ref(false)
+const resignSubmitLoading = ref(false)
+const resignFormRef = ref()
+const resignForm = reactive<api.ResignApplyDTO>({ employeeId: undefined!, resignDate: '', resignType: undefined! })
+const resignRules = { employeeId: [{ required: true, message: '请选择员工' }], resignDate: [{ required: true, message: '请选择离职日期' }], resignType: [{ required: true, message: '请选择离职类型' }] }
+const handleSubmitResign = async () => {
+  await resignFormRef.value.validate()
+  resignSubmitLoading.value = true
+  try {
+    await api.submitResignApi(resignForm as any)
+    ElMessage.success('提交成功')
+    resignDialogVisible.value = false
+    loadResignData()
+  } finally { resignSubmitLoading.value = false }
+}
 
 const handleRevokeRegular = (row: api.HrRegularApplyVO) => {
   ElMessageBox.confirm('确认撤销该转正申请?', '提示').then(async () => {
@@ -772,7 +1005,70 @@ const handleRevokeResign = (row: api.HrResignApplyVO) => {
   })
 }
 
-onMounted(() => { loadOrgTree(); loadAllPosts(); loadEntryData() })
+// ---- 就职城市 ----
+const cityList = ref<any[]>([])
+const cityLoading = ref(false)
+const loadCityList = async () => {
+  cityLoading.value = true
+  try {
+    const res = await getCityListApi()
+    cityList.value = res || []
+    // 默认选中 id=1 的青岛
+    if (cityList.value.length > 0) {
+      const qd = cityList.value.find((c: any) => c.id === 1)
+      if (qd) entryForm.cityId = qd.id
+    }
+  } catch (e) {
+    console.error('[transfer] 加载城市列表失败', e)
+  } finally {
+    cityLoading.value = false
+  }
+}
+
+// ---- 薪资模板下拉 ----
+const salaryRuleList = ref<HrSalaryRuleVO[]>([])
+const salaryRuleLoading = ref(false)
+const loadSalaryRuleList = async () => {
+  salaryRuleLoading.value = true
+  try {
+    const res = await getSalaryRuleListApi()
+    salaryRuleList.value = res || []
+  } catch (e) {
+    console.error('[transfer] 加载薪资模板列表失败', e)
+  } finally {
+    salaryRuleLoading.value = false
+  }
+}
+
+// 选择薪资模板时自动填充基本工资
+function handleSalaryRuleChange(ruleId: number | undefined) {
+  if (!ruleId) { entryForm.basicSalary = undefined; return }
+  const rule = salaryRuleList.value.find(r => r.id === ruleId)
+  if (rule) entryForm.basicSalary = rule.basicSalary
+}
+
+// ---- 休息日配置下拉 ----
+const workweekConfigList = ref<api.WorkweekConfigVO[]>([])
+const loadWorkweekConfigList = async () => {
+  try { workweekConfigList.value = await getWorkweekConfigListApi() } catch (e) { console.error('[transfer] 加载休息日配置列表失败', e) }
+}
+
+// ---- 员工下拉列表（转正/调岗/离职弹窗用）----
+const employeeList = ref<api.EmployeeVO[]>([])
+const employeeListLoading = ref(false)
+// 根据申请类型加载对应状态的员工列表：转正=试用期(2)，调岗/离职=在职(1)
+const loadEmployeeList = async (employeeStatus?: number) => {
+  employeeListLoading.value = true
+  try {
+    const params: any = { employmentType: 1 }
+    if (employeeStatus != null) params.employeeStatus = employeeStatus
+    const res = await api.getEmployeeListApi(params)
+    employeeList.value = res || []
+  } catch (e) { console.error('[transfer] 加载员工列表失败', e) }
+  finally { employeeListLoading.value = false }
+}
+
+onMounted(() => { loadOrgTree(); loadAllPosts(); loadEntryData(); loadCityList(); loadSalaryRuleList(); loadWorkweekConfigList() })
 // Editor 实例由 destroy-on-close 自动管理，无需手动销毁
 </script>
 

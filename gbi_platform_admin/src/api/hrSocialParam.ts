@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 社保公积金模块前端 API
  * 包含：城市字典、险种字典、行业字典、社保参数、公积金参数、核算明细、年度基数重算
  */
@@ -42,3 +42,6 @@ export const exportCalcDetailApi = (params: any) => get('/hr/social-calc/detail/
 
 // ========== 年度基数重算 ==========
 export const triggerAnnualRecalcApi = (data: any) => post('/hr/social-calc/annual-recalc', data)
+
+// 城市列表（下拉框用，仅返回启用状态）
+export const getCityListApi = () => get<any[]>('/hr/city/list')

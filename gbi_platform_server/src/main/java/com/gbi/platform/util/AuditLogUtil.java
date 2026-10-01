@@ -1,7 +1,8 @@
 package com.gbi.platform.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gbi.platform.common.constant.CommonConst;
+import com.gbi.platform.common.security.LoginUser;
+import com.gbi.platform.common.security.UserContext;
 import com.gbi.platform.entity.SysAuditLog;
 import com.gbi.platform.mapper.SysAuditLogMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +29,20 @@ public class AuditLogUtil {
             log.setBeforeJson(beforeObj != null ? OBJECT_MAPPER.writeValueAsString(beforeObj) : null);
             log.setAfterJson(afterObj != null ? OBJECT_MAPPER.writeValueAsString(afterObj) : null);
             log.setOperIp(getClientIp());
-            log.setOperUserName(getCurrentUserName());
+            // 从上下文取登录用户
+            try {
+                LoginUser user = UserContext.getLoginUserOrNull();
+                if (user != null) {
+                    log.setOperUserId(user.getUserId());
+                    log.setOperUserName(user.getRealName() != null ? user.getRealName() : user.getUsername());
+                    log.setCompanyId(user.getCompanyId());
+                }
+            } catch (Exception ignored) {
+            }
+            // userName 兜底
+            if (log.getOperUserName() == null) {
+                log.setOperUserName(getCurrentUserName());
+            }
             auditLogMapper.insert(log);
         } catch (Exception e) {
             System.err.println("[AuditLogUtil] 记录审计日志失败: " + e.getMessage());

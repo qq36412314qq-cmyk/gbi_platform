@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="g-table-card">
     <!-- 默认 slot：el-table 列定义 -->
     <slot />
@@ -25,7 +25,7 @@
  *         <el-table :data="records">...</el-table>
  *       </TablePage>
  */
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -59,6 +59,11 @@ function handleSizeChange(): void {
 }
 
 function handleCurrentChange(): void {
+  // 页码变化时直接刷新数据
   emit('refresh')
 }
+
+// 监听分页参数变化，自动触发刷新（确保翻页时数据同步更新）
+watch(() => props.pageNum, () => emit('refresh'))
+watch(() => props.pageSize, () => { emit('update:pageNum', 1); emit('refresh') })
 </script>

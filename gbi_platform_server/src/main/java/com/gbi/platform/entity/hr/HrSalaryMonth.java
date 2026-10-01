@@ -40,6 +40,8 @@ public class HrSalaryMonth extends BaseEntity {
     private Integer minWageProtected;
     /** 是否跳过考勤（快照） */
     private Integer skipAttendance;
+    /** 加班补偿金额（元），由 generateMonth 同步 */
+    private java.math.BigDecimal overtimeAmount;
     private java.math.BigDecimal grossAmount;
     private java.math.BigDecimal netAmount;
     /** 养老保险个人扣除 */

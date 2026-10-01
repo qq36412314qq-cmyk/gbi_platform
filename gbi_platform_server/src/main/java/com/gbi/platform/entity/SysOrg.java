@@ -23,8 +23,10 @@ public class SysOrg extends BaseEntity {
     /** 组织部门名称 */
     private String orgName;
 
-    /** 组织类型：1集团 2子公司 3部门 */
+    /** 组织类型：1集团 2子公司 3部门 4班组 */
     private Integer orgType;
+    /** 默认休息日配置ID */
+    private Long defaultWorkweekConfigId;
 
     /** 排序 */
     private Integer sortOrder;

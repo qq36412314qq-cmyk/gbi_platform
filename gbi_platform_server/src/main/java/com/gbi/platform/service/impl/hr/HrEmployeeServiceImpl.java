@@ -12,15 +12,25 @@ import com.gbi.platform.dto.hr.EmployeeDTO;
 import com.gbi.platform.dto.hr.EduExpDTO;
 import com.gbi.platform.dto.hr.WorkExpDTO;
 import com.gbi.platform.entity.hr.HrEmployee;
+import com.gbi.platform.entity.hr.HrCity;
 import com.gbi.platform.entity.hr.HrEntryApply;
+import com.gbi.platform.entity.hr.HrSalaryRule;
 import com.gbi.platform.entity.hr.HrEmployeeEduExp;
 import com.gbi.platform.entity.hr.HrEmployeeWorkExp;
 import com.gbi.platform.mapper.hr.HrEmployeeMapper;
+import com.gbi.platform.mapper.hr.HrCityMapper;
 import com.gbi.platform.mapper.hr.HrEntryApplyMapper;
+import com.gbi.platform.mapper.hr.HrSalaryRuleMapper;
 import com.gbi.platform.mapper.hr.HrEmployeeEduExpMapper;
 import com.gbi.platform.mapper.hr.HrEmployeeWorkExpMapper;
+import com.gbi.platform.mapper.hr.HrPostMapper;
+import com.gbi.platform.entity.hr.HrPost;
 import com.gbi.platform.mapper.SysUserMapper;
+import com.gbi.platform.mapper.SysOrgMapper;
+import com.gbi.platform.entity.SysOrg;
 import com.gbi.platform.entity.SysUser;
+import com.gbi.platform.entity.sys.SysWorkweekConfig;
+import com.gbi.platform.mapper.sys.SysWorkweekConfigMapper;
 import com.gbi.platform.service.hr.HrEmployeeService;
 import com.gbi.platform.service.FileService;
 import com.gbi.platform.vo.hr.EduExpVO;
@@ -81,6 +91,11 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
     private final ObjectMapper objectMapper;
     private final SysUserMapper sysUserMapper;
     private final FileService fileService;
+    private final HrCityMapper hrCityMapper;
+    private final HrSalaryRuleMapper hrSalaryRuleMapper;
+    private final HrPostMapper hrPostMapper;
+    private final SysOrgMapper sysOrgMapper;
+    private final SysWorkweekConfigMapper workweekConfigMapper;
 
     @Override
     public PageVO<HrEmployeeVO> page(Long pageNum, Long pageSize, String name, String employeeNo, Integer employeeStatus) {
@@ -125,11 +140,14 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
         employee.setBankAccount(dto.getBankAccount());
         employee.setSocialSecurityBase(dto.getSocialSecurityBase());
         employee.setBasicSalary(dto.getBasicSalary());
+        employee.setWorkweekConfigId(dto.getWorkweekConfigId());
+        employee.setExemptAttendance(dto.getExemptAttendance() != null ? dto.getExemptAttendance() : 0);
         employee.setRemark(dto.getRemark());
         employee.setPhotoFileId(dto.getPhotoFileId());
         employee.setAttachmentContent(dto.getAttachmentContent());
         employee.setCreateBy(loginUser.getUserId());
         employeeMapper.insert(employee);
+        writeExperienceData(dto.getExperienceData(), employee.getId(), employee.getCompanyId(), loginUser.getUserId());
         auditLogUtil.record(CommonConst.MODULE_HR_EMPLOYEE, CommonConst.OPER_TYPE_ADD,
                 String.valueOf(employee.getId()), null, employee);
         return employee.getId();
@@ -156,11 +174,14 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
         employee.setBankAccount(dto.getBankAccount());
         employee.setSocialSecurityBase(dto.getSocialSecurityBase());
         employee.setBasicSalary(dto.getBasicSalary());
+        employee.setWorkweekConfigId(dto.getWorkweekConfigId());
+        employee.setExemptAttendance(dto.getExemptAttendance() != null ? dto.getExemptAttendance() : 0);
         employee.setRemark(dto.getRemark());
         employee.setPhotoFileId(dto.getPhotoFileId());
         employee.setAttachmentContent(dto.getAttachmentContent());
         employee.setUpdateBy(UserContext.getLoginUser().getUserId());
         employeeMapper.updateById(employee);
+        writeExperienceData(dto.getExperienceData(), dto.getId(), oldEmployee.getCompanyId(), UserContext.getLoginUser().getUserId());
         auditLogUtil.record(CommonConst.MODULE_HR_EMPLOYEE, CommonConst.OPER_TYPE_UPDATE,
                 String.valueOf(dto.getId()), oldEmployee, employee);
     }
@@ -183,6 +204,20 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
     public List<HrEmployeeVO> export(List<Long> ids) {
         List<HrEmployee> list = employeeMapper.selectBatchIds(ids);
         return list.stream().map(this::toVO).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<HrEmployeeVO> listForDropdown(String name, String employeeNo, Integer employeeStatus, Integer employmentType) {
+        LoginUser loginUser = UserContext.getLoginUser();
+        LambdaQueryWrapper<HrEmployee> wrapper = new LambdaQueryWrapper<HrEmployee>()
+                .eq(HrEmployee::getCompanyId, loginUser.getCompanyId())
+                .eq(employeeStatus != null, HrEmployee::getEmployeeStatus, employeeStatus)
+                .eq(employmentType != null, HrEmployee::getEmploymentType, employmentType)
+                .like(StringUtils.hasText(name), HrEmployee::getName, name)
+                .like(StringUtils.hasText(employeeNo), HrEmployee::getEmployeeNo, employeeNo)
+                .orderByDesc(HrEmployee::getCreateTime)
+                .last("LIMIT 200");
+        return employeeMapper.selectList(wrapper).stream().map(this::toVO).collect(Collectors.toList());
     }
 
     /**
@@ -228,8 +263,12 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
         employee.setRemark(apply.getRemark());
         employee.setPhotoFileId(apply.getPhotoFileId());
         employee.setAttachmentContent(apply.getAttachmentContent());
+        employee.setCityId(apply.getCityId());
+        employee.setSalaryRuleId(apply.getSalaryRuleId());
+        employee.setWorkweekConfigId(apply.getWorkweekConfigId());
         employee.setCreateBy(apply.getCreateBy());
         employeeMapper.insert(employee);
+        writeExperienceData(apply.getExperienceData(), employee.getId(), employee.getCompanyId(), apply.getCreateBy());
         auditLogUtil.record(CommonConst.MODULE_HR_EMPLOYEE, CommonConst.OPER_TYPE_ADD,
                 String.valueOf(employee.getId()), null, employee);
         log.info("入职审批通过，自动建档成功：employeeId={}, employeeNo={}, name={}",
@@ -270,6 +309,61 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
     /**
      * 解析入职申请中的JSON经历数据并写入子表
      */
+    /**
+     * 从 EmployeeDTO 中解析经历数据并写入子表（新增/编辑员工时使用）
+     */
+    private void writeExperienceData(String experienceData, Long employeeId, Long companyId, Long createBy) {
+        if (!StringUtils.hasText(experienceData)) return;
+        try {
+            Map<String, Object> dataMap = objectMapper.readValue(experienceData, new TypeReference<Map<String, Object>>() {});
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> workExps = (List<Map<String, Object>>) dataMap.get("workExps");
+            if (workExps != null && !workExps.isEmpty()) {
+                for (Map<String, Object> item : workExps) {
+                    HrEmployeeWorkExp exp = new HrEmployeeWorkExp();
+                    exp.setCompanyId(companyId);
+                    exp.setEmployeeId(employeeId);
+                    exp.setCompanyName((String) item.get("companyName"));
+                    exp.setPosition((String) item.get("position"));
+                    exp.setDepartment((String) item.get("department"));
+                    exp.setStartDate(parseLocalDate(item.get("startDate")));
+                    exp.setEndDate(parseLocalDate(item.get("endDate")));
+                    exp.setIsCurrent(item.get("isCurrent") != null ? ((Number) item.get("isCurrent")).intValue() : 0);
+                    exp.setReasonForLeaving((String) item.get("reasonForLeaving"));
+                    exp.setRemark((String) item.get("remark"));
+                    exp.setCreateBy(createBy);
+                    workExpMapper.insert(exp);
+                }
+                log.info("writeExperienceData: 写入工作经历成功：employeeId={}, count={}", employeeId, workExps.size());
+            }
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> eduExps = (List<Map<String, Object>>) dataMap.get("eduExps");
+            if (eduExps != null && !eduExps.isEmpty()) {
+                for (Map<String, Object> item : eduExps) {
+                    HrEmployeeEduExp exp = new HrEmployeeEduExp();
+                    exp.setCompanyId(companyId);
+                    exp.setEmployeeId(employeeId);
+                    exp.setSchoolName((String) item.get("schoolName"));
+                    exp.setDegree((String) item.get("degree"));
+                    exp.setMajor((String) item.get("major"));
+                    exp.setEducationLevel((String) item.get("educationLevel"));
+                    exp.setStartDate(parseLocalDate(item.get("startDate")));
+                    exp.setGraduationDate(parseLocalDate(item.get("graduationDate")));
+                    exp.setIsGraduated(item.get("isGraduated") != null ? ((Number) item.get("isGraduated")).intValue() : 0);
+                    exp.setCertificateNo((String) item.get("certificateNo"));
+                    exp.setRemark((String) item.get("remark"));
+                    exp.setCreateBy(createBy);
+                    eduExpMapper.insert(exp);
+                }
+                log.info("writeExperienceData: 写入学业经历成功：employeeId={}, count={}", employeeId, eduExps.size());
+            }
+        } catch (Exception e) {
+            log.error("writeExperienceData: 解析经历数据失败 employeeId={} error={}", employeeId, e.getMessage(), e);
+        }
+    }
+
     private void writeExperienceData(HrEntryApply apply, Long employeeId) {
         String experienceData = apply.getExperienceData();
         if (!StringUtils.hasText(experienceData)) {
@@ -385,6 +479,52 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
                 vo.setPhotoPreviewUrl(fileService.getPreviewUrl(entity.getPhotoFileId()));
             } catch (Exception e) {
                 log.warn("[toVO] 获取照片预览URL失败 - photoFileId={}", entity.getPhotoFileId(), e);
+            }
+        }
+        vo.setCityId(entity.getCityId());
+        vo.setSalaryRuleId(entity.getSalaryRuleId());
+        if (entity.getCityId() != null && entity.getCityId() > 0) {
+            try {
+                HrCity city = hrCityMapper.selectById(entity.getCityId());
+                if (city != null) vo.setCityName(city.getCityName());
+            } catch (Exception e) {
+                log.warn("[toVO] 查询城市失败 cityId={}", entity.getCityId(), e);
+            }
+        }
+        if (entity.getSalaryRuleId() != null && entity.getSalaryRuleId() > 0) {
+            try {
+                HrSalaryRule rule = hrSalaryRuleMapper.selectById(entity.getSalaryRuleId());
+                if (rule != null) vo.setSalaryRuleName(rule.getRuleName());
+            } catch (Exception e) {
+                log.warn("[toVO] 查询薪资模板失败 ruleId={}", entity.getSalaryRuleId(), e);
+            }
+        }
+        // 查询休息日配置名称
+        if (entity.getWorkweekConfigId() != null && entity.getWorkweekConfigId() > 0) {
+            try {
+                SysWorkweekConfig config = workweekConfigMapper.selectById(entity.getWorkweekConfigId());
+                if (config != null) vo.setWorkweekConfigName(config.getConfigName());
+            } catch (Exception e) {
+                log.warn("[toVO] 查询休息日配置失败 workweekConfigId={}", entity.getWorkweekConfigId(), e);
+            }
+        }
+        vo.setExemptAttendance(entity.getExemptAttendance());
+        // 是否参与考勤文本：0=参与，1=不参与
+        vo.setExemptAttendanceText(entity.getExemptAttendance() != null && entity.getExemptAttendance() == 1 ? "不参与" : "参与");
+        if (entity.getPostId() != null && entity.getPostId() > 0) {
+            try {
+                HrPost post = hrPostMapper.selectById(entity.getPostId());
+                if (post != null) vo.setPostName(post.getPostName());
+            } catch (Exception e) {
+                log.warn("[toVO] 查询岗位失败 postId={}", entity.getPostId(), e);
+            }
+        }
+        if (entity.getOrgId() != null && entity.getOrgId() > 0) {
+            try {
+                SysOrg org = sysOrgMapper.selectById(entity.getOrgId());
+                if (org != null) vo.setOrgName(org.getOrgName());
+            } catch (Exception e) {
+                log.warn("[toVO] 查询组织失败 orgId={}", entity.getOrgId(), e);
             }
         }
         return vo;
@@ -582,3 +722,4 @@ public class HrEmployeeServiceImpl implements HrEmployeeService {
                 String.valueOf(id), exp, null);
     }
 }
+

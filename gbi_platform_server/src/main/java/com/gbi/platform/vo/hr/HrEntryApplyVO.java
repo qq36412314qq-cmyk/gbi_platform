@@ -98,4 +98,24 @@ public class HrEntryApplyVO implements Serializable {
 
     @Schema(description = "附件内容（富文本HTML）")
     private String attachmentContent;
+
+    @Schema(description = "就职城市ID")
+    private Long cityId;
+
+    @Schema(description = "就职城市名称（关联查询）")
+    private String cityName;
+
+    @Schema(description = "薪资模板ID")
+    private Long salaryRuleId;
+
+    @Schema(description = "薪资模板名称（关联查询）")
+    private String salaryRuleName;
+    @Schema(description = "休息日配置ID")
+    private Long workweekConfigId;
+    @Schema(description = "休息日配置名称（关联查询）")
+    private String workweekConfigName;
+    @Schema(description = "是否免考勤 0参与 1不参与")
+    private Integer exemptAttendance;
+    @Schema(description = "是否免考勤文本")
+    private String exemptAttendanceText;
 }

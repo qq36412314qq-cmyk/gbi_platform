@@ -40,4 +40,12 @@ public class HrEntryApply extends BaseEntity {
     private Long photoFileId;
     /** 附件内容（富文本HTML） */
     private String attachmentContent;
+    /** 就职城市ID（关联sys_city.id） */
+    private Long cityId;
+    /** 薪资模板ID（关联hr_salary_rule.id） */
+    private Long salaryRuleId;
+    /** 休息日配置ID（关联sys_workweek_config.id） */
+    private Long workweekConfigId;
+    /** 是否免考勤 0参与 1不参与（不参与考勤的员工同步时默认为满勤） */
+    private Integer exemptAttendance;
 }

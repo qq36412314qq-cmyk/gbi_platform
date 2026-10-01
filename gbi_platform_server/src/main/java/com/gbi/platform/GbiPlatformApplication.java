@@ -3,6 +3,7 @@ package com.gbi.platform;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 /**
  * 集团业务一体化管控平台 - 后端唯一程序启动入口
@@ -10,7 +11,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author gbi
  */
 @SpringBootApplication
-@MapperScan({"com.gbi.platform.mapper", "com.gbi.platform.mapper.hr"})
+@EnableConfigurationProperties(com.gbi.platform.config.WecomProperties.class)
+@MapperScan({
+        "com.gbi.platform.mapper",
+        "com.gbi.platform.mapper.hr",
+        "com.gbi.platform.mapper.wecom"
+})
 public class GbiPlatformApplication {
 
     public static void main(String[] args) {

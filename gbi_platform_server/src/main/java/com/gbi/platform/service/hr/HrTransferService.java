@@ -21,6 +21,9 @@ public interface HrTransferService {
     void onEntryApproved(Long entryApplyId);
     void onEntryRejected(Long entryApplyId);
     void onRegularApproved(Long regularApplyId);
+    void onRegularRejected(Long regularApplyId);
     void onTransferApproved(Long transferApplyId);
+    void onTransferRejected(Long transferApplyId);
     void onResignApproved(Long resignApplyId);
+    void onResignRejected(Long resignApplyId);
 }

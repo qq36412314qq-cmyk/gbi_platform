@@ -185,7 +185,7 @@ async function handleDelete(row: OrgVO): Promise<void> {
 
 /** 组织类型文案 */
 function orgTypeText(type: number): string {
-  const map: Record<number, string> = { 1: '集团', 2: '子公司', 3: '部门' }
+  const map: Record<number, string> = { 1: '集团', 2: '子公司', 3: '部门', 4: '班组' }
   return map[type] || '-'
 }
 

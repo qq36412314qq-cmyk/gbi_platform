@@ -14,6 +14,8 @@ import com.gbi.platform.service.hr.HrOrgService;
 import com.gbi.platform.vo.hr.HrPostVO;
 import com.gbi.platform.util.AuditLogUtil;
 import com.gbi.platform.vo.PageVO;
+import com.gbi.platform.entity.sys.SysWorkweekConfig;
+import com.gbi.platform.mapper.sys.SysWorkweekConfigMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class HrOrgServiceImpl implements HrOrgService {
 
     private final HrPostMapper postMapper;
     private final com.gbi.platform.mapper.SysOrgMapper orgMapper;
+    private final SysWorkweekConfigMapper workweekConfigMapper;
     private final AuditLogUtil auditLogUtil;
 
     /**
@@ -67,9 +70,12 @@ public class HrOrgServiceImpl implements HrOrgService {
         // 一次性加载所有组织，构建 ID→实体 Map，避免 N+1 查询
         Map<Long, SysOrg> orgMap = orgMapper.selectList(new LambdaQueryWrapper<SysOrg>())
                 .stream().collect(Collectors.toMap(SysOrg::getId, o -> o, (a, b) -> a));
+        // 一次性加载所有休息日配置，构建 ID→配置 Map
+        Map<Long, SysWorkweekConfig> workweekConfigMap = workweekConfigMapper.selectList(new LambdaQueryWrapper<SysWorkweekConfig>())
+                .stream().collect(Collectors.toMap(SysWorkweekConfig::getId, c -> c, (a, b) -> a));
 
         List<HrPostVO> voList = result.getRecords().stream()
-                .map(e -> toPostVO(e, orgMap))
+                .map(e -> toPostVO(e, orgMap, workweekConfigMap))
                 .collect(Collectors.toList());
         return new PageVO<>(voList, result.getTotal(), result.getCurrent(), result.getSize(), result.getPages());
     }
@@ -83,6 +89,8 @@ public class HrOrgServiceImpl implements HrOrgService {
         post.setPostCode(dto.getPostCode());
         post.setPostLevel(dto.getPostLevel());
         post.setDeptId(dto.getDeptId());
+        post.setWorkweekConfigId(dto.getWorkweekConfigId());
+        post.setShiftType(dto.getShiftType());
         post.setStatus(dto.getStatus() != null ? dto.getStatus() : CommonConst.STATUS_ENABLED);
         post.setRemark(dto.getRemark());
         post.setCreateBy(loginUser.getUserId());
@@ -102,6 +110,8 @@ public class HrOrgServiceImpl implements HrOrgService {
         post.setPostCode(dto.getPostCode());
         post.setPostLevel(dto.getPostLevel());
         post.setDeptId(dto.getDeptId());
+        post.setWorkweekConfigId(dto.getWorkweekConfigId());
+        post.setShiftType(dto.getShiftType());
         post.setStatus(dto.getStatus());
         post.setRemark(dto.getRemark());
         post.setUpdateBy(UserContext.getLoginUser().getUserId());
@@ -131,10 +141,13 @@ public class HrOrgServiceImpl implements HrOrgService {
         // 一次性加载所有组织，构建 ID→实体 Map
         Map<Long, SysOrg> orgMap = orgMapper.selectList(new LambdaQueryWrapper<SysOrg>())
                 .stream().collect(Collectors.toMap(SysOrg::getId, o -> o, (a, b) -> a));
-        return posts.stream().map(e -> toPostVO(e, orgMap)).collect(Collectors.toList());
+        // 一次性加载所有休息日配置
+        Map<Long, SysWorkweekConfig> workweekConfigMap = workweekConfigMapper.selectList(new LambdaQueryWrapper<SysWorkweekConfig>())
+                .stream().collect(Collectors.toMap(SysWorkweekConfig::getId, c -> c, (a, b) -> a));
+        return posts.stream().map(e -> toPostVO(e, orgMap, workweekConfigMap)).collect(Collectors.toList());
     }
 
-    private HrPostVO toPostVO(HrPost entity, Map<Long, SysOrg> orgMap) {
+    private HrPostVO toPostVO(HrPost entity, Map<Long, SysOrg> orgMap, Map<Long, SysWorkweekConfig> workweekConfigMap) {
         HrPostVO vo = new HrPostVO();
         vo.setId(entity.getId());
         vo.setCompanyId(entity.getCompanyId());
@@ -142,6 +155,8 @@ public class HrOrgServiceImpl implements HrOrgService {
         vo.setPostCode(entity.getPostCode());
         vo.setPostLevel(entity.getPostLevel());
         vo.setDeptId(entity.getDeptId());
+        vo.setWorkweekConfigId(entity.getWorkweekConfigId());
+        vo.setShiftType(entity.getShiftType());
         vo.setStatus(entity.getStatus());
         vo.setStatusText(entity.getStatus() != null && entity.getStatus() == 0 ? "禁用" : "启用");
         vo.setRemark(entity.getRemark());
@@ -150,6 +165,11 @@ public class HrOrgServiceImpl implements HrOrgService {
         if (entity.getDeptId() != null) {
             String path = buildOrgPath(entity.getDeptId(), orgMap);
             if (path != null) vo.setOrgName(path);
+        }
+        // 查询休息日配置名称
+        if (entity.getWorkweekConfigId() != null && entity.getWorkweekConfigId() > 0) {
+            SysWorkweekConfig config = workweekConfigMap.get(entity.getWorkweekConfigId());
+            if (config != null) vo.setWorkweekConfigName(config.getConfigName());
         }
         return vo;
     }

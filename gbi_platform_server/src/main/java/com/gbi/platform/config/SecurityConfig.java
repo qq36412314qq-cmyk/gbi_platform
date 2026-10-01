@@ -41,7 +41,8 @@ public class SecurityConfig {
             "/finance/discount/**",
             "/sys/device/hardware/sign",
             "/sys/device/auth/register",
-            "/sys/device/hardware/info"
+            "/sys/device/hardware/info",
+            "/api/wecom/callback"
     };
 
     private final JwtAuthFilter jwtAuthFilter;

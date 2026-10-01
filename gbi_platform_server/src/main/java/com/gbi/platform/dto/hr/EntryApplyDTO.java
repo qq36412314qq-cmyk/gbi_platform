@@ -79,4 +79,16 @@ public class EntryApplyDTO implements Serializable {
 
     @Schema(description = "附件内容（富文本HTML）")
     private String attachmentContent;
+
+    @Schema(description = "就职城市ID（关联sys_city.id）")
+    private Long cityId;
+
+    @Schema(description = "薪资模板ID（关联hr_salary_rule.id）")
+    private Long salaryRuleId;
+
+    @Schema(description = "休息日配置ID（关联sys_workweek_config.id）")
+    private Long workweekConfigId;
+
+    @Schema(description = "是否免考勤 0参与 1不参与")
+    private Integer exemptAttendance;
 }

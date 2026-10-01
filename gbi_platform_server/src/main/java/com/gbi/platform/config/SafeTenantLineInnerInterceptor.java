@@ -24,8 +24,8 @@ public class SafeTenantLineInnerInterceptor extends TenantLineInnerInterceptor {
 
     /**
      * 查询前：捕获 JsqlParser 解析异常后降级（不追加租户条件，直接执行原始 SQL）
-     * 全局表（GLOBAL_TABLES）本来就不需要租户过滤，降级后数据完全正确；
-     * 非全局表若解析失败则跳过拦截但记录 WARN 日志，便于后续修复表结构
+     * 若原始 SQL 已手动写了 company_id 条件，说明业务代码已自行处理租户隔离，
+     * 此时解析失败降级是预期行为，打 DEBUG 而非 WARN，避免噪音日志刷屏
      */
     @Override
     public void beforeQuery(Executor executor, MappedStatement ms, Object parameter,
@@ -33,7 +33,17 @@ public class SafeTenantLineInnerInterceptor extends TenantLineInnerInterceptor {
         try {
             super.beforeQuery(executor, ms, parameter, rowBounds, resultHandler, boundSql);
         } catch (Exception e) {
-            log.warn("多租户拦截器 beforeQuery 解析 SQL 失败，降级跳过拦截: {}", e.getMessage());
+            String rawSql = boundSql.getSql();
+            // 检测 SQL 是否已手动包含 company_id 条件（兼容 #{companyId} / ? 两种占位符形态）
+            boolean hasManualTenant = rawSql != null
+                    && (rawSql.contains("company_id") || rawSql.contains("companyId"))
+                    && rawSql.toLowerCase().contains("where");
+            if (hasManualTenant) {
+                log.debug("多租户拦截器跳过（SQL 已手动包含 company_id 条件，解析失败降级是预期行为）: {}",
+                        rawSql.length() > 120 ? rawSql.substring(0, 120) + "..." : rawSql);
+            } else {
+                log.warn("多租户拦截器 beforeQuery 解析 SQL 失败，降级跳过拦截（可能存在数据越权风险）: {}", e.getMessage());
+            }
         }
     }
 }

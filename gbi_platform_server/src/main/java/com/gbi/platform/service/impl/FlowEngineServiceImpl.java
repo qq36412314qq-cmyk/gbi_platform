@@ -400,159 +400,6 @@ public class FlowEngineServiceImpl implements FlowEngineService {
                 .stream().map(SysUserRoleRel::getUserId).distinct().toList();
     }
 
-    /* ============================== 私有方法 ============================== */
-
-    /**
-     * 通过节点流转：全部任务通过才进入下一节点；最后节点通过则实例完成
-     */
-    private void pass(FlowInstance instance, FlowTask task, FlowHandleDTO dto) {
-        markTaskDone(task, CommonConst.TASK_STATUS_DONE, 1, dto.getOpinion());
-        writeRecord(instance, task, CommonConst.FLOW_ACTION_PASS, dto.getOpinion());
-
-        // 会签未完成：同节点仍有待办任务则等待
-        Long remaining = taskMapper.selectCount(new LambdaQueryWrapper<FlowTask>()
-                .eq(FlowTask::getInstanceId, instance.getId())
-                .eq(FlowTask::getNodeOrder, task.getNodeOrder())
-                .eq(FlowTask::getTaskStatus, CommonConst.TASK_STATUS_PENDING));
-        if (remaining != null && remaining > 0) {
-            return;
-        }
-
-        // 进入下一节点或完成
-        List<FlowConfigUtil.NodeSpec> nodes = FlowConfigUtil.parseNodes(
-                definitionMapper.selectById(instance.getDefId()).getNodeConfigJson());
-        if (task.getNodeOrder() < nodes.size()) {
-            FlowConfigUtil.NodeSpec next = nodes.get(task.getNodeOrder());
-            List<Long> nextHandlers = resolveNodeHandlers(next, instance.getCompanyId(), instance.getApplyUserId());
-            createNodeTasks(instance, next, nextHandlers, task.getNodeOrder() + 1);
-            instance.setCurrentNodeName(next.getNodeName());
-            instance.setCurrentHandlers(toJsonArray(nextHandlers));
-            instanceMapper.updateById(instance);
-            writeCopyRecords(instance, next, instance.getCompanyId());
-        } else {
-            finishInstance(instance, CommonConst.FLOW_STATUS_PASS, null, "全部节点审批通过");
-            invokeHandler(instance.getBizType(), h -> h.onPass(Long.valueOf(instance.getSourceId()), instance.getId()));
-        }
-    }
-
-    /**
-     * 驳回：实例驳回，作废剩余待办，回调业务
-     */
-    private void reject(FlowInstance instance, FlowTask task, FlowHandleDTO dto) {
-        markTaskDone(task, CommonConst.TASK_STATUS_DONE, 0, dto.getOpinion());
-        finishInstance(instance, CommonConst.FLOW_STATUS_REJECT, CommonConst.FLOW_ACTION_REJECT, dto.getOpinion());
-        invokeHandler(instance.getBizType(), h -> h.onReject(Long.valueOf(instance.getSourceId()), instance.getId()));
-    }
-
-    /**
-     * 转交：原任务作废转交，新任务复制节点信息
-     */
-    private void transfer(FlowInstance instance, FlowTask task, FlowHandleDTO dto) {
-        if (dto.getTransferHandlerId() == null) {
-            throw new BizException("转交目标用户不能为空");
-        }
-        task.setTaskStatus(CommonConst.TASK_STATUS_TRANSFERRED);
-        task.setHandleTime(LocalDateTime.now());
-        taskMapper.updateById(task);
-
-        String targetName = userService.mapRealNameByIds(List.of(dto.getTransferHandlerId()))
-                .getOrDefault(dto.getTransferHandlerId(), "用户" + dto.getTransferHandlerId());
-        FlowTask newTask = new FlowTask();
-        newTask.setCompanyId(instance.getCompanyId());
-        newTask.setInstanceId(instance.getId());
-        newTask.setNodeName(task.getNodeName());
-        newTask.setNodeOrder(task.getNodeOrder());
-        newTask.setHandlerId(dto.getTransferHandlerId());
-        newTask.setHandlerName(targetName);
-        newTask.setTaskStatus(CommonConst.TASK_STATUS_PENDING);
-        newTask.setParentTaskId(task.getId());
-        taskMapper.insert(newTask);
-        writeRecord(instance, task, CommonConst.FLOW_ACTION_TRANSFER,
-                "转交至" + targetName);
-        auditLogUtil.record(CommonConst.MODULE_FLOW, "转交", String.valueOf(instance.getId()), task, newTask);
-    }
-
-    /**
-     * 完成实例（终态：通过/驳回/撤回/终止），作废剩余待办
-     */
-    private void finishInstance(FlowInstance instance, int status, String action, String comment) {
-        instance.setInstanceStatus(status);
-        instance.setFinishTime(LocalDateTime.now());
-        instanceMapper.updateById(instance);
-
-        taskMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<FlowTask>()
-                .eq(FlowTask::getInstanceId, instance.getId())
-                .eq(FlowTask::getTaskStatus, CommonConst.TASK_STATUS_PENDING)
-                .set(FlowTask::getTaskStatus, CommonConst.TASK_STATUS_CANCELED));
-        if (action != null) {
-            writeRecord(instance, null, action, comment);
-        }
-        auditLogUtil.record(CommonConst.MODULE_FLOW, "完成", String.valueOf(instance.getId()), null, instance);
-    }
-
-    /**
-     * 标记任务已办
-     */
-    private void markTaskDone(FlowTask task, int taskStatus, int approveResult, String opinion) {
-        task.setTaskStatus(taskStatus);
-        task.setApproveResult(approveResult);
-        task.setOpinion(opinion);
-        task.setHandleTime(LocalDateTime.now());
-        taskMapper.updateById(task);
-    }
-
-    /**
-     * 展开节点审批人（role/user/submitter），并写抄送留痕
-     */
-    private List<Long> resolveNodeHandlers(FlowConfigUtil.NodeSpec node, Long companyId, Long submitterId) {
-        List<Long> handlerIds;
-        if ("user".equals(node.getHandlerType())) {
-            handlerIds = List.of(Long.valueOf(node.getHandlerValue()));
-        } else if ("submitter".equals(node.getHandlerType())) {
-            handlerIds = List.of(submitterId);
-        } else {
-            handlerIds = resolveRoleUserIds(node.getHandlerValue());
-        }
-        if (handlerIds.isEmpty()) {
-            throw new BizException("节点[" + node.getNodeName() + "]未匹配到审批人，请检查角色配置");
-        }
-        return handlerIds;
-    }
-
-    /**
-     * 创建某节点审批任务
-     */
-    private void createNodeTasks(FlowInstance instance, FlowConfigUtil.NodeSpec node, List<Long> handlerIds, int nodeOrder) {
-        Map<Long, String> nameMap = userService.mapRealNameByIds(handlerIds);
-        for (Long handlerId : handlerIds) {
-            FlowTask task = new FlowTask();
-            task.setCompanyId(instance.getCompanyId());
-            task.setInstanceId(instance.getId());
-            task.setNodeName(node.getNodeName());
-            task.setNodeOrder(nodeOrder);
-            task.setHandlerId(handlerId);
-            task.setHandlerName(nameMap.getOrDefault(handlerId, "用户" + handlerId));
-            task.setTaskStatus(CommonConst.TASK_STATUS_PENDING);
-            taskMapper.insert(task);
-        }
-    }
-
-    /**
-     * 抄送留痕（不阻塞流转，仅写 flow_record）
-     */
-    private void writeCopyRecords(FlowInstance instance, FlowConfigUtil.NodeSpec node, Long companyId) {
-        if (node.getCopyTo() == null) {
-            return;
-        }
-        for (String copy : node.getCopyTo()) {
-            String roleCode = copy.startsWith("role:") ? copy.substring(5) : copy;
-            List<Long> userIds = resolveRoleUserIds(roleCode);
-            if (!userIds.isEmpty()) {
-                writeRecord(instance, null, CommonConst.FLOW_ACTION_CC, "抄送角色：" + roleCode);
-            }
-        }
-    }
-
     /**
      * 写流转记录（操作人默认取当前登录用户）
      */
@@ -691,5 +538,152 @@ public class FlowEngineServiceImpl implements FlowEngineService {
             case CommonConst.FLOW_ACTION_TERMINATE -> "终止";
             default -> action;
         };
+    }
+
+    /**
+     * 审批通过处理
+     */
+    private void pass(FlowInstance instance, FlowTask task, FlowHandleDTO dto) {
+        task.setTaskStatus(CommonConst.TASK_STATUS_DONE);
+        task.setApproveResult(1);
+        task.setOpinion(dto.getOpinion());
+        task.setHandleTime(LocalDateTime.now());
+        taskMapper.updateById(task);
+        writeRecord(instance, task, CommonConst.FLOW_ACTION_PASS, dto.getOpinion());
+        auditLogUtil.record(CommonConst.MODULE_FLOW, CommonConst.OPER_TYPE_AUDIT,
+                String.valueOf(task.getId()), task, null);
+        // 检查是否还有其他待办任务
+        Long pendingCount = taskMapper.selectCount(
+                new LambdaQueryWrapper<FlowTask>()
+                        .eq(FlowTask::getInstanceId, task.getInstanceId())
+                        .eq(FlowTask::getTaskStatus, CommonConst.TASK_STATUS_PENDING));
+        if (pendingCount != null && pendingCount > 0) {
+            advanceToNextNode(instance);
+        } else {
+            finishInstance(instance, CommonConst.FLOW_STATUS_PASS, CommonConst.FLOW_ACTION_PASS, "审批通过");
+            invokeHandler(instance.getBizType(), h -> h.onPass(Long.valueOf(instance.getSourceId()), instance.getId()));
+        }
+    }
+
+    /**
+     * 审批驳回处理
+     */
+    private void reject(FlowInstance instance, FlowTask task, FlowHandleDTO dto) {
+        task.setTaskStatus(CommonConst.TASK_STATUS_DONE);
+        task.setApproveResult(0);
+        task.setOpinion(dto.getOpinion());
+        task.setHandleTime(LocalDateTime.now());
+        taskMapper.updateById(task);
+        writeRecord(instance, task, CommonConst.FLOW_ACTION_REJECT, dto.getOpinion());
+        auditLogUtil.record(CommonConst.MODULE_FLOW, CommonConst.OPER_TYPE_AUDIT,
+                String.valueOf(task.getId()), task, null);
+        finishInstance(instance, CommonConst.FLOW_STATUS_REJECT, CommonConst.FLOW_ACTION_REJECT, "审批驳回");
+        invokeHandler(instance.getBizType(), h -> h.onReject(Long.valueOf(instance.getSourceId()), instance.getId()));
+    }
+
+    /**
+     * 审批转交处理
+     */
+    private void transfer(FlowInstance instance, FlowTask task, FlowHandleDTO dto) {
+        if (dto.getTransferHandlerId() == null) {
+            throw new BizException("转交目标用户不能为空");
+        }
+        task.setTaskStatus(CommonConst.TASK_STATUS_TRANSFERRED);
+        taskMapper.updateById(task);
+        FlowTask newTask = new FlowTask();
+        newTask.setCompanyId(task.getCompanyId());
+        newTask.setInstanceId(task.getInstanceId());
+        newTask.setNodeName(task.getNodeName());
+        newTask.setNodeOrder(task.getNodeOrder());
+        newTask.setHandlerId(dto.getTransferHandlerId());
+        newTask.setHandlerName(userService.mapRealNameByIds(List.of(dto.getTransferHandlerId()))
+                .getOrDefault(dto.getTransferHandlerId(), "用户" + dto.getTransferHandlerId()));
+        newTask.setTaskStatus(CommonConst.TASK_STATUS_PENDING);
+        taskMapper.insert(newTask);
+        writeRecord(instance, task, CommonConst.FLOW_ACTION_TRANSFER, "转交给用户ID:" + dto.getTransferHandlerId());
+    }
+
+    /**
+     * 结束流程实例
+     */
+    private void finishInstance(FlowInstance instance, int status, String action, String remark) {
+        instance.setInstanceStatus(status);
+        instance.setFinishTime(LocalDateTime.now());
+        instanceMapper.updateById(instance);
+        writeRecord(instance, null, action, remark);
+    }
+
+    /**
+     * 流转至下一节点
+     */
+    private void advanceToNextNode(FlowInstance instance) {
+        FlowDefinition def = definitionMapper.selectById(instance.getDefId());
+        if (def == null) return;
+        List<FlowConfigUtil.NodeSpec> nodes = FlowConfigUtil.parseNodes(def.getNodeConfigJson());
+        Integer maxNodeOrder = taskMapper.selectList(
+                new LambdaQueryWrapper<FlowTask>()
+                        .eq(FlowTask::getInstanceId, instance.getId()))
+                .stream()
+                .map(FlowTask::getNodeOrder)
+                .max(Integer::compareTo)
+                .orElse(0);
+        if (nodes.size() <= maxNodeOrder) return;
+        FlowConfigUtil.NodeSpec nextNode = nodes.get(maxNodeOrder);
+        List<Long> nextHandlers = resolveNodeHandlers(nextNode, instance.getCompanyId(), instance.getApplyUserId());
+        createNodeTasks(instance, nextNode, nextHandlers, maxNodeOrder + 1);
+        instance.setCurrentNodeName(nextNode.getNodeName());
+        instance.setCurrentHandlers(toJsonArray(nextHandlers));
+        instanceMapper.updateById(instance);
+        writeRecord(instance, null, CommonConst.FLOW_ACTION_PASS, "流转至节点：" + nextNode.getNodeName());
+    }
+
+    /**
+     * 解析节点审批人
+     */
+    private List<Long> resolveNodeHandlers(FlowConfigUtil.NodeSpec node, Long companyId, Long submitterId) {
+        List<Long> handlerIds;
+        if ("user".equals(node.getHandlerType())) {
+            handlerIds = List.of(Long.valueOf(node.getHandlerValue()));
+        } else if ("submitter".equals(node.getHandlerType())) {
+            handlerIds = List.of(submitterId);
+        } else {
+            handlerIds = resolveRoleUserIds(node.getHandlerValue());
+        }
+        if (handlerIds.isEmpty()) {
+            throw new BizException("节点[" + node.getNodeName() + "]未匹配到审批人，请检查角色配置");
+        }
+        return handlerIds;
+    }
+
+    /**
+     * 创建节点审批任务
+     */
+    private void createNodeTasks(FlowInstance instance, FlowConfigUtil.NodeSpec node, List<Long> handlerIds, int nodeOrder) {
+        Map<Long, String> nameMap = userService.mapRealNameByIds(handlerIds);
+        for (Long handlerId : handlerIds) {
+            FlowTask task = new FlowTask();
+            task.setCompanyId(instance.getCompanyId());
+            task.setInstanceId(instance.getId());
+            task.setNodeName(node.getNodeName());
+            task.setNodeOrder(nodeOrder);
+            task.setHandlerId(handlerId);
+            task.setHandlerName(nameMap.getOrDefault(handlerId, "用户" + handlerId));
+            task.setTaskStatus(CommonConst.TASK_STATUS_PENDING);
+            taskMapper.insert(task);
+        }
+    }
+
+    /**
+     * 抄送留痕
+     */
+    private void writeCopyRecords(FlowInstance instance, FlowConfigUtil.NodeSpec node, Long companyId) {
+        if (node.getCopyTo() == null) return;
+        for (String copy : node.getCopyTo()) {
+            String roleCode = copy.startsWith("role:") ? copy.substring(5) : copy;
+            List<Long> userIds = resolveRoleUserIds(roleCode);
+            if (!userIds.isEmpty()) {
+                writeRecord(instance, null, CommonConst.FLOW_ACTION_CC, "抄送角色：" + roleCode);
+            }
+        }
     }
 }

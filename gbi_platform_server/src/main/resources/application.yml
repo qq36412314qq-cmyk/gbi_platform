@@ -46,3 +46,14 @@ gbi:
     secret: ${JWT_SECRET:GbiPlatform@2026#DevOnlyDefaultKey}
     expire-hours: ${JWT_EXPIRE_HOURS:24}
   upload-dir: ${UPLOAD_DIR:./upload}
+
+# 企业微信配置
+# token / encoding-aes-key 必须在环境变量中注入，禁止硬编码
+wecom:
+  token: ${WECOM_TOKEN:dev-placeholder-token}
+  encoding-aes-key: ${WECOM_AES_KEY:dev-placeholder-aes-key-43chars}
+  callback-url: ${WECOM_CALLBACK_URL:https://dev-placeholder.com/api/wecom/callback}
+  web-url: ${SYSTEM_WEB_URL:https://dev-placeholder.com}
+  connect-timeout: 5000
+  read-timeout: 10000
+  max-retry-count: 3

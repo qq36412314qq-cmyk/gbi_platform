@@ -80,6 +80,7 @@ public final class CommonConst {
     public static final String MODULE_HR_ATTENDANCE = "hr_attendance";
     public static final String MODULE_HR_SALARY = "hr_salary";
     public static final String MODULE_HR_SOCIAL = "hr_social";
+    public static final String MODULE_HR_OVERTIME = "hr_overtime";
 
     /* ------------------------------ 社保参数配置审计模块 ------------------------------ */
     public static final String MODULE_HR_SOCIAL_PARAM = "hr_social_param";
@@ -111,7 +112,16 @@ public final class CommonConst {
     public static final String FLOW_DEF_HR_REGULAR = "hr_regular";
     public static final String FLOW_DEF_HR_TRANSFER = "hr_transfer";
     public static final String FLOW_DEF_HR_RESIGN = "hr_resign";
-
+    /** 加班申请审批流 */
+    public static final String FLOW_DEF_HR_OVERTIME_APPLY = "hr_overtime_apply";
+    /** 用工类型：正式 */
+    public static final int EMPLOYMENT_TYPE_REGULAR = 1;
+    /** 用工类型：试用期 */
+    public static final int EMPLOYMENT_TYPE_PROBATION = 2;
+    /** 用工类型：劳务派遣 */
+    public static final int EMPLOYMENT_TYPE_DISPATCH = 3;
+    /** 用工类型：临时工 */
+    public static final int EMPLOYMENT_TYPE_TEMP = 4;
     /* ------------------------------ 申请状态 ------------------------------ */
     public static final int APPLY_STATUS_DRAFT = 0;
     public static final int APPLY_STATUS_AUDITING = 1;

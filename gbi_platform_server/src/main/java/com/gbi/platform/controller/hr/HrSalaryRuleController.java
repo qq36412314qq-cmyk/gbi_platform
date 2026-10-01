@@ -8,6 +8,8 @@ import com.gbi.platform.service.hr.HrSalaryRuleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,5 +66,15 @@ public class HrSalaryRuleController {
     public Result<Void> submitAudit(@PathVariable Long id) {
         salaryRuleService.submitAudit(id);
         return Result.success("已提交审批", null);
+    }
+
+    @Operation(summary = "查询薪资模板列表（下拉框用）")
+    @GetMapping("/list")
+    public Result<List<HrSalaryRule>> list(
+            @RequestParam(required = false) Integer bindType,
+            @RequestParam(required = false) Long postId,
+            @RequestParam(required = false) String gradeCode) {
+        Long companyId = UserContext.getLoginUser().getCompanyId();
+        return Result.success(salaryRuleService.listByCompany(companyId, bindType, postId, gradeCode));
     }
 }

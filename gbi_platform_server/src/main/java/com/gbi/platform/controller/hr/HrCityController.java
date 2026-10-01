@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * 城市字典管理接口
  */
@@ -53,5 +55,11 @@ public class HrCityController {
         cityService.removeById(id);
         return Result.success();
     }
-}
 
+    @Operation(summary = "查询城市列表（下拉框用）")
+    @GetMapping("/list")
+    public Result<List<HrCity>> list() {
+        return Result.success(cityService.list(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<HrCity>()
+                .eq(HrCity::getStatus, 1).orderByAsc(HrCity::getSort)));
+    }
+}

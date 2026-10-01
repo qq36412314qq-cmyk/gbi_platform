@@ -1,7 +1,7 @@
 /**
  * 人力资源模块接口
  */
-import { get, post } from '@/utils/request'
+import { get, post, request } from '@/utils/request'
 import type { PageResult } from '@/utils/request'
 
 /* ==================== 员工档案 ==================== */
@@ -44,6 +44,16 @@ export interface EmployeeVO {
   photoFileId?: number
   photoPreviewUrl?: string
   attachmentContent?: string
+  cityId?: number
+  cityName?: string
+  salaryRuleId?: number
+  salaryRuleName?: string
+  workweekConfigId?: number
+  workweekConfigName?: string
+  /** 是否免考勤 0参与 1不参与 */
+  exemptAttendance?: number
+  /** 是否参与考勤文本 */
+  exemptAttendanceText?: string
   createTime: string
 }
 
@@ -63,6 +73,11 @@ export interface EmployeeDTO {
   bankAccount?: string
   socialSecurityBase?: number
   basicSalary?: number
+  cityId?: number
+  salaryRuleId?: number
+  workweekConfigId?: number
+  /** 是否免考勤 0参与 1不参与 */
+  exemptAttendance?: number
   remark?: string
   photoFileId?: number
   attachmentContent?: string
@@ -70,6 +85,10 @@ export interface EmployeeDTO {
 
 export function getEmployeePageApi(params: EmployeeQueryDTO): Promise<PageResult<EmployeeVO>> {
   return get<PageResult<EmployeeVO>>('/hr/employee/page', params)
+}
+
+export function getEmployeeListApi(params?: { name?: string; employeeNo?: string; employeeStatus?: number; employmentType?: number }): Promise<EmployeeVO[]> {
+  return get<EmployeeVO[]>('/hr/employee/list', params ?? {})
 }
 
 export function getEmployeeApi(id: number): Promise<EmployeeVO> {
@@ -188,7 +207,7 @@ export function deleteEduExpApi(id: number): Promise<void> {
 
 /* ==================== 下拉选项接口 ==================== */
 export interface OrgFlatOption { id: number; orgName: string; orgType?: number }
-export interface PostFlatOption { id: number; postName: string; postCode: string; deptId?: number; orgName?: string }
+export interface PostFlatOption { id: number; postName: string; postCode: string; deptId?: number; orgName?: string; workweekConfigId?: number; shiftType?: number }
 export function getOrgFlatListApi(): Promise<OrgFlatOption[]> {
   return get<OrgFlatOption[]>(`/org/tree`).then(list => flattenOrgTree(list))
 }
@@ -225,6 +244,9 @@ export interface HrPostVO {
   postLevel?: string
   deptId?: number
   orgName?: string
+  workweekConfigId?: number
+  workweekConfigName?: string
+  shiftType?: number
   status: number
   statusText?: string
   remark?: string
@@ -238,6 +260,8 @@ export interface PostDTO {
   postCode: string
   postLevel?: string
   deptId?: number
+  workweekConfigId?: number
+  shiftType?: number
   status?: number
   remark?: string
 }
@@ -265,19 +289,51 @@ export function getPostByDeptApi(deptId: number): Promise<HrPostVO[]> {
 /* ==================== 人事异动 ==================== */
 export interface HrEntryApplyVO {
   id?: number
+  companyId?: number
   employeeNo: string
   name: string
+  idCardNo?: string
+  phone?: string
+  gender?: number
+  birthdate?: string
   entryDate: string
   employmentType?: number
   employmentTypeText?: string
+  orgId?: number
+  postId?: number
+  orgName?: string
+  postName?: string
+  basicSalary?: number
+  bankAccount?: string
+  autoCreateUser?: number
   status: number
   statusText?: string
+  flowInstanceId?: number
   remark?: string
   createTime: string
+  experienceData?: string
+  /** 免冠照片对应的 sys_file.id */
+  photoFileId?: number
   /** 免冠照片可直访预览URL */
   photoPreviewUrl?: string
   /** 附件内容（富文本HTML） */
   attachmentContent?: string
+  /** 就职城市ID */
+  cityId?: number
+  /** 就职城市名称 */
+  cityName?: string
+  /** 薪资模板ID */
+  salaryRuleId?: number
+  /** 薪资模板名称 */
+  salaryRuleName?: string
+  /** 休息日配置ID */
+  workweekConfigId?: number
+  /** 休息日配置名称 */
+  workweekConfigName?: string
+  /** 是否免考勤 0参与 1不参与 */
+  exemptAttendance?: number
+  /** 是否参与考勤文本 */
+  exemptAttendanceText?: string
 }
 
 export interface HrRegularApplyVO {
@@ -335,6 +391,14 @@ export interface EntryApplyDTO {
   photoFileId?: number
   /** 附件内容（富文本HTML） */
   attachmentContent?: string
+  /** 就职城市ID（关联sys_city.id） */
+  cityId?: number
+  /** 薪资模板ID（关联hr_salary_rule.id） */
+  salaryRuleId?: number
+  /** 休息日配置ID（关联sys_workweek_config.id） */
+  workweekConfigId?: number
+  /** 是否免考勤 0参与 1不参与 */
+  exemptAttendance?: number
 }
 
 export interface RegularApplyDTO {
@@ -531,6 +595,7 @@ export interface SalaryMonthVO {
   earlyDeduction?: number
   unpaidLeaveDeduction?: number
   minWageProtected?: number
+  overtimeAmount?: number
   grossAmount: number
   netAmount: number
   payStatus: number
@@ -546,6 +611,7 @@ export interface SalaryMonthDTO {
   employeeIds: number[]
   salaryMonth: string
   syncAttendance?: number
+  syncOvertime?: number
 }
 
 export function getSalaryMonthPageApi(params: SalaryMonthQueryDTO): Promise<PageResult<SalaryMonthVO>> {
@@ -620,4 +686,414 @@ export function updateSocialApi(data: SocialDTO): Promise<void> {
 
 export function deleteSocialApi(id: number): Promise<void> {
   return post<void>(`/hr/social/delete/${id}`)
+}
+/* ==================== 考勤高级同步 ==================== */
+export interface AttendancePreviewDTO {
+  month: string
+  employeeScope: number  // 0=全部 1=指定
+  employeeIds?: number[]
+  syncType?: number  // 1=首次同步 2=重新同步
+}
+
+export interface AttendanceSyncPreviewVO {
+  workDays: number
+  clockRecords: number
+  willCreate: number
+  fullAttendance: number
+  normal: number
+  late: number
+  absent: number
+  employeeCount: number
+}
+
+export interface AttendanceExceptionVO {
+  id: number
+  companyId: number
+  employeeId: number
+  employeeName: string
+  exceptionType: number
+  exceptionTypeText?: string
+  exceptionDate: string
+  detailCount?: number
+  detailJson?: string
+  status: number
+  statusText?: string
+  handleBy?: number
+  handleTime?: string
+  handleRemark?: string
+  createTime: string
+}
+
+export interface WorkweekConfigVO {
+  id: number
+  companyId: number
+  configName: string
+  workweekType: number
+  workweekTypeText?: string
+  restDayPattern?: string
+  status: number
+  statusText?: string
+  remark?: string
+  createTime: string
+}
+
+export interface HolidayConfigVO {
+  id: number
+  companyId: number
+  holidayDate: string
+  holidayName: string
+  holidayType: number
+  holidayTypeText?: string
+  isWorkday: number
+  status: number
+  remark?: string
+  createTime: string
+}
+
+export interface ShiftConfigVO {
+  shiftType: number
+  shiftTypeText?: string
+  shiftStartTime?: string
+  shiftEndTime?: string
+}
+
+export interface EmployeeShiftVO {
+  id: number
+  companyId: number
+  employeeId: number
+  employeeName?: string
+  shiftType: number
+  shiftTypeText?: string
+  shiftStartTime?: string
+  shiftEndTime?: string
+  startDate: string
+  endDate?: string
+  status: number
+  remark?: string
+  createTime: string
+}
+
+export function syncAttendancePreviewApi(data: AttendancePreviewDTO): Promise<AttendanceSyncPreviewVO> {
+  return post<AttendanceSyncPreviewVO>('/hr/attendance/sync/preview', data)
+}
+
+export function syncAttendanceAdvancedApi(data: AttendancePreviewDTO): Promise<number> {
+  return post<number>('/hr/attendance/sync/advanced', data)
+}
+
+export function getAttendanceExceptionsApi(params: { pageNum: number; pageSize: number; employeeId?: number; exceptionType?: number; status?: number }): Promise<PageResult<AttendanceExceptionVO>> {
+  return get<PageResult<AttendanceExceptionVO>>('/hr/attendance/exception/page', params)
+}
+
+export function handleAttendanceExceptionApi(id: number, handleType: number, handleRemark?: string, handlerId?: number): Promise<void> {
+  return post<void>('/hr/attendance/exception/handle', null, { params: { id, handleType, handleRemark, handlerId } })
+}
+
+export function detectAttendanceExceptionsApi(month: string): Promise<void> {
+  return get<void>('/hr/attendance/exception/detect', { month })
+}
+
+export function getAttendanceConfigsApi(): Promise<Record<string, string>> {
+  return get<Record<string, string>>('/hr/attendance/config/params')
+}
+
+export function updateAttendanceConfigsApi(configs: Record<string, string>): Promise<void> {
+  return put<void>('/hr/attendance/config/params', configs)
+}
+
+export function getWorkweekConfigListApi(): Promise<WorkweekConfigVO[]> {
+  return get<WorkweekConfigVO[]>('/hr/attendance/workweek/list')
+}
+
+export function createWorkweekConfigApi(data: Partial<WorkweekConfigVO>): Promise<number> {
+  return post<number>('/hr/attendance/workweek/add', data)
+}
+
+export function addWorkweekConfigApi(data: Partial<WorkweekConfigVO>): Promise<number> {
+  return post<number>('/hr/attendance/workweek/add', data)
+}
+
+export function updateWorkweekConfigApi(data: Partial<WorkweekConfigVO>): Promise<void> {
+  return put<void>('/hr/attendance/workweek/update', data)
+}
+
+export function deleteWorkweekConfigApi(id: number): Promise<void> {
+  return post<void>(`/hr/attendance/workweek/delete/${id}`)
+}
+
+export function setDefaultWorkweekConfigApi(id: number): Promise<void> {
+  return post<void>(`/hr/attendance/workweek/default/${id}`)
+}
+
+export function getHolidayConfigListApi(params: { year?: number }): Promise<HolidayConfigVO[]> {
+  return get<HolidayConfigVO[]>('/hr/attendance/holiday/list', params)
+}
+
+export function createHolidayConfigApi(data: Partial<HolidayConfigVO>): Promise<number> {
+  return post<number>('/hr/attendance/holiday/add', data)
+}
+
+export function updateHolidayConfigApi(data: Partial<HolidayConfigVO>): Promise<void> {
+  return put<void>('/hr/attendance/holiday/update', data)
+}
+
+export function deleteHolidayConfigApi(id: number): Promise<void> {
+  return post<void>(`/hr/attendance/holiday/delete/${id}`)
+}
+
+export function getEmployeeShiftApi(employeeId: number, date: string): Promise<ShiftConfigVO> {
+  return get<ShiftConfigVO>(`/hr/attendance/shift/${employeeId}`, { params: { date } })
+}
+
+export function listEmployeeShiftsApi(employeeId: number): Promise<EmployeeShiftVO[]> {
+  return get<EmployeeShiftVO[]>(`/hr/attendance/shift/list/${employeeId}`)
+}
+
+export function addEmployeeShiftApi(data: Partial<EmployeeShiftVO>): Promise<void> {
+  return post<void>('/hr/attendance/shift/add', data)
+}
+
+export function updateEmployeeShiftApi(data: Partial<EmployeeShiftVO>): Promise<void> {
+  return put<void>('/hr/attendance/shift/update', data)
+}
+
+export function deleteEmployeeShiftApi(id: number): Promise<void> {
+  return post<void>(`/hr/attendance/shift/delete/${id}`)
+}
+
+export function batchHandleAttendanceExceptionsApi(ids: number[], handleType: number, handleRemark?: string): Promise<void> {
+  return post<void>('/hr/attendance/exception/batch-handle', null, { params: { ids: ids.join(','), handleType, handleRemark } })
+}
+
+/* ==================== 加班管理 ==================== */
+/** PUT 请求辅助（request.ts 未导出 put，此处内联） */
+function put<T = unknown>(url: string, data?: object): Promise<T> {
+  return request<T>({ url, method: 'put', data })
+}
+
+/* --- 类型定义 --- */
+export interface HrOvertimeApplyVO {
+  id: number
+  companyId: number
+  employeeId: number
+  employeeName: string
+  overtimeDate: string
+  startTime: string
+  endTime: string
+  expectedHours: number
+  overtimeType: number          // 1工作日 2休息日 3法定节假日
+  overtimeTypeText?: string
+  reason: string
+  status: number                // 0待审批 1已通过 2已驳回 3已撤回 4已取消
+  statusText?: string
+  flowInstanceId?: number
+  createTime: string
+}
+
+export interface HrOvertimeApplyQueryDTO {
+  pageNum: number
+  pageSize: number
+  employeeId?: number
+  employeeName?: string
+  overtimeDateStart?: string
+  overtimeDateEnd?: string
+  status?: number
+}
+
+export interface HrOvertimeApplyAddDTO {
+  employeeId: number
+  employeeName: string
+  overtimeDate: string
+  startTime: string
+  endTime: string
+  expectedHours: number
+  overtimeType?: number
+  reason: string
+}
+
+export interface HrOvertimeRecordVO {
+  id: number
+  companyId: number
+  employeeId: number
+  employeeName: string
+  overtimeDate: string
+  startTime: string
+  endTime: string
+  overtimeHours: number
+  overtimeType: number          // 1工作日 2休息日 3法定节假日
+  overtimeTypeText?: string
+  sourceType: number            // 1手动申请 2自动识别
+  sourceTypeText?: string
+  applyId?: number
+  attendRecordId?: number
+  confirmStatus: number         // 0待确认 1已确认 2已驳回
+  confirmStatusText?: string
+  confirmTime?: string
+  status: number                // 1有效 2已抵扣 3已作废
+  statusText?: string
+  compensateStatus: number      // 0未补偿 1已调休 2已发放加班费
+  compensateStatusText?: string
+  createTime: string
+}
+
+export interface HrOvertimeRecordQueryDTO {
+  pageNum: number
+  pageSize: number
+  employeeId?: number
+  employeeName?: string
+  overtimeDateStart?: string
+  overtimeDateEnd?: string
+  sourceType?: number
+  confirmStatus?: number
+}
+
+export interface HrOvertimeRecordConfirmDTO {
+  id: number
+  confirmStatus: number         // 1确认 2驳回
+  remark?: string
+}
+
+export interface HrOvertimeAutoDetectVO {
+  totalRecords: number
+  newRecords: number
+  updatedRecords: number
+  skippedRecords: number
+}
+
+export interface HrOvertimeCompensateVO {
+  id: number
+  companyId: number
+  employeeId: number
+  employeeName: string
+  basicSalary: number
+  compensateMonth: string
+  totalHours: number
+  workdayHours: number
+  restdayHours: number
+  holidayHours: number
+  usedHours: number
+  remainHours: number
+  compensateType: number        // 1调休 2加班费 3混合
+  compensateTypeText?: string
+  overtimeAmount: number
+  payStatus: number             // 0待发放 1已发放 2已取消
+  payStatusText?: string
+  payTime?: string
+  remark?: string
+  createTime: string
+}
+
+export interface HrOvertimeCompensateQueryDTO {
+  pageNum: number
+  pageSize: number
+  employeeId?: number
+  employeeName?: string
+  compensateMonth?: string
+  payStatus?: number
+}
+
+export interface HrOvertimeCompensateCalculateDTO {
+  compensateMonth: string
+}
+
+export interface SysOvertimeConfigVO {
+  id: number
+  companyId: number
+  configName: string
+  overtimeMinHours: number
+  overtimeRoundMode: number     // 1向上 2四舍五入 3向下
+  overtimeRoundModeText?: string
+  workdayRate: number
+  restdayRate: number
+  holidayRate: number
+  maxOvertimeHours?: number
+  compensatePriority: number    // 1调休优先 2加班费优先
+  compensatePriorityText?: string
+  autoDetectEnabled: number
+  autoDetectCron?: string
+  status: number                // 0禁用 1启用
+  statusText?: string
+  remark?: string
+}
+
+export interface SysOvertimeConfigSaveDTO {
+  id: number
+  configName: string
+  overtimeMinHours: number
+  overtimeRoundMode: number
+  workdayRate: number
+  restdayRate: number
+  holidayRate: number
+  maxOvertimeHours?: number
+  compensatePriority: number
+  status: number
+  remark?: string
+}
+
+/* --- API 函数 --- */
+export function getOvertimeApplyPageApi(params: HrOvertimeApplyQueryDTO): Promise<PageResult<HrOvertimeApplyVO>> {
+  return get<PageResult<HrOvertimeApplyVO>>('/hr/overtime/apply/page', params)
+}
+
+export function addOvertimeApplyApi(data: HrOvertimeApplyAddDTO): Promise<number> {
+  return post<number>('/hr/overtime/apply/add', data)
+}
+
+export function editOvertimeApplyApi(data: HrOvertimeApplyAddDTO & { id: number }): Promise<void> {
+  return put<void>('/hr/overtime/apply/edit', data)
+}
+
+export function deleteOvertimeApplyApi(id: number): Promise<void> {
+  return post<void>(`/hr/overtime/apply/delete/${id}`)
+}
+
+export function revokeOvertimeApplyApi(id: number): Promise<void> {
+  return post<void>(`/hr/overtime/apply/revoke/${id}`)
+}
+
+export function getOvertimeRecordPageApi(params: HrOvertimeRecordQueryDTO): Promise<PageResult<HrOvertimeRecordVO>> {
+  return get<PageResult<HrOvertimeRecordVO>>('/hr/overtime/record/page', params)
+}
+
+export function confirmOvertimeRecordApi(data: HrOvertimeRecordConfirmDTO): Promise<void> {
+  return post<void>('/hr/overtime/record/confirm', data)
+}
+
+export function autoDetectOvertimeApi(date?: string): Promise<HrOvertimeAutoDetectVO> {
+  if (date) {
+    return get<HrOvertimeAutoDetectVO>('/hr/overtime/record/detect/byDate', { params: { date } })
+  }
+  return post<HrOvertimeAutoDetectVO>('/hr/overtime/record/detect')
+}
+
+export function exportOvertimeRecordApi(params: HrOvertimeRecordQueryDTO): Promise<void> {
+  return get<void>('/hr/overtime/record/export', params)
+}
+
+export function getOvertimeCompensatePageApi(params: HrOvertimeCompensateQueryDTO): Promise<PageResult<HrOvertimeCompensateVO>> {
+  return get<PageResult<HrOvertimeCompensateVO>>('/hr/overtime/compensate/page', params)
+}
+
+export function calculateOvertimeCompensateApi(data: HrOvertimeCompensateCalculateDTO): Promise<void> {
+  return post<void>('/hr/overtime/compensate/calculate', data)
+}
+
+export function payOvertimeCompensateApi(id: number): Promise<void> {
+  return post<void>(`/hr/overtime/compensate/pay/${id}`)
+}
+
+export function exportOvertimeCompensateApi(params: HrOvertimeCompensateQueryDTO): Promise<void> {
+  return get<void>('/hr/overtime/compensate/export', params)
+}
+
+export function getOvertimeConfigApi(): Promise<SysOvertimeConfigVO> {
+  return get<SysOvertimeConfigVO>('/hr/overtime/config')
+}
+
+export function saveOvertimeConfigApi(data: SysOvertimeConfigSaveDTO): Promise<void> {
+  return put<void>('/hr/overtime/config/save', data)
+}
+
+export function updateOvertimeConfigStatusApi(id: number, status: number): Promise<void> {
+  return request<void>({ url: '/hr/overtime/config/status', method: 'put', params: { id, status } })
 }

@@ -42,6 +42,7 @@ public class HrSalaryServiceImpl implements HrSalaryService {
     private final com.gbi.platform.mapper.hr.HrAttendanceRecordMapper attendanceRecordMapper;
     private final com.gbi.platform.mapper.hr.HrSalaryRuleMapper salaryRuleMapper;
     private final com.gbi.platform.mapper.hr.HrCityMapper cityMapper;
+    private final com.gbi.platform.mapper.hr.HrOvertimeCompensateMapper overtimeCompensateMapper;
 
     @Override
     public PageVO<HrSalaryArchiveVO> pageArchive(Long pageNum, Long pageSize, Long employeeId) {
@@ -228,12 +229,13 @@ public class HrSalaryServiceImpl implements HrSalaryService {
             // 最低工资保护
             month.setMinWageProtected(applyMinWageProtection(month, dailyWage));
 
-            // 重新计算 netAmount
+            // 重新计算 netAmount（含加班补偿）
             BigDecimal net = month.getGrossAmount()
                     .subtract(month.getSocialSecurity() != null ? month.getSocialSecurity() : BigDecimal.ZERO)
                     .subtract(month.getHousingFund() != null ? month.getHousingFund() : BigDecimal.ZERO)
                     .subtract(month.getTaxAmount() != null ? month.getTaxAmount() : BigDecimal.ZERO)
                     .subtract(attendanceDed)
+                    .add(month.getOvertimeAmount() != null ? month.getOvertimeAmount() : BigDecimal.ZERO)
                     .subtract(month.getDeductionAmount() != null ? month.getDeductionAmount() : BigDecimal.ZERO);
             if (net.compareTo(BigDecimal.ZERO) <= 0) {
                 log.warn("generateMonth 员工{} {}月netAmount<=0，强制置0.01", month.getEmployeeId(), salaryMonth);
@@ -242,6 +244,53 @@ public class HrSalaryServiceImpl implements HrSalaryService {
             month.setNetAmount(net);
             salaryMonthMapper.updateById(month);
         }
+
+        // 若启用加班费同步，追加加班补偿金额
+        boolean syncOvertime = dto.getSyncOvertime() != null && dto.getSyncOvertime() == 1;
+        if (!syncOvertime) return;
+
+        String overtimeMonth = dto.getSalaryMonth();
+        // 聚合当月加班补偿（Map: employeeId -> overtimeAmount）
+        LambdaQueryWrapper<HrOvertimeCompensate> otWrapper = new LambdaQueryWrapper<HrOvertimeCompensate>()
+                .eq(HrOvertimeCompensate::getCompanyId, loginUser.getCompanyId())
+                .eq(HrOvertimeCompensate::getCompensateMonth, overtimeMonth)
+                .isNotNull(HrOvertimeCompensate::getOvertimeAmount)
+                .gt(HrOvertimeCompensate::getOvertimeAmount, BigDecimal.ZERO);
+        List<HrOvertimeCompensate> otRecords = overtimeCompensateMapper.selectList(otWrapper);
+        Map<Long, BigDecimal> otAmountMap = otRecords.stream()
+                .collect(Collectors.groupingBy(
+                        HrOvertimeCompensate::getEmployeeId,
+                        Collectors.mapping(HrOvertimeCompensate::getOvertimeAmount, Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))
+                ));
+
+        // 逐条更新 hr_salary_month 加班补偿金额，并重新计算 netAmount
+        LambdaQueryWrapper<HrSalaryMonth> monthOtWrapper = new LambdaQueryWrapper<HrSalaryMonth>()
+                .eq(HrSalaryMonth::getCompanyId, loginUser.getCompanyId())
+                .eq(HrSalaryMonth::getSalaryMonth, overtimeMonth)
+                .eq(HrSalaryMonth::getIsDelete, 0);
+        List<HrSalaryMonth> otMonths = salaryMonthMapper.selectList(monthOtWrapper);
+        for (HrSalaryMonth month : otMonths) {
+            BigDecimal otAmount = otAmountMap.getOrDefault(month.getEmployeeId(), BigDecimal.ZERO);
+            if (otAmount.compareTo(BigDecimal.ZERO) > 0) {
+                month.setOvertimeAmount(otAmount);
+                // 重新计算 netAmount
+                BigDecimal netOt = month.getGrossAmount()
+                        .subtract(month.getSocialSecurity() != null ? month.getSocialSecurity() : BigDecimal.ZERO)
+                        .subtract(month.getHousingFund() != null ? month.getHousingFund() : BigDecimal.ZERO)
+                        .subtract(month.getTaxAmount() != null ? month.getTaxAmount() : BigDecimal.ZERO)
+                        .subtract(month.getAttendanceDeduction() != null ? month.getAttendanceDeduction() : BigDecimal.ZERO)
+                        .add(otAmount)
+                        .subtract(month.getDeductionAmount() != null ? month.getDeductionAmount() : BigDecimal.ZERO);
+                if (netOt.compareTo(BigDecimal.ZERO) <= 0) {
+                    log.warn("generateMonth 员工{} {}月netAmount<=0（含加班费），强制置0.01", month.getEmployeeId(), overtimeMonth);
+                    netOt = new BigDecimal("0.01");
+                }
+                month.setNetAmount(netOt);
+                salaryMonthMapper.updateById(month);
+            }
+        }
+        log.info("generateMonth 加班费同步完成: companyId={}, month={}, matched={}",
+                loginUser.getCompanyId(), overtimeMonth, otMonths.size());
     }
 
     /** 从 employee 关联的薪资档案中取 ruleId（简化：直接查档案） */
@@ -362,6 +411,7 @@ public class HrSalaryServiceImpl implements HrSalaryService {
         vo.setEarlyDeduction(entity.getEarlyDeduction());
         vo.setUnpaidLeaveDeduction(entity.getUnpaidLeaveDeduction());
         vo.setMinWageProtected(entity.getMinWageProtected());
+        vo.setOvertimeAmount(entity.getOvertimeAmount());
         vo.setGrossAmount(entity.getGrossAmount());
         vo.setNetAmount(entity.getNetAmount());
         vo.setPayStatus(entity.getPayStatus());

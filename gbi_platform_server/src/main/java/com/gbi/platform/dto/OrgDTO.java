@@ -36,10 +36,10 @@ public class OrgDTO implements Serializable {
     @Size(max = 128, message = "组织名称不能超过128字符")
     private String orgName;
 
-    @Schema(description = "组织类型：1集团 2子公司 3部门", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "组织类型：1集团 2子公司 3部门 4班组", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "组织类型不能为空")
     @Min(value = 1, message = "组织类型非法")
-    @Max(value = 3, message = "组织类型非法")
+    @Max(value = 4, message = "组织类型非法")
     private Integer orgType;
 
     @Schema(description = "所属子公司ID，后端自动计算，前端禁止传参")

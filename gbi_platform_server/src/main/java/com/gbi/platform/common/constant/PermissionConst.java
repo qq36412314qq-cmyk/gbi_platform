@@ -358,4 +358,55 @@ public final class PermissionConst {
     /* ------------------------------ 人力资源-考勤管理（导出） ------------------------------ */
     public static final String HR_ATTENDANCE_EXPORT = "hr:attendance:export";
 
+    /* ------------------------------ 人力资源-考勤管理（同步预览/异常管理/配置管理） ------------------------------ */
+    public static final String HR_ATTENDANCE_PREVIEW = "hr:attendance:preview";
+    public static final String HR_ATTENDANCE_EXCEPTION_VIEW = "hr:attendance:exception:view";
+    public static final String HR_ATTENDANCE_EXCEPTION_HANDLE = "hr:attendance:exception:handle";
+    public static final String HR_CONFIG_WORKWEEK = "hr:config:workweek";
+    public static final String HR_CONFIG_HOLIDAY = "hr:config:holiday";
+    public static final String HR_CONFIG_ATTENDANCE = "hr:config:attendance";
+    public static final String HR_CONFIG_SHIFT = "hr:config:shift";
+
+    /* ------------------------------ 企业微信集成管理 ------------------------------ */
+    // 企微配置管理
+    public static final String WECOM_CONFIG_LIST    = "wecom:config:list";
+    public static final String WECOM_CONFIG_VIEW    = "wecom:config:view";
+    public static final String WECOM_CONFIG_EDIT    = "wecom:config:edit";
+    public static final String WECOM_TOKEN_REFRESH  = "wecom:token:refresh";
+    // 企微同步记录
+    public static final String WECOM_SYNC_VIEW      = "wecom:sync:view";
+    public static final String WECOM_SYNC_TRIGGER   = "wecom:sync:trigger";
+    public static final String WECOM_SYNC_EXPORT    = "wecom:sync:export";
+    // 企微消息记录
+    public static final String WECOM_MESSAGE_VIEW   = "wecom:message:view";
+
+    /* ------------------------------ 人力资源-加班管理 ------------------------------ */
+    // 主菜单
+    public static final String HR_OVERTIME_LIST                       = "hr:overtime:list";
+
+    // 加班申请
+    public static final String HR_OVERTIME_APPLY_LIST                 = "hr:overtime:apply:list";
+    public static final String HR_OVERTIME_APPLY_ADD                  = "hr:overtime:apply:add";
+    public static final String HR_OVERTIME_APPLY_EDIT                 = "hr:overtime:apply:edit";
+    public static final String HR_OVERTIME_APPLY_DELETE               = "hr:overtime:apply:delete";
+    public static final String HR_OVERTIME_APPLY_REVOKE               = "hr:overtime:apply:revoke";
+
+    // 加班记录
+    public static final String HR_OVERTIME_RECORD_LIST                = "hr:overtime:record:list";
+    public static final String HR_OVERTIME_RECORD_CONFIRM             = "hr:overtime:record:confirm";
+    public static final String HR_OVERTIME_RECORD_REJECT              = "hr:overtime:record:reject";
+    public static final String HR_OVERTIME_RECORD_DETECT              = "hr:overtime:record:detect";
+    public static final String HR_OVERTIME_RECORD_EXPORT              = "hr:overtime:record:export";
+
+    // 加班补偿
+    public static final String HR_OVERTIME_COMPENSATE_LIST            = "hr:overtime:compensate:list";
+    public static final String HR_OVERTIME_COMPENSATE_CALCULATE       = "hr:overtime:compensate:calculate";
+    public static final String HR_OVERTIME_COMPENSATE_PAY             = "hr:overtime:compensate:pay";
+    public static final String HR_OVERTIME_COMPENSATE_EXPORT          = "hr:overtime:compensate:export";
+
+    // 加班配置
+    public static final String HR_OVERTIME_CONFIG_LIST                = "hr:overtime:config:list";
+    public static final String HR_OVERTIME_CONFIG_SAVE                = "hr:overtime:config:save";
+    public static final String HR_OVERTIME_CONFIG_STATUS              = "hr:overtime:config:status";
+
 }

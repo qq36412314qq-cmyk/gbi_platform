@@ -25,7 +25,11 @@ import java.math.BigDecimal; import java.time.LocalDate;
     @Schema(description="工资卡号（密文）") @Size(max=64) private String bankAccount;
     @Schema(description="社保公积金缴纳基数") private BigDecimal socialSecurityBase;
     @Schema(description="基本工资") private BigDecimal basicSalary;
+    @Schema(description="休息日配置ID（关联sys_workweek_config.id，默认取岗位配置）") private Long workweekConfigId;
+    @Schema(description="是否免考勤 0参与 1不参与") private Integer exemptAttendance;
     @Schema(description="备注") @Size(max=500) private String remark;
     @Schema(description="免冠照片文件ID") private Long photoFileId;
     @Schema(description="附件内容（富文本HTML）") private String attachmentContent;
+    @Schema(description="工作经历和学业经历JSON数据，格式：{\"workExps\":[...],\"eduExps\":[...]}")
+    private String experienceData;
 }

@@ -12,6 +12,7 @@ public interface HrEmployeeService {
     void update(EmployeeDTO dto);
     void delete(Long id);
     List<HrEmployeeVO> export(List<Long> ids);
+    List<HrEmployeeVO> listForDropdown(String name, String employeeNo, Integer employeeStatus, Integer employmentType);
     void createFromEntry(Long entryApplyId);
 
     // ==================== 工作经历 ====================
